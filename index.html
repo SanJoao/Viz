@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>viz — Juan's data field notebook</title>
 <link rel="icon" type="image/svg+xml" href="logo.svg">
+<script src="analytics.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -461,6 +462,7 @@ posts.forEach((p, i) => {
     ${i === 0 ? juanDoodle : ""}
     ${i === 1 ? sketchDoodle : ""}
   `;
+  if (p.live) el.addEventListener("click", () => vizTrack("open_entry", { entry: p.entry, href: p.href }));
   grid.appendChild(el);
 });
 

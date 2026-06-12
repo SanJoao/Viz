@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>World Cup 2026 — Born There, Playing Here</title>
 <link rel="icon" type="image/svg+xml" href="../logo.svg">
+<script src="../analytics.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <style>
   :root {
@@ -33,7 +34,7 @@
   #tooltip {
     position: fixed; pointer-events: none;
     background: var(--panel); border: 1px solid #30363d; border-radius: 8px;
-    padding: 10px 14px; font-size: 13px; max-width: 360px;
+    padding: 10px 14px; font-size: 13px; max-width: min(360px, calc(100vw - 24px));
     box-shadow: 0 8px 24px rgba(0,0,0,.5);
     opacity: 0; transition: opacity .12s; z-index: 10;
   }
@@ -570,6 +571,18 @@ document.getElementById("hdr-count").textContent = `${players.length} players`;
 // ---- State ----
 let wcOnly = true;
 const tooltip = d3.select("#tooltip");
+const compactMq = window.matchMedia("(max-width: 760px)"); // phones: flag-only labels, bigger donut
+
+// Keep the tooltip fully on screen: if it would spill past the right or
+// bottom edge (taps on the right half of the chart on mobile), flip it to
+// the other side of the pointer.
+function placeTooltip(ev) {
+  const node = tooltip.node();
+  let x = ev.clientX + 14, y = ev.clientY + 14;
+  if (x + node.offsetWidth > window.innerWidth - 8) x = Math.max(8, ev.clientX - node.offsetWidth - 14);
+  if (y + node.offsetHeight > window.innerHeight - 8) y = Math.max(8, ev.clientY - node.offsetHeight - 14);
+  tooltip.style("left", x + "px").style("top", y + "px");
+}
 
 function activePlayers() {
   return wcOnly ? players.filter(pl => PARTICIPANTS.has(pl.b)) : players;
@@ -608,8 +621,9 @@ function drawChart() {
   const matrix = Array.from({length:names.length}, () => new Array(names.length).fill(0));
   flows.forEach(f => { matrix[index.get(f.src)][index.get(f.dst)] += f.n; });
 
+  const compact = compactMq.matches;
   const width = 1120, height = 1120;
-  const outerR = Math.min(width, height) * 0.5 - 150;
+  const outerR = Math.min(width, height) * 0.5 - (compact ? 48 : 150);
   const innerR = outerR - 13;
 
   const chord = d3.chordDirected()
@@ -652,15 +666,18 @@ function drawChart() {
       translate(${outerR + 6})
       ${d.angle > Math.PI ? "rotate(180)" : ""}`);
 
+  // On phones the country names are unreadable at this scale, so show only
+  // the flags (larger), and let the tooltip carry the name on tap.
+  const fw = compact ? 24 : 15, fh = compact ? 17 : 11;
   label.append("image")
     .attr("href", d => flagUrl(names[d.index]))
-    .attr("width", 15).attr("height", 11)
+    .attr("width", fw).attr("height", fh)
     .attr("preserveAspectRatio", "none")
-    .attr("x", d => d.angle > Math.PI ? -15 : 0)
-    .attr("y", -5.5)
-    .attr("transform", d => d.angle > Math.PI ? `rotate(180 ${-7.5} 0)` : null);
+    .attr("x", d => d.angle > Math.PI ? -fw : 0)
+    .attr("y", -fh / 2)
+    .attr("transform", d => d.angle > Math.PI ? `rotate(180 ${-fw / 2} 0)` : null);
 
-  label.append("text")
+  if (!compact) label.append("text")
     .attr("dy", "0.35em")
     .attr("x", d => d.angle > Math.PI ? -19 : 19)
     .attr("text-anchor", d => d.angle > Math.PI ? "end" : null)
@@ -688,8 +705,10 @@ function drawChart() {
       if (inn) html += `Foreign-born players in squad: <b>${inn}</b>`;
       html += `</div>`;
       tooltip.html(html).style("opacity", 1);
+      placeTooltip(event);
+      vizTrack("country_tap", { country: c });
     })
-    .on("mousemove", ev => tooltip.style("left", (ev.clientX + 14) + "px").style("top", (ev.clientY + 14) + "px"))
+    .on("mousemove", placeTooltip)
     .on("mouseout", () => { unfocus(); tooltip.style("opacity", 0); });
 
   ribbons
@@ -700,8 +719,9 @@ function drawChart() {
       let html = `<div class="flow">${flagImg(src)}${src} → ${flagImg(dst)}${dst}: ${d.source.value} player${d.source.value > 1 ? "s" : ""}</div>`;
       if (f) html += `<div class="names">${f.list.join(", ")}</div>`;
       tooltip.html(html).style("opacity", 1);
+      placeTooltip(event);
     })
-    .on("mousemove", ev => tooltip.style("left", (ev.clientX + 14) + "px").style("top", (ev.clientY + 14) + "px"))
+    .on("mousemove", placeTooltip)
     .on("mouseout", () => { unfocus(); tooltip.style("opacity", 0); });
 
   // toggle info badge
@@ -771,6 +791,9 @@ function renderFlows() {
 
 function renderAll() { drawChart(); renderTable(); renderFlows(); }
 
+// Redraw when crossing the phone breakpoint (rotation, window resize).
+compactMq.addEventListener("change", drawChart);
+
 // ---- Toggle wiring ----
 const toggleEl = document.getElementById("wc-toggle");
 function flip() {
@@ -778,6 +801,7 @@ function flip() {
   toggleEl.classList.toggle("on", wcOnly);
   toggleEl.setAttribute("aria-checked", wcOnly);
   renderAll();
+  vizTrack("wc_only_toggle", { on: wcOnly });
 }
 toggleEl.addEventListener("click", flip);
 toggleEl.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); } });

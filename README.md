@@ -16,6 +16,7 @@ A data field notebook by [Juan](https://www.reddit.com/user/ArchiTechOfTheFuture
 viz/
 ├── index.html          ← the notebook (gallery)
 ├── logo.svg            ← 7-petal streak rose (one week of streaks)
+├── analytics.js        ← Firebase Analytics (reserved URLs, zero config)
 ├── tools/gen-logo.mjs  ← regenerates the logo (node tools/gen-logo.mjs)
 ├── firebase.json       ← hosting config
 └── worldcup2026/       ← entry 001, self-contained
@@ -28,7 +29,8 @@ Each entry is a self-contained folder with its own vibe.
 1. Create a folder with a self-contained `index.html` — any style, any stack.
 2. Paste the **entry badge** from [`snippets/entry-badge.html`](snippets/entry-badge.html) (the "← viz." button back to the notebook). Re-theme it by changing only the four `--vh-*` variables.
 3. Add the favicon: `<link rel="icon" type="image/svg+xml" href="../logo.svg">`.
-4. Register the entry in the `posts` array of `index.html` at the root.
+4. Add analytics: `<script src="../analytics.js"></script>` (automatic page views; log custom events with `vizTrack("name", {...})` — safe to call anywhere, no-ops outside Firebase Hosting).
+5. Register the entry in the `posts` array of `index.html` at the root.
 
 ## Deploy
 
