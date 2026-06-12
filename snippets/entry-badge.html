@@ -1,0 +1,54 @@
+<!--
+  viz · entry badge — the "back to the notebook" button every entry carries.
+
+  HOW TO USE (new entry checklist):
+    1. Copy the <style> + <a> below into the entry's index.html (entry folders
+       sit one level under the site root, so ../ paths just work).
+    2. Theme it by changing ONLY the four --vh-* variables to match the
+       entry's vibe. Everything else stays identical so the badge is the
+       one constant across all visualizations.
+    3. Don't forget the favicon too:
+       <link rel="icon" type="image/svg+xml" href="../logo.svg">
+    4. Register the entry in the posts array of /index.html.
+
+  The defaults below are the light/paper theme. The World Cup entry shows
+  the dark-theme values:
+      --vh-bg: rgba(22, 27, 34, .88);
+      --vh-fg: #e6edf3;
+      --vh-border: #30363d;
+      --vh-accent: #58a6ff;
+-->
+<style>
+  .viz-home {
+    --vh-bg: rgba(255, 253, 247, .88);
+    --vh-fg: #2c2a25;
+    --vh-border: rgba(60, 50, 30, .25);
+    --vh-accent: #2b50c8;
+    position: fixed; top: 14px; left: 14px; z-index: 100;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 14px 7px 10px;
+    background: var(--vh-bg);
+    border: 1px solid var(--vh-border);
+    border-radius: 999px;
+    color: var(--vh-fg);
+    font-size: 13px; text-decoration: none;
+    backdrop-filter: blur(8px);
+    transition: border-color .15s;
+  }
+  .viz-home:hover { border-color: var(--vh-accent); }
+  .viz-home img { height: 17px; width: 17px; transition: transform .4s ease; }
+  .viz-home:hover img { transform: rotate(360deg); }
+  .viz-home .vh-arrow { color: var(--vh-accent); transition: transform .15s; }
+  .viz-home:hover .vh-arrow { transform: translateX(-3px); }
+  @media (max-width: 760px) {
+    .viz-home .vh-label { display: none; }
+    /* If the entry has a centered header near the top, give it room:
+       header { padding-top: 56px; } */
+  }
+</style>
+
+<a class="viz-home" href="../index.html" title="Back to the notebook">
+  <span class="vh-arrow">&larr;</span>
+  <img src="../logo.svg" alt="">
+  <span class="vh-label">viz<b>.</b></span>
+</a>

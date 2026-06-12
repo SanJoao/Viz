@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "viz-luarai",
     "public": ".",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "cleanUrls": true

@@ -21,7 +21,14 @@ viz/
 └── worldcup2026/       ← entry 001, self-contained
 ```
 
-Each entry is a self-contained folder with its own vibe. Publishing a new one = drop a folder in, add one object to the `posts` array in `index.html`.
+Each entry is a self-contained folder with its own vibe.
+
+## New entry checklist
+
+1. Create a folder with a self-contained `index.html` — any style, any stack.
+2. Paste the **entry badge** from [`snippets/entry-badge.html`](snippets/entry-badge.html) (the "← viz." button back to the notebook). Re-theme it by changing only the four `--vh-*` variables.
+3. Add the favicon: `<link rel="icon" type="image/svg+xml" href="../logo.svg">`.
+4. Register the entry in the `posts` array of `index.html` at the root.
 
 ## Deploy
 

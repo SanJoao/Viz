@@ -85,6 +85,35 @@
   th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
   th.sortable:hover { color: var(--accent); }
   th.sortable .arr { font-size: 10px; margin-left: 4px; color: var(--accent); }
+
+  /* ── viz home badge (shared pattern across all entries) ──
+     Theme via the four --vh-* variables; everything else is identical
+     on every entry. Template: /snippets/entry-badge.html */
+  .viz-home {
+    --vh-bg: rgba(22, 27, 34, .88);
+    --vh-fg: #e6edf3;
+    --vh-border: #30363d;
+    --vh-accent: #58a6ff;
+    position: fixed; top: 14px; left: 14px; z-index: 100;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 14px 7px 10px;
+    background: var(--vh-bg);
+    border: 1px solid var(--vh-border);
+    border-radius: 999px;
+    color: var(--vh-fg);
+    font-size: 13px; text-decoration: none;
+    backdrop-filter: blur(8px);
+    transition: border-color .15s;
+  }
+  .viz-home:hover { border-color: var(--vh-accent); }
+  .viz-home img { height: 17px; width: 17px; transition: transform .4s ease; }
+  .viz-home:hover img { transform: rotate(360deg); }
+  .viz-home .vh-arrow { color: var(--vh-accent); transition: transform .15s; }
+  .viz-home:hover .vh-arrow { transform: translateX(-3px); }
+  @media (max-width: 760px) {
+    .viz-home .vh-label { display: none; }
+    header { padding-top: 56px; }
+  }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #21262d; vertical-align: top; }
   th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--bg); }
@@ -101,6 +130,12 @@
 </style>
 </head>
 <body>
+
+<a class="viz-home" href="../index.html" title="Back to the notebook">
+  <span class="vh-arrow">&larr;</span>
+  <img src="../logo.svg" alt="">
+  <span class="vh-label">viz<b>.</b></span>
+</a>
 
 <header>
   <h1>&#9917; World Cup 2026: Born There, Playing Here</h1>
