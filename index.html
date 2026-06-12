@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>viz — Juan's data field notebook</title>
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #faf6ec;
+    --paper-2: #f3eddd;
+    --ink: #2c2a25;          /* dark warm ink for print text */
+    --pen: #2b50c8;          /* ballpoint blue */
+    --red: #d93025;          /* red marker */
+    --pencil: #8a857c;
+    --hl: #ffef9e;           /* highlighter */
+    --shadow: rgba(60, 50, 30, .18);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background:
+      radial-gradient(circle, rgba(60,50,30,.10) 1px, transparent 1.4px) 0 0 / 26px 26px,
+      linear-gradient(var(--paper), var(--paper-2));
+    color: var(--ink);
+    font-family: "Inter", sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  /* faint paper grain */
+  body::after {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 40;
+    opacity: .05; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ── HEADER ── */
+  header {
+    max-width: 1120px; margin: 0 auto;
+    padding: 48px 28px 0;
+    position: relative;
+  }
+  .topline {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .wordmark .dot {
+    width: 46px; height: 46px;
+    display: inline-block;
+    margin-left: 8px;
+    transform: translateY(5px); /* sits on the baseline like a period */
+    transition: transform .4s ease;
+    cursor: pointer;
+  }
+  .wordmark:hover .dot { transform: translateY(5px) rotate(360deg); }
+
+  /* speech bubble easter egg when the rose is clicked */
+  .rose-bubble {
+    position: absolute; left: 100%; top: -6px; white-space: nowrap;
+    font-family: "Caveat", cursive; font-size: 21px; font-weight: 600;
+    color: var(--red); transform: rotate(-3deg);
+    animation: bubble-pop 2.6s ease forwards;
+    pointer-events: none;
+  }
+  @keyframes bubble-pop {
+    0% { opacity: 0; transform: rotate(-3deg) scale(.6); }
+    12% { opacity: 1; transform: rotate(-3deg) scale(1.05); }
+    18% { transform: rotate(-3deg) scale(1); }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* ── margin doodles & easter eggs ── */
+  .moon-doodle {
+    position: absolute; top: 64px; right: 5vw; z-index: 0;
+    width: 56px; height: 56px; opacity: .45;
+    transition: opacity .2s, transform .3s;
+  }
+  .moon-doodle:hover { opacity: 1; transform: rotate(-12deg); }
+  .coffee-ring {
+    position: absolute; right: 44px; top: 158px;
+    width: 86px; height: 86px; pointer-events: none; opacity: .8;
+  }
+  @media (max-width: 1020px) { .coffee-ring { display: none; } }
+  .constellation {
+    display: block; margin: 4px auto -8px; width: 340px; max-width: 86vw;
+    opacity: .75; overflow: visible;
+  }
+  .constellation .star { transition: transform .2s; transform-box: fill-box; transform-origin: center; }
+  .constellation .star:hover { transform: scale(1.6); }
+  .flame-doodle {
+    position: absolute; right: 34px; top: -14px; pointer-events: none;
+  }
+  .snow-trigger { cursor: pointer; }
+  .snowflake-fall {
+    position: fixed; top: -30px; z-index: 60; pointer-events: none;
+    font-size: 18px; animation: snow-fall linear forwards;
+  }
+  @keyframes snow-fall {
+    to { transform: translateY(110vh) rotate(340deg); opacity: .2; }
+  }
+  @media (max-width: 760px) {
+    .moon-doodle, .coffee-ring, .flame-doodle, .doodle { display: none; }
+  }
+  .wordmark {
+    font-family: "Caveat", cursive;
+    font-size: 72px; font-weight: 700; line-height: .8;
+    color: var(--ink);
+    position: relative;
+    padding: 10px 18px 4px 8px;
+  }
+  .wordmark svg { position: absolute; inset: -14px -10px; overflow: visible; pointer-events: none; }
+  .links {
+    margin-left: auto;
+    font-family: "JetBrains Mono", monospace; font-size: 12px;
+    display: flex; gap: 18px; flex-wrap: wrap;
+  }
+  .links a {
+    color: var(--pen); text-decoration: none;
+    border-bottom: 1.5px dashed rgba(43,80,200,.4);
+    padding-bottom: 1px;
+  }
+  .links a:hover { border-bottom-style: solid; }
+
+  /* handwritten intro note */
+  .intro {
+    font-family: "Caveat", cursive;
+    font-size: 27px; font-weight: 500; line-height: 1.35;
+    color: var(--pen);
+    max-width: 720px;
+    margin: 18px 0 0;
+    transform: rotate(-.6deg);
+  }
+  .intro .hl {
+    background: linear-gradient(transparent 8%, var(--hl) 12%, var(--hl) 86%, transparent 92%);
+    padding: 0 4px;
+  }
+  .intro .sig {
+    display: block; margin-top: 6px;
+    font-size: 24px; color: var(--ink);
+    text-decoration: none; width: fit-content;
+  }
+  .intro .sig:hover { color: var(--pen); border-bottom: 1.5px dashed rgba(43,80,200,.4); }
+  .start-here {
+    font-family: "Caveat", cursive; font-size: 22px; font-weight: 600;
+    color: var(--red);
+    max-width: 1120px; margin: 26px auto -8px; padding: 0 34px;
+    transform: rotate(-1.4deg);
+    position: relative; z-index: 2;
+  }
+
+  /* ── GRID OF TAPED-IN ENTRIES ── */
+  main {
+    max-width: 1120px; margin: 26px auto 0; padding: 0 28px 70px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 44px 38px;
+    position: relative; z-index: 1;
+  }
+
+  .card {
+    position: relative;
+    background: #fffdf7;
+    padding: 12px 12px 14px;
+    border-radius: 3px;
+    box-shadow: 0 2px 4px var(--shadow), 0 12px 28px rgba(60,50,30,.12);
+    text-decoration: none; color: var(--ink);
+    display: block;
+    transform: rotate(var(--tilt, -1.3deg));
+    transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .card:nth-child(2n) { --tilt: 1.1deg; }
+  .card:nth-child(3n) { --tilt: -.7deg; }
+  .card:hover {
+    transform: rotate(0deg) translateY(-6px) scale(1.012);
+    box-shadow: 0 4px 8px var(--shadow), 0 22px 44px rgba(60,50,30,.20);
+    z-index: 3;
+  }
+
+  /* washi tape */
+  .tape {
+    position: absolute; top: -13px; left: 50%;
+    width: 110px; height: 26px;
+    transform: translateX(-50%) rotate(-3deg);
+    background: linear-gradient(rgba(120,170,255,.45), rgba(120,170,255,.38));
+    border-left: 1px dashed rgba(255,255,255,.7);
+    border-right: 1px dashed rgba(255,255,255,.7);
+    box-shadow: 0 1px 3px rgba(60,50,30,.15);
+    backdrop-filter: blur(1px);
+    z-index: 4;
+  }
+  .card:nth-child(2n) .tape { background: linear-gradient(rgba(255,170,150,.5), rgba(255,170,150,.42)); transform: translateX(-50%) rotate(2.5deg); }
+  .card:nth-child(3n) .tape { background: linear-gradient(rgba(255,225,120,.55), rgba(255,225,120,.45)); }
+
+  .thumb {
+    height: 225px; overflow: hidden; position: relative;
+    background: #0d1117; /* the dark vizzes read as photos on paper */
+    border: 1px solid rgba(60,50,30,.12);
+  }
+  .thumb.light { background: #fdfbf3; }
+  .thumb iframe {
+    width: 420%; height: 420%;
+    transform: scale(.238); transform-origin: 0 0;
+    border: 0; pointer-events: none;
+  }
+  .thumb svg.preview { width: 100%; height: 100%; }
+
+  .meta { padding: 12px 6px 2px; }
+  .entry {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px; letter-spacing: 1.8px;
+    color: var(--pencil); text-transform: uppercase;
+  }
+  .caption {
+    font-family: "Caveat", cursive;
+    font-size: 27px; font-weight: 600; line-height: 1.05;
+    color: var(--pen);
+    margin: 7px 0 6px;
+  }
+  .card:nth-child(2n) .caption { color: var(--red); }
+  .label {
+    font-size: 13px; color: #5d574b; line-height: 1.5;
+  }
+  .sigline {
+    margin-top: 10px;
+    font-family: "Caveat", cursive; font-size: 19px; color: var(--pencil);
+    text-align: right;
+  }
+
+  /* stamps */
+  .stamp {
+    position: absolute; z-index: 5;
+    font-family: "JetBrains Mono", monospace; font-weight: 600;
+    font-size: 12px; letter-spacing: 2px;
+    padding: 3px 10px; border-radius: 4px;
+    top: 16px; right: -10px;
+  }
+  .stamp.live {
+    color: var(--red); border: 2.5px solid var(--red);
+    transform: rotate(7deg);
+    background: rgba(255,253,247,.85);
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40'%3E%3Cfilter id='r'%3E%3CfeTurbulence baseFrequency='0.6' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.92 0.08'/%3E%3CfeComposite operator='in' in2='SourceGraphic'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23r)'/%3E%3C/svg%3E");
+  }
+  .stamp.soon {
+    color: var(--pencil); border: 1.5px dashed var(--pencil);
+    transform: rotate(-5deg);
+    font-family: "Caveat", cursive; font-size: 19px; letter-spacing: 0; font-weight: 600;
+  }
+
+  /* doodle mascot + marginalia */
+  .doodle { position: absolute; z-index: 6; pointer-events: none; overflow: visible; }
+  .anno {
+    position: absolute; z-index: 6; pointer-events: none;
+    font-family: "Caveat", cursive; font-weight: 600;
+  }
+
+  footer {
+    text-align: center; padding: 16px 16px 52px;
+    font-family: "JetBrains Mono", monospace; font-size: 11.5px;
+    color: var(--pencil); letter-spacing: 1px;
+  }
+  footer a { color: var(--pen); text-decoration: none; }
+  footer .snow { letter-spacing: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="topline">
+    <div class="wordmark">
+      viz<img class="dot" src="logo.svg" alt="streak-rose logo, the dot of viz">
+      <svg viewBox="0 0 190 110">
+        <path id="pen-circle" d="M30 62 C 16 30, 66 4, 112 12 C 162 21, 180 60, 144 86 C 106 112, 28 102, 22 68 C 20 56, 30 44, 46 40"
+          fill="none" stroke="var(--pen)" stroke-width="3" stroke-linecap="round" opacity=".8"
+          stroke-dasharray="540" stroke-dashoffset="540">
+          <animate attributeName="stroke-dashoffset" from="540" to="0" dur="1.3s" begin="0.3s" fill="freeze"/>
+        </path>
+      </svg>
+    </div>
+  </div>
+
+  <!-- coffee ring — every real notebook has one -->
+  <svg class="coffee-ring" viewBox="0 0 90 90" fill="none">
+    <circle cx="45" cy="45" r="36" stroke="rgba(135,85,35,.22)" stroke-width="6" stroke-dasharray="40 7 28 4 52 9"/>
+    <circle cx="45" cy="45" r="30" stroke="rgba(135,85,35,.13)" stroke-width="2" stroke-dasharray="60 12 30 8"/>
+  </svg>
+
+  <p class="intro">
+    Hi! I'm Juan — an observer who builds. Systems shape life, and life shapes systems,
+    so I keep a <span class="hl">data field notebook</span>: charts of whatever I'm currently
+    questioning. Sometimes it's Luarai experiments, sometimes just rabbit holes I fell into.
+    <a class="sig" href="https://www.reddit.com/user/ArchiTechOfTheFuture" target="_blank" rel="noopener">— u/ArchiTechOfTheFuture &nbsp;<span class="snow-trigger" title="❄">❄️❄️❄️</span></a>
+  </p>
+</header>
+
+<!-- luar = moonlight: the Luar crescent, sketched in pencil. Click it. -->
+<a class="moon-doodle" href="https://luarai.com" target="_blank" rel="noopener" title="luar ☾ = moonlight">
+  <svg viewBox="0 0 60 60" fill="none" stroke="#01303D" stroke-width="2" stroke-linecap="round">
+    <path d="M40 6 A 25 25 0 1 0 40 54 A 19.5 19.5 0 1 1 40 6 Z"/>
+    <path d="M41.5 9 A 23 23 0 1 0 41.5 51" opacity=".35"/>
+  </svg>
+</a>
+
+<div class="start-here">start here, this one surprised me ↓
+  <!-- 1.1m-day streak flame, from the severo screenshot -->
+  <span class="flame-doodle">
+    <svg width="46" height="58" viewBox="0 0 46 58" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round">
+      <path d="M23 8 C 14 18, 10 24, 11 34 C 12 44, 18 50, 23 50 C 28 50, 34 44, 35 34 C 36 26, 31 20, 29 14 C 28 20, 25 22, 23 18 C 21 14, 22 11, 23 8 Z"/>
+      <path d="M23 50 C 20 46, 19 42, 21 38 C 22 41, 25 41, 25 38 C 27 42, 26 46, 23 50" opacity=".5"/>
+    </svg>
+    <span style="font-family:Caveat,cursive; font-size:19px; color:var(--pencil); display:block; transform:rotate(4deg); margin-top:-6px;">1.1m days?!</span>
+  </span>
+</div>
+
+<main id="grid"></main>
+
+<!-- the Luarai universe: one star per project, a sprinkle of stardust.
+     Hover a star to see which project it is. -->
+<svg class="constellation" viewBox="0 0 340 110" fill="none" stroke-linecap="round">
+  <!-- dashed constellation lines (pencil) -->
+  <g stroke="var(--pencil)" stroke-width="1.3" stroke-dasharray="4 5" opacity=".65">
+    <path d="M26 78 L 70 40 L 124 56 L 168 26 L 215 48 L 258 30 L 312 62"/>
+    <path d="M124 56 L 142 92 M215 48 L 232 86"/>
+  </g>
+  <!-- stars (ballpoint), each one a project -->
+  <g stroke="var(--pen)" stroke-width="1.8" fill="none">
+    <g class="star"><title>Tencargo</title><path d="M26 70 v16 M18 78 h16 M21 73 l10 10 M31 73 l-10 10"/></g>
+    <g class="star"><title>Snipy</title><path d="M70 33 v14 M63 40 h14"/></g>
+    <g class="star"><title>Picky</title><path d="M124 49 v14 M117 56 h14"/></g>
+    <g class="star"><title>Zenota</title><path d="M168 19 v14 M161 26 h14 M163 21 l10 10 M173 21 l-10 10"/></g>
+    <g class="star"><title>Koby</title><path d="M215 41 v14 M208 48 h14"/></g>
+    <g class="star"><title>Homigo</title><path d="M258 23 v14 M251 30 h14"/></g>
+    <g class="star"><title>Daily Tracker</title><path d="M142 85 v14 M135 92 h14"/></g>
+    <g class="star"><title>SANFANSON</title><path d="M232 79 v14 M225 86 h14"/></g>
+  </g>
+  <!-- severo, the brightest star — it grew into this notebook's logo -->
+  <g class="star" stroke="var(--red)" stroke-width="2" fill="none">
+    <title>Severo — the streak rose came from here</title>
+    <path d="M312 50 v24 M300 62 h24 M304 54 l16 16 M320 54 l-16 16"/>
+  </g>
+  <!-- a sliver of luar -->
+  <g stroke="var(--pencil)" stroke-width="1.6" opacity=".8">
+    <path d="M52 96 A 9 9 0 1 0 52 112 A 7 7 0 1 1 52 96 Z" transform="translate(0,-8)"/>
+  </g>
+  <!-- stardust -->
+  <g fill="var(--pencil)" opacity=".6">
+    <circle cx="96" cy="22" r="1.4"/><circle cx="190" cy="70" r="1.4"/>
+    <circle cx="282" cy="78" r="1.4"/><circle cx="240" cy="14" r="1.4"/>
+  </g>
+</svg>
+
+<footer>
+  viz · a field notebook by <a href="https://luarai.com" target="_blank" rel="noopener">Luarai</a> ·
+  built by hand, charted in d3 · <span class="snow snow-trigger" title="❄">❄️❄️❄️</span>
+</footer>
+
+<script>
+const posts = [
+  {
+    href: "worldcup2026/index.html",
+    entry: "entry 001 · jun 12 2026 · rabbit hole ⚽",
+    caption: "everyone's from France!?",
+    label: "A quarter of all World Cup players were born outside the country they represent. Every single one, traced on a circular sankey.",
+    live: true,
+    thumb: "iframe",
+    sig: "— Juan · 12.jun.2026"
+  },
+  {
+    entry: "entry 002 · soon · luarai lab ✿",
+    caption: "streaks, but make them flowers",
+    label: "Every user streak in the app drawn as a flower — one petal per week survived. Some bloomed way longer than expected.",
+    live: false,
+    thumb: "flower",
+    sig: "— Juan · sketching…"
+  },
+  {
+    entry: "entry 003 · soon · people ▥",
+    caption: "who actually uses this?",
+    label: "Demographics of our users — age pyramids, time-of-day rhythms, and one country I never expected in the top 5.",
+    live: false,
+    thumb: "pyramid",
+    sig: "— Juan · collecting data…"
+  }
+];
+
+const previews = {
+  flower: `
+    <svg class="preview" viewBox="0 0 360 225">
+      <g transform="translate(180,118)">
+        <g>
+          <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="60s" repeatCount="indefinite"/>
+          ${Array.from({length:12}, (_,i) => `
+            <ellipse rx="13" ry="48" fill="hsla(${i*18+310},65%,72%,.45)" stroke="hsla(${i*18+310},55%,55%,.8)" stroke-width="1"
+              transform="rotate(${i*30}) translate(0,-48)"/>`).join("")}
+          <circle r="13" fill="#f0c93d"/>
+        </g>
+      </g>
+      <text x="14" y="210" font-family="JetBrains Mono, monospace" font-size="10" fill="#8a857c">fig 1 — streak_flower(user_4812)</text>
+    </svg>`,
+  pyramid: `
+    <svg class="preview" viewBox="0 0 360 225">
+      ${Array.from({length:9}, (_,i) => {
+        const w = [28,52,80,112,140,118,90,56,32][i];
+        return `
+        <rect x="${177-w}" y="${24+i*19}" width="${w}" height="12" fill="rgba(43,80,200,.45)">
+          <animate attributeName="width" values="${w*.45};${w};${w*.45}" dur="${6+i*.4}s" repeatCount="indefinite"/>
+          <animate attributeName="x" values="${177-w*.45};${177-w};${177-w*.45}" dur="${6+i*.4}s" repeatCount="indefinite"/>
+        </rect>
+        <rect x="183" y="${24+i*19}" width="${w*.9}" height="12" fill="rgba(217,48,37,.40)">
+          <animate attributeName="width" values="${w*.4};${w*.9};${w*.4}" dur="${6.5+i*.3}s" repeatCount="indefinite"/>
+        </rect>`;
+      }).join("")}
+      <line x1="180" y1="16" x2="180" y2="200" stroke="#8a857c" stroke-dasharray="3 4" stroke-width="1"/>
+      <text x="14" y="212" font-family="JetBrains Mono, monospace" font-size="10" fill="#8a857c">fig 2 — age_pyramid(everyone)</text>
+    </svg>`
+};
+
+// doodle of Juan (long hair + glasses, ballpoint style) — appears next to entry 001
+const juanDoodle = `
+  <svg class="doodle" style="left:-46px; bottom:30px; width:64px; height:96px" viewBox="0 0 64 96"
+       fill="none" stroke="var(--pen)" stroke-width="2" stroke-linecap="round">
+    <circle cx="30" cy="20" r="11"/>
+    <path d="M19 16 C 16 30, 17 38, 15 44 M41 16 C 44 30, 43 38, 45 44"/>
+    <circle cx="26" cy="19" r="3.6"/><circle cx="35" cy="19" r="3.6"/><path d="M29.6 19 h2"/>
+    <path d="M27 26 c2 2, 5 2, 7 0"/>
+    <path d="M30 31 V 62 M30 40 L 12 50 M30 40 L 52 34"/>
+    <path d="M30 62 L 20 88 M30 62 L 41 87"/>
+    <path d="M52 34 L 60 30 M60 30 l -4 -1.5 M60 30 l -2.5 3.5" stroke="var(--red)"/>
+  </svg>`;
+
+// doodle sketching for the "soon" card
+const sketchDoodle = `
+  <svg class="doodle" style="right:-26px; bottom:24px; width:54px; height:72px" viewBox="0 0 60 80"
+       fill="none" stroke="var(--pencil)" stroke-width="2" stroke-linecap="round">
+    <circle cx="24" cy="14" r="9"/>
+    <path d="M15 11 C 13 22, 14 28, 12 33 M33 11 C 35 22, 34 28, 36 33"/>
+    <circle cx="21" cy="13" r="3"/><circle cx="28" cy="13" r="3"/>
+    <path d="M24 23 V 46 L 12 66 M24 46 L 34 65 M24 30 L 42 42"/>
+    <path d="M42 42 l 8 6 M38 52 q 8 -2 12 -4" stroke-dasharray="3 3"/>
+  </svg>`;
+
+const grid = document.getElementById("grid");
+posts.forEach((p, i) => {
+  const el = document.createElement(p.live ? "a" : "div");
+  if (p.live) el.href = p.href;
+  el.className = "card";
+  el.innerHTML = `
+    <div class="tape"></div>
+    <div class="stamp ${p.live ? "live" : "soon"}">${p.live ? "LIVE" : "soon…"}</div>
+    <div class="thumb ${p.thumb === "iframe" ? "" : "light"}">${p.thumb === "iframe"
+      ? `<iframe src="${p.href}" loading="lazy" tabindex="-1" title="${p.caption}"></iframe>`
+      : previews[p.thumb]}</div>
+    <div class="meta">
+      <div class="entry">${p.entry}</div>
+      <div class="caption">${p.caption}</div>
+      <p class="label">${p.label}</p>
+      <div class="sigline">${p.sig}</div>
+    </div>
+    ${i === 0 ? juanDoodle : ""}
+    ${i === 1 ? sketchDoodle : ""}
+  `;
+  grid.appendChild(el);
+});
+
+// ── easter eggs ──────────────────────────────────────────────────────
+// 1. Click the rose-dot: it confesses what it is.
+const dot = document.querySelector(".wordmark .dot");
+dot.addEventListener("click", () => {
+  const old = document.querySelector(".rose-bubble");
+  if (old) old.remove();
+  const b = document.createElement("span");
+  b.className = "rose-bubble";
+  b.textContent = "← one week of streaks!";
+  document.querySelector(".wordmark").appendChild(b);
+  setTimeout(() => b.remove(), 2700);
+});
+
+// 2. Click the snowflakes (signature or footer): it snows on the notebook.
+function letItSnow() {
+  for (let i = 0; i < 16; i++) {
+    const s = document.createElement("span");
+    s.className = "snowflake-fall";
+    s.textContent = "❄";
+    s.style.left = Math.random() * 100 + "vw";
+    s.style.color = Math.random() < .5 ? "var(--pen)" : "var(--pencil)";
+    s.style.fontSize = (12 + Math.random() * 14) + "px";
+    s.style.animationDuration = (2.4 + Math.random() * 2.6) + "s";
+    s.style.animationDelay = (Math.random() * .8) + "s";
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 6500);
+  }
+}
+document.querySelectorAll(".snow-trigger").forEach(el => {
+  el.addEventListener("click", e => { e.preventDefault(); letItSnow(); });
+});
+</script>
+</body>
+</html>

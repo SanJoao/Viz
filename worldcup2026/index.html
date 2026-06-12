@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>World Cup 2026 — Born There, Playing Here</title>
+<link rel="icon" type="image/svg+xml" href="../logo.svg">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, sans-serif;
+  }
+  header { text-align: center; padding: 28px 16px 8px; }
+  header h1 { margin: 0 0 6px; font-size: 28px; font-weight: 700; }
+  header p { margin: 4px auto; max-width: 880px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  header .stat { color: var(--accent); font-weight: 600; }
+  #chart-wrap { display: flex; justify-content: center; }
+  #chart { max-width: 1080px; width: 100%; }
+  svg { display: block; width: 100%; height: auto; }
+  .group-arc { cursor: pointer; }
+  .ribbon { mix-blend-mode: screen; }
+  #tooltip {
+    position: fixed; pointer-events: none;
+    background: var(--panel); border: 1px solid #30363d; border-radius: 8px;
+    padding: 10px 14px; font-size: 13px; max-width: 360px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    opacity: 0; transition: opacity .12s; z-index: 10;
+  }
+  #tooltip .flow { font-weight: 600; margin-bottom: 4px; }
+  #tooltip .names { color: var(--muted); line-height: 1.4; }
+  #tooltip img.fl, td img.fl { height: 11px; width: 16px; object-fit: cover; border-radius: 2px; vertical-align: -1px; margin-right: 5px; }
+  .hint { text-align: center; color: var(--muted); font-size: 12px; margin: 0 0 6px; }
+
+  /* toggle */
+  .toggle-bar { display: flex; justify-content: center; margin: 6px 0 14px; }
+  .toggle {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--panel); border: 1px solid #30363d; border-radius: 999px;
+    padding: 8px 16px; cursor: pointer; user-select: none; font-size: 13px;
+    transition: border-color .15s;
+  }
+  .toggle:hover { border-color: var(--accent); }
+  .toggle .track {
+    width: 36px; height: 20px; border-radius: 999px; background: #30363d;
+    position: relative; transition: background .15s; flex: none;
+  }
+  .toggle .knob {
+    position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+    border-radius: 50%; background: #8b949e; transition: left .15s, background .15s;
+  }
+  .toggle.on .track { background: #1f6feb; }
+  .toggle.on .knob { left: 18px; background: #fff; }
+  .toggle .lbl b { color: var(--text); }
+
+  section.table-wrap { max-width: 940px; margin: 10px auto 30px; padding: 0 16px; }
+  h2 { font-size: 18px; border-bottom: 1px solid #30363d; padding-bottom: 8px; }
+
+  /* collapsible sections */
+  details > summary { cursor: pointer; list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary h2 {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 0 0 8px;
+  }
+  details > summary:hover h2 { color: var(--accent); }
+  details > summary .caret {
+    font-size: 13px; color: var(--muted);
+    transition: transform .2s ease;
+    transform: rotate(-90deg);
+  }
+  details[open] > summary .caret { transform: rotate(0deg); }
+
+  /* sortable headers */
+  th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+  th.sortable:hover { color: var(--accent); }
+  th.sortable .arr { font-size: 10px; margin-left: 4px; color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #21262d; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--bg); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  #player-search {
+    width: 100%; padding: 9px 12px; margin: 10px 0 14px;
+    background: var(--panel); border: 1px solid #30363d; border-radius: 8px;
+    color: var(--text); font-size: 14px; outline: none;
+  }
+  #player-search:focus { border-color: var(--accent); }
+  .count-note { color: var(--muted); font-size: 12px; margin: 4px 0 10px; }
+  .sources { max-width: 940px; margin: 0 auto 50px; padding: 0 16px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+  .sources a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>&#9917; World Cup 2026: Born There, Playing Here</h1>
+  <p>A circular Sankey of player birthplaces. Each ribbon flows from the country where players were <b>born</b>
+     to the national team they <b>represent</b> at the 2026 World Cup, with arrowheads pointing to the team.</p>
+  <p>Roughly <span class="stat">a quarter of the 1,248 players</span> at the tournament were born outside the country they
+     represent — the most ever (289 per the TUDN/Macías census, 310 per Flashscore's count).
+     This chart maps <span class="stat" id="hdr-count">…</span> of them by name.</p>
+</header>
+
+<div class="toggle-bar">
+  <div class="toggle on" id="wc-toggle" role="switch" aria-checked="true" tabindex="0">
+    <span class="track"><span class="knob"></span></span>
+    <span class="lbl">Only show countries <b>playing at the 2026 World Cup</b> <span id="toggle-info"></span></span>
+  </div>
+</div>
+<p class="hint">Hover an arc or ribbon to isolate a country's flows. Arrowheads point at the national team.</p>
+<div id="chart-wrap"><div id="chart"></div></div>
+<div id="tooltip"></div>
+
+<section class="table-wrap">
+  <details id="players-details">
+    <summary><h2>All foreign-born players <span class="caret">&#9660;</span></h2></summary>
+    <input id="player-search" type="text" placeholder="Filter by player, team or birth country &mdash; e.g. 'Mexico', 'Quiñones', 'France'&hellip;">
+    <div class="count-note" id="row-count"></div>
+    <table id="player-table">
+      <thead><tr>
+        <th class="sortable" data-key="p">Player<span class="arr"></span></th>
+        <th class="sortable" data-key="b">Born in<span class="arr"></span></th>
+        <th class="sortable" data-key="t">Plays for<span class="arr"></span></th>
+        <th class="sortable num" data-key="a">Age<span class="arr"></span></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </details>
+</section>
+
+<section class="table-wrap">
+  <details>
+    <summary><h2>Flow summary (birth country &rarr; national team) <span class="caret">&#9660;</span></h2></summary>
+    <table id="flow-table">
+      <thead><tr><th>Born in</th><th>Plays for</th><th class="num">Players</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </details>
+</section>
+
+<div class="sources">
+  <b>Highlights:</b> Colombia-born Juli&aacute;n Qui&ntilde;ones scored the opening goal of the tournament &mdash; for Mexico.
+  Cura&ccedil;ao's squad is 25/26 Dutch-born (only Tahith Chong was born on the island).
+  France is the world's biggest talent exporter — 13 players for Algeria, 12 for Haiti, 11 for DR Congo, 10 for Senegal.
+  Bosnia's 17 foreign-born trace the 1990s refugee diaspora (Germany, Austria, Sweden…) — and they knocked Italy out in the
+  playoff final, so the Azzurri (and Argentina-born Mateo Retegui) miss a third straight World Cup. Brazil, Colombia, Panama,
+  Austria, Sweden, Saudi Arabia, Czech Republic and South Africa brought fully homegrown squads.<br><br>
+  <b>Data notes:</b> ages as of tournament kickoff (June 2026). Dataset merges the TUDN/Jaime F. Mac&iacute;as census with verified
+  corrections: Rafik Belghali born in Mechelen, <i>Belgium</i>; Diogo Costa born in Geneva, <i>Switzerland</i>; Brice Samba born in
+  Linzolo, <i>Congo-Brazzaville</i>; Samed Ba&zcaron;dar and Jovo Luki&cacute; both born in <i>Serbia</i> (Novi Pazar and &Scaron;abac); Martin Baturina
+  born in Zurich, Switzerland.<br><br>
+  <b>Sources:</b>
+  <a href="https://www.flashscore.com/news/south-africa-showcase-homegrown-talent-as-other-world-cup-teams-rely-on-foreign-born-stars/beYZt8he/">Flashscore</a> &middot;
+  <a href="https://frontofficesports.com/how-world-cup-teams-stack-rosters-with-foreign-players/">Front Office Sports</a> &middot;
+  <a href="https://theconversation.com/how-migration-became-a-key-to-world-cup-success-284626">The Conversation</a> &middot;
+  <a href="https://www.givemesport.com/players-born-england-represent-other-world-cup-teams/">GiveMeSport</a> &middot;
+  <a href="https://www.beinsports.com/en-us/soccer/fifa-world-cup-2026/articles/the-10-players-born-in-spain-who-will-play-at-the-2026-world-cup-for-another-national-team-and-write-their-story-away-from-la-roja-2026-06-03">beIN Sports</a> &middot;
+  <a href="https://bolavip.com/en/world-cup/how-many-players-born-abroad-are-playing-for-mexico-at-the-2026-world-cup">Bolavip</a> &middot;
+  <a href="https://www.ussoccer.com/stories/2026/05/usmnt/meet-the-team-world-cup-roster">US Soccer</a> &middot;
+  TUDN / Jaime F. Mac&iacute;as / El Colombiano census &middot;
+  <a href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/european-qualifiers-play-off-final-review">FIFA (playoff review)</a> &middot;
+  Flags by <a href="https://flagcdn.com">flagcdn.com</a>
+</div>
+
+<script>
+// ISO codes for flag images (flagcdn.com)
+const ISO = {
+  "France":"fr","England":"gb-eng","Spain":"es","Netherlands":"nl","Germany":"de","Belgium":"be",
+  "Switzerland":"ch","Italy":"it","Sweden":"se","USA":"us","Canada":"ca","Brazil":"br","Argentina":"ar",
+  "Colombia":"co","Zambia":"zm","Curaçao":"cw","Algeria":"dz","Haiti":"ht","DR Congo":"cd","Congo":"cg",
+  "Morocco":"ma","Senegal":"sn","Tunisia":"tn","Scotland":"gb-sct","Wales":"gb-wls","Ghana":"gh",
+  "New Zealand":"nz","Norway":"no","Iraq":"iq","Mexico":"mx","Uruguay":"uy","Ecuador":"ec",
+  "Bosnia & Herz.":"ba","Turkey":"tr","Portugal":"pt","Uzbekistan":"uz","Croatia":"hr","Austria":"at",
+  "Serbia":"rs","Slovenia":"si","Denmark":"dk","Cape Verde":"cv","Ireland":"ie",
+  "Qatar":"qa","Egypt":"eg","Sudan":"sd","Somalia":"so","South Korea":"kr","Ivory Coast":"ci",
+  "Burkina Faso":"bf","Guinea":"gn","Kenya":"ke","Tanzania":"tz","Nigeria":"ng","Cameroon":"cm",
+  "Gambia":"gm","Japan":"jp","Jordan":"jo","Iran":"ir","Paraguay":"py","Kazakhstan":"kz",
+  "Isle of Man":"im","Australia":"au","Saudi Arabia":"sa"
+};
+const flagUrl = c => `https://flagcdn.com/w40/${ISO[c] || "xx"}.png`;
+const flagImg = c => ISO[c] ? `<img class="fl" src="${flagUrl(c)}" alt="">` : "";
+
+// The 48 nations at the 2026 World Cup (40 with foreign-born players + 8 fully homegrown)
+const PARTICIPANTS = new Set([
+  "USA","Mexico","Canada","France","England","Spain","Netherlands","Germany","Belgium","Switzerland",
+  "Scotland","Norway","Croatia","Bosnia & Herz.","Turkey","Portugal","Austria","Sweden","Czech Republic",
+  "Argentina","Brazil","Colombia","Uruguay","Ecuador","Paraguay","Panama","Curaçao","Haiti",
+  "Morocco","Algeria","Tunisia","Egypt","Senegal","Ghana","Ivory Coast","Cape Verde","DR Congo","South Africa",
+  "Qatar","Saudi Arabia","Iraq","Iran","Jordan","Uzbekistan","Japan","South Korea","Australia","New Zealand"
+]);
+
+// ---- Full player dataset: p = player, b = born in, t = plays for, a = age (June 2026) ----
+const players = [
+  // Germany
+  {p:"Waldemar Anton", b:"Uzbekistan", t:"Germany", a:29},
+  // Algeria (16)
+  {p:"Luca Zidane", b:"France", t:"Algeria", a:28},
+  {p:"Melvin Mastil", b:"France", t:"Algeria", a:26},
+  {p:"Aïssa Mandi", b:"France", t:"Algeria", a:34},
+  {p:"Rayan Aït-Nouri", b:"France", t:"Algeria", a:25},
+  {p:"Jaouen Hadjam", b:"France", t:"Algeria", a:23},
+  {p:"Samir Chergui", b:"France", t:"Algeria", a:27},
+  {p:"Nabil Bentaleb", b:"France", t:"Algeria", a:31},
+  {p:"Farès Chaïbi", b:"France", t:"Algeria", a:23},
+  {p:"Houssem Aouar", b:"France", t:"Algeria", a:27},
+  {p:"Riyad Mahrez", b:"France", t:"Algeria", a:35},
+  {p:"Amine Gouiri", b:"France", t:"Algeria", a:26},
+  {p:"Anis Hadj Moussa", b:"France", t:"Algeria", a:24},
+  {p:"Farès Ghedjemis", b:"France", t:"Algeria", a:23},
+  {p:"Rafik Belghali", b:"Belgium", t:"Algeria", a:24},
+  {p:"Ibrahim Maza", b:"Germany", t:"Algeria", a:20},
+  {p:"Ramiz Zerrouki", b:"Netherlands", t:"Algeria", a:28},
+  // Argentina
+  {p:"Giuliano Simeone", b:"Italy", t:"Argentina", a:23},
+  {p:"Nico Paz", b:"Spain", t:"Argentina", a:21},
+  // Australia (8)
+  {p:"Harry Souttar", b:"Scotland", t:"Australia", a:27},
+  {p:"Cameron Burgess", b:"Scotland", t:"Australia", a:30},
+  {p:"Miloš Degenek", b:"Croatia", t:"Australia", a:32},
+  {p:"Paul Okon-Engstler", b:"Belgium", t:"Australia", a:21},
+  {p:"Mohamed Touré", b:"Guinea", t:"Australia", a:22},
+  {p:"Alessandro Circati", b:"Italy", t:"Australia", a:22},
+  {p:"Awer Mabil", b:"Kenya", t:"Australia", a:30},
+  {p:"Nestory Irankunda", b:"Tanzania", t:"Australia", a:20},
+  // Belgium
+  {p:"Amadou Onana", b:"Senegal", t:"Belgium", a:24},
+  // Bosnia & Herz. (17)
+  {p:"Dženis Burnić", b:"Germany", t:"Bosnia & Herz.", a:28},
+  {p:"Kerim Alajbegović", b:"Germany", t:"Bosnia & Herz.", a:18},
+  {p:"Sead Kolašinac", b:"Germany", t:"Bosnia & Herz.", a:32},
+  {p:"Ermedin Demirović", b:"Germany", t:"Bosnia & Herz.", a:28},
+  {p:"Amar Dedić", b:"Austria", t:"Bosnia & Herz.", a:23},
+  {p:"Ermin Mahmić", b:"Austria", t:"Bosnia & Herz.", a:21},
+  {p:"Osman Hadžikić", b:"Austria", t:"Bosnia & Herz.", a:30},
+  {p:"Armin Gigović", b:"Sweden", t:"Bosnia & Herz.", a:24},
+  {p:"Benjamin Hadžikadunić", b:"Sweden", t:"Bosnia & Herz.", a:22},
+  {p:"Dennis Hadžikadunić", b:"Sweden", t:"Bosnia & Herz.", a:27},
+  {p:"Samed Baždar", b:"Serbia", t:"Bosnia & Herz.", a:22},
+  {p:"Jovo Lukić", b:"Serbia", t:"Bosnia & Herz.", a:27},
+  {p:"Ivan Bašić", b:"Croatia", t:"Bosnia & Herz.", a:24},
+  {p:"Amir Hadžiahmetović", b:"Denmark", t:"Bosnia & Herz.", a:29},
+  {p:"Tarik Muharemović", b:"Slovenia", t:"Bosnia & Herz.", a:23},
+  {p:"Haris Tabaković", b:"Switzerland", t:"Bosnia & Herz.", a:32},
+  {p:"Esmir Bajraktarević", b:"USA", t:"Bosnia & Herz.", a:21},
+  // Cape Verde (14)
+  {p:"Sidny Lopes Cabral", b:"Netherlands", t:"Cape Verde", a:23},
+  {p:"Jamiro Monteiro", b:"Netherlands", t:"Cape Verde", a:32},
+  {p:"Deroy Duarte", b:"Netherlands", t:"Cape Verde", a:27},
+  {p:"Laros Duarte", b:"Netherlands", t:"Cape Verde", a:29},
+  {p:"Garry Rodrigues", b:"Netherlands", t:"Cape Verde", a:35},
+  {p:"Dailon Livramento", b:"Netherlands", t:"Cape Verde", a:25},
+  {p:"Logan Costa", b:"France", t:"Cape Verde", a:25},
+  {p:"Steven Moreira", b:"France", t:"Cape Verde", a:31},
+  {p:"Willy Semedo", b:"France", t:"Cape Verde", a:32},
+  {p:"Wagner Pina", b:"Portugal", t:"Cape Verde", a:23},
+  {p:"Telmo Arcanjo", b:"Portugal", t:"Cape Verde", a:24},
+  {p:"Hélio Varela", b:"Portugal", t:"Cape Verde", a:24},
+  {p:"Roberto Lopes", b:"Ireland", t:"Cape Verde", a:34},
+  {p:"CJ dos Santos", b:"USA", t:"Cape Verde", a:25},
+  // Canada (7)
+  {p:"Owen Goodman", b:"England", t:"Canada", a:22},
+  {p:"Luc de Fougerolles", b:"England", t:"Canada", a:20},
+  {p:"Alfie Jones", b:"England", t:"Canada", a:28},
+  {p:"Alphonso Davies", b:"Ghana", t:"Canada", a:25},
+  {p:"Ismaël Koné", b:"Ivory Coast", t:"Canada", a:24},
+  {p:"Tani Oluwaseyi", b:"Nigeria", t:"Canada", a:26},
+  {p:"Jonathan David", b:"USA", t:"Canada", a:26},
+  // Qatar (14)
+  {p:"Salah Zakaria", b:"Egypt", t:"Qatar", a:27},
+  {p:"Ahmed Fathy", b:"Egypt", t:"Qatar", a:33},
+  {p:"Ahmed Alaaeldin", b:"Egypt", t:"Qatar", a:33},
+  {p:"Meshaal Barsham", b:"Sudan", t:"Qatar", a:28},
+  {p:"Assim Madibo", b:"Sudan", t:"Qatar", a:29},
+  {p:"Almoez Ali", b:"Sudan", t:"Qatar", a:29},
+  {p:"Boualem Khoukhi", b:"Algeria", t:"Qatar", a:35},
+  {p:"Edmilson Junior", b:"Belgium", t:"Qatar", a:31},
+  {p:"Lucas Mendes", b:"Brazil", t:"Qatar", a:36},
+  {p:"Karim Boudiaf", b:"France", t:"Qatar", a:35},
+  {p:"Mohammed Muntari", b:"Ghana", t:"Qatar", a:32},
+  {p:"Pedro Miguel", b:"Portugal", t:"Qatar", a:36},
+  {p:"Issa Laye", b:"Senegal", t:"Qatar", a:28},
+  {p:"Yusuf Abdurisag", b:"Somalia", t:"Qatar", a:26},
+  // South Korea
+  {p:"Jens Castrop", b:"Germany", t:"South Korea", a:22},
+  // Ivory Coast (9)
+  {p:"Yahia Fofana", b:"France", t:"Ivory Coast", a:25},
+  {p:"Evan N'Dicka", b:"France", t:"Ivory Coast", a:26},
+  {p:"Guéla Doué", b:"France", t:"Ivory Coast", a:23},
+  {p:"Seko Fofana", b:"France", t:"Ivory Coast", a:31},
+  {p:"Nicolas Pépé", b:"France", t:"Ivory Coast", a:31},
+  {p:"Evann Guessand", b:"France", t:"Ivory Coast", a:24},
+  {p:"Elye Wahi", b:"France", t:"Ivory Coast", a:23},
+  {p:"Ange-Yoan Bonny", b:"France", t:"Ivory Coast", a:22},
+  {p:"Alban Lafont", b:"Burkina Faso", t:"Ivory Coast", a:27},
+  // Croatia (8)
+  {p:"Josip Stanišić", b:"Germany", t:"Croatia", a:26},
+  {p:"Marin Pongračić", b:"Germany", t:"Croatia", a:28},
+  {p:"Mario Pašalić", b:"Germany", t:"Croatia", a:31},
+  {p:"Mateo Kovačić", b:"Austria", t:"Croatia", a:32},
+  {p:"Luka Sučić", b:"Austria", t:"Croatia", a:23},
+  {p:"Josip Šutalo", b:"Bosnia & Herz.", t:"Croatia", a:26},
+  {p:"Petar Sučić", b:"Bosnia & Herz.", t:"Croatia", a:22},
+  {p:"Martin Baturina", b:"Switzerland", t:"Croatia", a:23},
+  // Curaçao (25)
+  {p:"Eloy Room", b:"Netherlands", t:"Curaçao", a:37},
+  {p:"Tyrick Bodak", b:"Netherlands", t:"Curaçao", a:24},
+  {p:"Trevor Doornbusch", b:"Netherlands", t:"Curaçao", a:26},
+  {p:"Shurandy Sambo", b:"Netherlands", t:"Curaçao", a:24},
+  {p:"Juriën Gaari", b:"Netherlands", t:"Curaçao", a:32},
+  {p:"Roshon van Eijma", b:"Netherlands", t:"Curaçao", a:28},
+  {p:"Sherel Floranus", b:"Netherlands", t:"Curaçao", a:27},
+  {p:"Deveron Fonville", b:"Netherlands", t:"Curaçao", a:23},
+  {p:"Armando Obispo", b:"Netherlands", t:"Curaçao", a:27},
+  {p:"Joshua Brenet", b:"Netherlands", t:"Curaçao", a:32},
+  {p:"Riechedly Bazoer", b:"Netherlands", t:"Curaçao", a:29},
+  {p:"Leandro Bacuna", b:"Netherlands", t:"Curaçao", a:34},
+  {p:"Juninho Bacuna", b:"Netherlands", t:"Curaçao", a:28},
+  {p:"Godfried Roemeratoe", b:"Netherlands", t:"Curaçao", a:26},
+  {p:"Livano Comenencia", b:"Netherlands", t:"Curaçao", a:22},
+  {p:"Ar'jany Martha", b:"Netherlands", t:"Curaçao", a:22},
+  {p:"Tyrese Noslin", b:"Netherlands", t:"Curaçao", a:23},
+  {p:"Kevin Felida", b:"Netherlands", t:"Curaçao", a:26},
+  {p:"Jürgen Locadia", b:"Netherlands", t:"Curaçao", a:32},
+  {p:"Jeremy Antonisse", b:"Netherlands", t:"Curaçao", a:24},
+  {p:"Sontje Hansen", b:"Netherlands", t:"Curaçao", a:24},
+  {p:"Kenji Gorré", b:"Netherlands", t:"Curaçao", a:31},
+  {p:"Jearl Margaritha", b:"Netherlands", t:"Curaçao", a:26},
+  {p:"Brandley Kuwas", b:"Netherlands", t:"Curaçao", a:33},
+  {p:"Gervane Kastaneer", b:"Netherlands", t:"Curaçao", a:30},
+  // Ecuador (3)
+  {p:"Hernán Galíndez", b:"Argentina", t:"Ecuador", a:39},
+  {p:"John Yeboah", b:"Germany", t:"Ecuador", a:25},
+  {p:"Jeremy Arévalo", b:"Spain", t:"Ecuador", a:21},
+  // Egypt
+  {p:"Haissem Hassan", b:"France", t:"Egypt", a:24},
+  // Scotland (7)
+  {p:"Angus Gunn", b:"England", t:"Scotland", a:30},
+  {p:"Scott McTominay", b:"England", t:"Scotland", a:29},
+  {p:"Che Adams", b:"England", t:"Scotland", a:29},
+  {p:"George Hirst", b:"England", t:"Scotland", a:27},
+  {p:"Tyler Fletcher", b:"England", t:"Scotland", a:19},
+  {p:"Lyndon Dykes", b:"Australia", t:"Scotland", a:30},
+  {p:"Kieran Tierney", b:"Isle of Man", t:"Scotland", a:29},
+  // Spain
+  {p:"Aymeric Laporte", b:"France", t:"Spain", a:32},
+  // USA (6)
+  {p:"Antonee Robinson", b:"England", t:"USA", a:28},
+  {p:"Giovanni Reyna", b:"England", t:"USA", a:23},
+  {p:"Sebastian Berhalter", b:"England", t:"USA", a:25},
+  {p:"Malik Tillman", b:"Germany", t:"USA", a:24},
+  {p:"Sergiño Dest", b:"Netherlands", t:"USA", a:25},
+  {p:"Alejandro Zendejas", b:"Mexico", t:"USA", a:28},
+  // France (3)
+  {p:"Michael Olise", b:"England", t:"France", a:24},
+  {p:"Marcus Thuram", b:"Italy", t:"France", a:28},
+  {p:"Brice Samba", b:"Congo", t:"France", a:32},
+  // Ghana (8)
+  {p:"Jerome Opoku", b:"England", t:"Ghana", a:27},
+  {p:"Antoine Semenyo", b:"England", t:"Ghana", a:26},
+  {p:"Brandon Thomas-Asante", b:"England", t:"Ghana", a:27},
+  {p:"Marvin Senaya", b:"France", t:"Ghana", a:25},
+  {p:"Elisha Owusu", b:"France", t:"Ghana", a:28},
+  {p:"Jordan Ayew", b:"France", t:"Ghana", a:34},
+  {p:"Derrick Luckassen", b:"Netherlands", t:"Ghana", a:31},
+  {p:"Iñaki Williams", b:"Spain", t:"Ghana", a:32},
+  // Haiti (16)
+  {p:"Johny Placide", b:"France", t:"Haiti", a:38},
+  {p:"Alexandre Pierre", b:"France", t:"Haiti", a:25},
+  {p:"Martin Expérience", b:"France", t:"Haiti", a:27},
+  {p:"Jean-Kévin Duverne", b:"France", t:"Haiti", a:28},
+  {p:"Jean-Ricner Bellegarde", b:"France", t:"Haiti", a:28},
+  {p:"Dominique Simon", b:"France", t:"Haiti", a:25},
+  {p:"Duckens Nazon", b:"France", t:"Haiti", a:32},
+  {p:"Ruben Providence", b:"France", t:"Haiti", a:25},
+  {p:"Josué Casimir", b:"France", t:"Haiti", a:24},
+  {p:"Yassin Fortuné", b:"France", t:"Haiti", a:27},
+  {p:"Wilson Isidor", b:"France", t:"Haiti", a:25},
+  {p:"Lenny Joseph", b:"France", t:"Haiti", a:25},
+  {p:"Duke Lacroix", b:"USA", t:"Haiti", a:32},
+  {p:"Derrick Etienne Jr.", b:"USA", t:"Haiti", a:29},
+  {p:"Josué Duverger", b:"Canada", t:"Haiti", a:26},
+  {p:"Keeto Thermoncy", b:"Switzerland", t:"Haiti", a:20},
+  // England
+  {p:"Marc Guéhi", b:"Ivory Coast", t:"England", a:25},
+  // Iraq (9)
+  {p:"Hussein Ali", b:"Sweden", t:"Iraq", a:24},
+  {p:"Amir Al-Ammari", b:"Sweden", t:"Iraq", a:28},
+  {p:"Kevin Yakob", b:"Sweden", t:"Iraq", a:25},
+  {p:"Ahmed Qasem", b:"Sweden", t:"Iraq", a:23},
+  {p:"Merchas Doski", b:"Germany", t:"Iraq", a:26},
+  {p:"Youssef Amyn", b:"Germany", t:"Iraq", a:22},
+  {p:"Frans Putros", b:"Denmark", t:"Iraq", a:33},
+  {p:"Zidane Iqbal", b:"England", t:"Iraq", a:23},
+  {p:"Marko Farji", b:"Norway", t:"Iraq", a:22},
+  // Iran (2)
+  {p:"Dennis Eckert", b:"Germany", t:"Iran", a:29},
+  {p:"Saman Ghoddos", b:"Sweden", t:"Iran", a:32},
+  // Japan
+  {p:"Zion Suzuki", b:"USA", t:"Japan", a:23},
+  // Jordan (3)
+  {p:"Ali Azaizeh", b:"Germany", t:"Jordan", a:22},
+  {p:"Mohammad Abu Hashish", b:"Iraq", t:"Jordan", a:31},
+  {p:"Mo Abualnadi", b:"USA", t:"Jordan", a:25},
+  // Morocco (19)
+  {p:"Issa Diop", b:"France", t:"Morocco", a:29},
+  {p:"Redouane Halhal", b:"France", t:"Morocco", a:23},
+  {p:"Neil El Aynaoui", b:"France", t:"Morocco", a:24},
+  {p:"Samir El Mourabet", b:"France", t:"Morocco", a:20},
+  {p:"Ayyoub Bouaddi", b:"France", t:"Morocco", a:18},
+  {p:"Gessime Yassine", b:"France", t:"Morocco", a:21},
+  {p:"Munir Mohamedi", b:"Spain", t:"Morocco", a:37},
+  {p:"Achraf Hakimi", b:"Spain", t:"Morocco", a:27},
+  {p:"Chadi Riad", b:"Spain", t:"Morocco", a:23},
+  {p:"Ismael Saibari", b:"Spain", t:"Morocco", a:25},
+  {p:"Brahim Díaz", b:"Spain", t:"Morocco", a:26},
+  {p:"Ayoube Amaimouni", b:"Spain", t:"Morocco", a:21},
+  {p:"Zakaria El Ouahdi", b:"Belgium", t:"Morocco", a:26},
+  {p:"Bilal El Khannouss", b:"Belgium", t:"Morocco", a:22},
+  {p:"Chemsdine Talbi", b:"Belgium", t:"Morocco", a:21},
+  {p:"Noussair Mazraoui", b:"Netherlands", t:"Morocco", a:28},
+  {p:"Anass Salah-Eddine", b:"Netherlands", t:"Morocco", a:22},
+  {p:"Sofyan Amrabat", b:"Netherlands", t:"Morocco", a:29},
+  {p:"Yassine Bounou", b:"Canada", t:"Morocco", a:35},
+  // Mexico (5)
+  {p:"Brian Gutiérrez", b:"USA", t:"Mexico", a:23},
+  {p:"Obed Vargas", b:"USA", t:"Mexico", a:20},
+  {p:"Santiago Giménez", b:"Argentina", t:"Mexico", a:25},
+  {p:"Álvaro Fidalgo", b:"Spain", t:"Mexico", a:29},
+  {p:"Julián Quiñones", b:"Colombia", t:"Mexico", a:29},
+  // Norway (2)
+  {p:"Thelo Aasgaard", b:"England", t:"Norway", a:24},
+  {p:"Erling Haaland", b:"England", t:"Norway", a:25},
+  // New Zealand (6)
+  {p:"Matthew Garbett", b:"England", t:"New Zealand", a:24},
+  {p:"Lachlan Bayliss", b:"Australia", t:"New Zealand", a:23},
+  {p:"Nando Pijnaker", b:"Netherlands", t:"New Zealand", a:27},
+  {p:"Callan Elliot", b:"Scotland", t:"New Zealand", a:26},
+  {p:"Alex Rufer", b:"Switzerland", t:"New Zealand", a:30},
+  {p:"Finn Surman", b:"Wales", t:"New Zealand", a:22},
+  // Netherlands
+  {p:"Guus Til", b:"Zambia", t:"Netherlands", a:28},
+  // Paraguay (5)
+  {p:"Juan José Cáceres", b:"Argentina", t:"Paraguay", a:26},
+  {p:"Alejandro Romero (Kaku)", b:"Argentina", t:"Paraguay", a:31},
+  {p:"Andrés Cubas", b:"Argentina", t:"Paraguay", a:30},
+  {p:"Maurício", b:"Brazil", t:"Paraguay", a:24},
+  {p:"Gastón Olivera", b:"Uruguay", t:"Paraguay", a:29},
+  // Portugal (2)
+  {p:"Matheus Nunes", b:"Brazil", t:"Portugal", a:27},
+  {p:"Diogo Costa", b:"Switzerland", t:"Portugal", a:26},
+  // DR Congo (20)
+  {p:"Lionel Mpasi", b:"France", t:"DR Congo", a:31},
+  {p:"Arthur Masuaku", b:"France", t:"DR Congo", a:32},
+  {p:"Gédéon Kalulu", b:"France", t:"DR Congo", a:28},
+  {p:"Dylan Batubinsika", b:"France", t:"DR Congo", a:30},
+  {p:"Steve Kapuadi", b:"France", t:"DR Congo", a:28},
+  {p:"Samuel Moutoussamy", b:"France", t:"DR Congo", a:29},
+  {p:"Gaël Kakuta", b:"France", t:"DR Congo", a:34},
+  {p:"Cédric Bakambu", b:"France", t:"DR Congo", a:35},
+  {p:"Yoane Wissa", b:"France", t:"DR Congo", a:29},
+  {p:"Nathanaël Mbuku", b:"France", t:"DR Congo", a:24},
+  {p:"Simon Banza", b:"France", t:"DR Congo", a:29},
+  {p:"Matthieu Epolo", b:"Belgium", t:"DR Congo", a:21},
+  {p:"Joris Kayembe", b:"Belgium", t:"DR Congo", a:31},
+  {p:"Noah Sadiki", b:"Belgium", t:"DR Congo", a:21},
+  {p:"Ngal'ayel Mukau", b:"Belgium", t:"DR Congo", a:21},
+  {p:"Théo Bongonda", b:"Belgium", t:"DR Congo", a:30},
+  {p:"Aaron Wan-Bissaka", b:"England", t:"DR Congo", a:28},
+  {p:"Aaron Tshibola", b:"England", t:"DR Congo", a:31},
+  {p:"Timothy Fayulu", b:"Switzerland", t:"DR Congo", a:26},
+  {p:"Charles Pickel", b:"Switzerland", t:"DR Congo", a:29},
+  // Senegal (12)
+  {p:"Édouard Mendy", b:"France", t:"Senegal", a:34},
+  {p:"Mory Diaw", b:"France", t:"Senegal", a:32},
+  {p:"Yehvann Diouf", b:"France", t:"Senegal", a:26},
+  {p:"Kalidou Koulibaly", b:"France", t:"Senegal", a:35},
+  {p:"Moussa Niakhaté", b:"France", t:"Senegal", a:30},
+  {p:"Mamadou Sarr", b:"France", t:"Senegal", a:20},
+  {p:"Antoine Mendy", b:"France", t:"Senegal", a:22},
+  {p:"Pape Gueye", b:"France", t:"Senegal", a:27},
+  {p:"Iliman Ndiaye", b:"France", t:"Senegal", a:26},
+  {p:"Ibrahim Mbaye", b:"France", t:"Senegal", a:18},
+  {p:"Nicolas Jackson", b:"Gambia", t:"Senegal", a:24},
+  {p:"Ismail Jakobs", b:"Germany", t:"Senegal", a:26},
+  // Switzerland (3)
+  {p:"Breel Embolo", b:"Cameroon", t:"Switzerland", a:29},
+  {p:"Yvon Mvogo", b:"Cameroon", t:"Switzerland", a:32},
+  {p:"Marvin Keller", b:"England", t:"Switzerland", a:24},
+  // Tunisia (15)
+  {p:"Montassar Talbi", b:"France", t:"Tunisia", a:28},
+  {p:"Dylan Bronn", b:"France", t:"Tunisia", a:31},
+  {p:"Yan Valery", b:"France", t:"Tunisia", a:27},
+  {p:"Ellyes Skhiri", b:"France", t:"Tunisia", a:31},
+  {p:"Hannibal Mejbri", b:"France", t:"Tunisia", a:23},
+  {p:"Ismaël Gharbi", b:"France", t:"Tunisia", a:22},
+  {p:"Elias Achouri", b:"France", t:"Tunisia", a:27},
+  {p:"Rani Khedira", b:"Germany", t:"Tunisia", a:32},
+  {p:"Elias Saad", b:"Germany", t:"Tunisia", a:26},
+  {p:"Rayan Elloumi", b:"Canada", t:"Tunisia", a:18},
+  {p:"Anis Ben Slimane", b:"Denmark", t:"Tunisia", a:25},
+  {p:"Omar Rekik", b:"Netherlands", t:"Tunisia", a:24},
+  {p:"Sebastian Tounekti", b:"Norway", t:"Tunisia", a:23},
+  {p:"Adem Arous", b:"Saudi Arabia", t:"Tunisia", a:21},
+  {p:"Moutaz Neffati", b:"Sweden", t:"Tunisia", a:21},
+  // Turkey (10)
+  {p:"Salih Özcan", b:"Germany", t:"Turkey", a:28},
+  {p:"Hakan Çalhanoğlu", b:"Germany", t:"Turkey", a:32},
+  {p:"Kaan Ayhan", b:"Germany", t:"Turkey", a:31},
+  {p:"Kenan Yıldız", b:"Germany", t:"Turkey", a:21},
+  {p:"Can Uzun", b:"Germany", t:"Turkey", a:20},
+  {p:"Ferdi Kadıoğlu", b:"Netherlands", t:"Turkey", a:26},
+  {p:"Orkun Kökçü", b:"Netherlands", t:"Turkey", a:25},
+  {p:"Oğuz Aydın", b:"Netherlands", t:"Turkey", a:25},
+  {p:"Mert Müldür", b:"Austria", t:"Turkey", a:27},
+  {p:"Deniz Gül", b:"Sweden", t:"Turkey", a:22},
+  // Uruguay (2)
+  {p:"Fernando Muslera", b:"Argentina", t:"Uruguay", a:39},
+  {p:"Rodrigo Zalazar", b:"Spain", t:"Uruguay", a:26},
+  // Uzbekistan
+  {p:"Utkir Yusupov", b:"Kazakhstan", t:"Uzbekistan", a:35}
+];
+
+document.getElementById("hdr-count").textContent = `${players.length} players`;
+
+// ---- State ----
+let wcOnly = true;
+const tooltip = d3.select("#tooltip");
+
+function activePlayers() {
+  return wcOnly ? players.filter(pl => PARTICIPANTS.has(pl.b)) : players;
+}
+
+function buildFlows(pls) {
+  const m = new Map();
+  pls.forEach(pl => {
+    const k = pl.b + "→" + pl.t;
+    if (!m.has(k)) m.set(k, {src: pl.b, dst: pl.t, n: 0, list: []});
+    const f = m.get(k);
+    f.n++; f.list.push(pl.p);
+  });
+  return m;
+}
+
+// ---- Chord chart ----
+function drawChart() {
+  d3.select("#chart").html("");
+  const pls = activePlayers();
+  const flowMap = buildFlows(pls);
+  const flows = [...flowMap.values()];
+
+  const totals = {};
+  flows.forEach(f => {
+    totals[f.src] = totals[f.src] || {out:0, inn:0};
+    totals[f.dst] = totals[f.dst] || {out:0, inn:0};
+    totals[f.src].out += f.n;
+    totals[f.dst].inn += f.n;
+  });
+  const names = Object.keys(totals).sort((a,b) =>
+    (totals[b].out - totals[b].inn) - (totals[a].out - totals[a].inn) ||
+    (totals[b].out + totals[b].inn) - (totals[a].out + totals[a].inn));
+  const index = new Map(names.map((n,i) => [n,i]));
+
+  const matrix = Array.from({length:names.length}, () => new Array(names.length).fill(0));
+  flows.forEach(f => { matrix[index.get(f.src)][index.get(f.dst)] += f.n; });
+
+  const width = 1120, height = 1120;
+  const outerR = Math.min(width, height) * 0.5 - 150;
+  const innerR = outerR - 13;
+
+  const chord = d3.chordDirected()
+    .padAngle(10 / innerR)
+    .sortSubgroups(d3.descending)
+    .sortChords(d3.descending)(matrix);
+
+  const arc = d3.arc().innerRadius(innerR).outerRadius(outerR);
+  const ribbon = d3.ribbonArrow().radius(innerR - 4).padAngle(1 / innerR);
+  const color = d3.scaleOrdinal(names, d3.quantize(t => d3.interpolateRainbow(t * 0.95), names.length));
+
+  const svg = d3.select("#chart").append("svg")
+    .attr("viewBox", [-width/2, -height/2, width, height]);
+
+  const ribbons = svg.append("g")
+    .attr("fill-opacity", 0.7)
+    .selectAll("path")
+    .data(chord)
+    .join("path")
+    .attr("class", "ribbon")
+    .attr("d", ribbon)
+    .attr("fill", d => color(names[d.source.index]))
+    .style("stroke", "none");
+
+  const group = svg.append("g")
+    .selectAll("g")
+    .data(chord.groups)
+    .join("g")
+    .attr("class", "group-arc");
+
+  group.append("path")
+    .attr("d", arc)
+    .attr("fill", d => color(names[d.index]))
+    .attr("stroke", "#0d1117");
+
+  const label = group.append("g")
+    .each(d => { d.angle = (d.startAngle + d.endAngle) / 2; })
+    .attr("transform", d => `
+      rotate(${d.angle * 180 / Math.PI - 90})
+      translate(${outerR + 6})
+      ${d.angle > Math.PI ? "rotate(180)" : ""}`);
+
+  label.append("image")
+    .attr("href", d => flagUrl(names[d.index]))
+    .attr("width", 15).attr("height", 11)
+    .attr("preserveAspectRatio", "none")
+    .attr("x", d => d.angle > Math.PI ? -15 : 0)
+    .attr("y", -5.5)
+    .attr("transform", d => d.angle > Math.PI ? `rotate(180 ${-7.5} 0)` : null);
+
+  label.append("text")
+    .attr("dy", "0.35em")
+    .attr("x", d => d.angle > Math.PI ? -19 : 19)
+    .attr("text-anchor", d => d.angle > Math.PI ? "end" : null)
+    .attr("fill", "#e6edf3")
+    .style("font-size", "11.5px")
+    .style("font-weight", d => totals[names[d.index]].out > totals[names[d.index]].inn ? "600" : "400")
+    .text(d => {
+      const c = names[d.index];
+      const {out, inn} = totals[c];
+      return `${c} (${out > inn ? "−" + out : "+" + inn})`;
+    });
+
+  function unfocus() {
+    ribbons.transition().duration(150).attr("fill-opacity", 0.7);
+  }
+
+  group
+    .on("mouseover", (event, d) => {
+      ribbons.transition().duration(150)
+        .attr("fill-opacity", r => (r.source.index === d.index || r.target.index === d.index) ? 0.92 : 0.04);
+      const c = names[d.index];
+      const {out, inn} = totals[c];
+      let html = `<div class="flow">${flagImg(c)}${c}</div><div class="names">`;
+      if (out) html += `Born here, playing elsewhere: <b>${out}</b><br>`;
+      if (inn) html += `Foreign-born players in squad: <b>${inn}</b>`;
+      html += `</div>`;
+      tooltip.html(html).style("opacity", 1);
+    })
+    .on("mousemove", ev => tooltip.style("left", (ev.clientX + 14) + "px").style("top", (ev.clientY + 14) + "px"))
+    .on("mouseout", () => { unfocus(); tooltip.style("opacity", 0); });
+
+  ribbons
+    .on("mouseover", function(event, d) {
+      ribbons.transition().duration(100).attr("fill-opacity", r => r === d ? 0.95 : 0.04);
+      const src = names[d.source.index], dst = names[d.target.index];
+      const f = flowMap.get(src + "→" + dst);
+      let html = `<div class="flow">${flagImg(src)}${src} → ${flagImg(dst)}${dst}: ${d.source.value} player${d.source.value > 1 ? "s" : ""}</div>`;
+      if (f) html += `<div class="names">${f.list.join(", ")}</div>`;
+      tooltip.html(html).style("opacity", 1);
+    })
+    .on("mousemove", ev => tooltip.style("left", (ev.clientX + 14) + "px").style("top", (ev.clientY + 14) + "px"))
+    .on("mouseout", () => { unfocus(); tooltip.style("opacity", 0); });
+
+  // toggle info badge
+  const hiddenCount = players.length - pls.length;
+  document.getElementById("toggle-info").textContent =
+    wcOnly ? `(hiding ${hiddenCount} players born in non-qualified countries)` : "";
+}
+
+// ---- Player table ----
+const tbody = d3.select("#player-table tbody");
+let sortState = { key: null, dir: 1 }; // null = default (team, born, player)
+
+function sortRows(rows) {
+  if (!sortState.key) {
+    return rows.sort((x,y) =>
+      d3.ascending(x.t,y.t) || d3.ascending(x.b,y.b) || d3.ascending(x.p,y.p));
+  }
+  const { key, dir } = sortState;
+  return rows.sort((x,y) => {
+    if (key === "a") {
+      // numeric; unknown ages always sink to the bottom
+      if (x.a == null && y.a == null) return d3.ascending(x.p, y.p);
+      if (x.a == null) return 1;
+      if (y.a == null) return -1;
+      return (x.a - y.a) * dir || d3.ascending(x.p, y.p);
+    }
+    return x[key].localeCompare(y[key]) * dir || d3.ascending(x.p, y.p);
+  });
+}
+
+function updateSortArrows() {
+  document.querySelectorAll("#player-table th.sortable").forEach(th => {
+    th.querySelector(".arr").textContent =
+      th.dataset.key === sortState.key ? (sortState.dir === 1 ? "▲" : "▼") : "";
+  });
+}
+
+function renderTable() {
+  const q = (document.getElementById("player-search").value || "").trim().toLowerCase();
+  const rows = sortRows(activePlayers().slice());
+  const visible = rows.filter(r => !q || r.p.toLowerCase().includes(q) || r.b.toLowerCase().includes(q) || r.t.toLowerCase().includes(q));
+  tbody.html("");
+  visible.forEach(r => {
+    const tr = tbody.append("tr");
+    tr.append("td").html(flagImg(r.b) + r.p);
+    tr.append("td").html(flagImg(r.b) + r.b);
+    tr.append("td").html(flagImg(r.t) + r.t);
+    tr.append("td").attr("class","num").text(r.a ?? "—");
+  });
+  d3.select("#row-count").text(
+    `${visible.length} of ${players.length} foreign-born players` +
+    (wcOnly ? " · World Cup countries only" : "") + (q ? " · filtered" : ""));
+}
+
+// ---- Flow summary table ----
+function renderFlows() {
+  const flows = [...buildFlows(activePlayers()).values()];
+  const ftbody = d3.select("#flow-table tbody");
+  ftbody.html("");
+  flows.sort((a,b) => b.n - a.n || d3.ascending(a.src, b.src)).forEach(f => {
+    const tr = ftbody.append("tr");
+    tr.append("td").html(flagImg(f.src) + f.src);
+    tr.append("td").html(flagImg(f.dst) + f.dst);
+    tr.append("td").attr("class","num").text(f.n);
+  });
+}
+
+function renderAll() { drawChart(); renderTable(); renderFlows(); }
+
+// ---- Toggle wiring ----
+const toggleEl = document.getElementById("wc-toggle");
+function flip() {
+  wcOnly = !wcOnly;
+  toggleEl.classList.toggle("on", wcOnly);
+  toggleEl.setAttribute("aria-checked", wcOnly);
+  renderAll();
+}
+toggleEl.addEventListener("click", flip);
+toggleEl.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); } });
+
+document.getElementById("player-search").addEventListener("input", renderTable);
+
+// Sortable column headers: click cycles asc → desc; switching column resets to asc.
+document.querySelectorAll("#player-table th.sortable").forEach(th => {
+  th.addEventListener("click", () => {
+    const key = th.dataset.key;
+    if (sortState.key === key) sortState.dir *= -1;
+    else sortState = { key, dir: 1 };
+    updateSortArrows();
+    renderTable();
+  });
+});
+
+renderAll();
+</script>
+</body>
+</html>

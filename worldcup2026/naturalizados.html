@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jugadores Naturalizados — Mundial 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #161a22;
+    --card: #1c2130;
+    --border: #2a3045;
+    --accent: #f5a623;
+    --accent2: #e8394d;
+    --text: #e8eaf0;
+    --muted: #7a8299;
+    --tag-bg: #252c3e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* twemoji renders emoji as images so flags work on Windows */
+  img.emoji { height: 1.15em; width: 1.15em; vertical-align: -0.18em; }
+
+  /* ── HERO ── */
+  header {
+    background: linear-gradient(135deg, #0d0f14 0%, #1a2040 60%, #0d0f14 100%);
+    border-bottom: 2px solid var(--accent);
+    padding: 40px 24px 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '⚽';
+    position: absolute;
+    font-size: 260px;
+    opacity: 0.04;
+    top: -60px; left: -40px;
+  }
+  header::after {
+    content: '🌎';
+    position: absolute;
+    font-size: 220px;
+    opacity: 0.04;
+    bottom: -60px; right: -30px;
+  }
+  .hero-label {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(36px, 8vw, 72px);
+    letter-spacing: 2px;
+    color: #fff;
+    line-height: 1;
+  }
+  header h1 span { color: var(--accent); }
+  .hero-sub {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    max-width: 560px;
+    margin-inline: auto;
+  }
+  .stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .stat { text-align: center; }
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 38px;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ── CONTROLS ── */
+  .controls {
+    padding: 20px 24px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  input[type="text"] {
+    flex: 1;
+    min-width: 200px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 14px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+
+  select {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 14px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+  }
+  .result-count {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Roboto Mono', monospace;
+    white-space: nowrap;
+  }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    max-width: 1200px;
+    margin: 0 auto 48px;
+    padding: 0 16px;
+    overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr {
+    background: var(--surface);
+    border-bottom: 2px solid var(--accent);
+  }
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  tbody tr:hover { background: var(--card); }
+
+  td { padding: 11px 16px; vertical-align: top; }
+
+  .col-num {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    width: 36px;
+    text-align: center;
+  }
+  .col-player {
+    font-weight: 600;
+    color: #fff;
+    font-size: 14px;
+    min-width: 180px;
+  }
+  .col-player .flag { margin-right: 6px; font-size: 15px; }
+  .col-origin { min-width: 140px; }
+  .col-team { min-width: 140px; }
+  .col-continent { min-width: 110px; }
+
+  .flag-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--tag-bg);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .flag-tag .flag { font-size: 16px; }
+
+  .origin-tag {
+    background: rgba(245,166,35,0.12);
+    border: 1px solid rgba(245,166,35,0.3);
+    color: #f5d08a;
+  }
+  .team-tag {
+    background: rgba(232,57,77,0.10);
+    border: 1px solid rgba(232,57,77,0.25);
+    color: #f4909a;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-family: 'Roboto Mono', monospace;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+  .badge-eu { background: #1a3a5c; color: #7ec8f5; }
+  .badge-af { background: #1e3a1e; color: #7fd87f; }
+  .badge-am { background: #3a1e2e; color: #f599c5; }
+  .badge-as { background: #2e2a1a; color: #f5d57e; }
+  .badge-oc { background: #1e2e3a; color: #7ecff5; }
+
+  /* ── SECTION HEADERS ── */
+  .section-row td {
+    background: var(--surface);
+    padding: 8px 16px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── NOTE ── */
+  .note {
+    max-width: 1200px;
+    margin: 0 auto 16px;
+    padding: 14px 20px;
+    background: var(--card);
+    border-left: 3px solid var(--accent2);
+    border-radius: 0 6px 6px 0;
+    font-size: 12px;
+    color: var(--muted);
+    margin-inline: 16px;
+  }
+  .note strong { color: var(--text); }
+
+  .hidden { display: none; }
+
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hero-label">FIFA Copa del Mundo 2026 · USA / MEX / CAN</div>
+  <h1>NATURALIZADOS <span>MUNDIAL</span> 2026</h1>
+  <p class="hero-sub">Jugadores que representan a un país diferente al de su nacimiento. Récord histórico en la Copa del Mundo.</p>
+  <div class="stats-row">
+    <div class="stat"><div class="stat-num">289</div><div class="stat-label">Jugadores naturalizados</div></div>
+    <div class="stat"><div class="stat-num">41</div><div class="stat-label">Selecciones afectadas</div></div>
+    <div class="stat"><div class="stat-num">8</div><div class="stat-label">Solo jugadores nativos</div></div>
+    <div class="stat"><div class="stat-num">23.2%</div><div class="stat-label">Del total convocado</div></div>
+  </div>
+</header>
+
+<div class="controls">
+  <input type="text" id="searchBox" placeholder="🔍  Buscar jugador, selección o país de origen…" oninput="filterTable()">
+  <select id="filterContinent" onchange="filterTable()">
+    <option value="">Todas las confederaciones</option>
+    <option value="UEFA">🌍 UEFA (Europa)</option>
+    <option value="CAF">🌍 CAF (África)</option>
+    <option value="CONMEBOL">🌎 CONMEBOL (Sudamérica)</option>
+    <option value="CONCACAF">🌎 CONCACAF (N/C América)</option>
+    <option value="AFC">🌏 AFC (Asia)</option>
+    <option value="OFC">🌏 OFC (Oceanía)</option>
+  </select>
+  <span class="result-count" id="countLabel">Cargando…</span>
+</div>
+
+<div class="note" id="mainNote">
+  <strong>Nota:</strong> Incluye tanto jugadores formalmente naturalizados como nacidos en otro país con raíces en la selección que defienden. Colombia, Brasil, Arabia Saudita, Austria, Chequia, Suecia, Panamá y Sudáfrica no tienen ningún naturalizado.
+</div>
+
+<div class="table-wrap">
+<table id="mainTable">
+<thead>
+  <tr>
+    <th>#</th>
+    <th>Jugador</th>
+    <th>País de Procedencia (Nacimiento)</th>
+    <th>Selección que Defiende</th>
+    <th>Conf.</th>
+  </tr>
+</thead>
+<tbody id="tableBody">
+</tbody>
+</table>
+</div>
+
+<footer>
+  Fuente: Datos oficiales FIFA · Informe Jaime F. Macías (@Jaimefmacias) · TUDN · El Colombiano · Junio 2026 ·
+  Verificado y corregido contra Flashscore, beIN Sports, Front Office Sports y fichas oficiales de jugadores.
+</footer>
+
+<script>
+const CONTINENT_FLAGS = {
+  "UEFA": "🌍", "CAF": "🌍", "CONMEBOL": "🌎",
+  "CONCACAF": "🌎", "AFC": "🌏", "OFC": "🌏"
+};
+const CONTINENT_CLASS = {
+  "UEFA": "badge-eu", "CAF": "badge-af", "CONMEBOL": "badge-am",
+  "CONCACAF": "badge-am", "AFC": "badge-as", "OFC": "badge-oc"
+};
+
+const COUNTRY_FLAGS = {
+  "Francia": "🇫🇷", "España": "🇪🇸", "Países Bajos": "🇳🇱", "Alemania": "🇩🇪",
+  "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Argentina": "🇦🇷", "Italia": "🇮🇹", "Bélgica": "🇧🇪",
+  "Brasil": "🇧🇷", "Estados Unidos": "🇺🇸", "Austria": "🇦🇹", "Suecia": "🇸🇪",
+  "Dinamarca": "🇩🇰", "Suiza": "🇨🇭", "Portugal": "🇵🇹", "Croacia": "🇭🇷",
+  "Bosnia": "🇧🇦", "Escocia": "🏴󠁧󠁢󠁳󠁣󠁴󠁿", "Australia": "🇦🇺", "Noruega": "🇳🇴",
+  "Kenia": "🇰🇪", "Tanzania": "🇹🇿", "Guinea": "🇬🇳", "Ghana": "🇬🇭",
+  "Costa de Marfil": "🇨🇮", "Senegal": "🇸🇳", "Nigeria": "🇳🇬", "Argelia": "🇩🇿",
+  "Camerún": "🇨🇲", "Sudán": "🇸🇩", "Egipto": "🇪🇬", "Somalia": "🇸🇴",
+  "Zambia": "🇿🇲", "RD Congo": "🇨🇩", "Congo": "🇨🇬", "Gambia": "🇬🇲",
+  "Burkina Faso": "🇧🇫", "Kazajistán": "🇰🇿", "Iraq": "🇮🇶", "Uruguay": "🇺🇾",
+  "Irlanda": "🇮🇪", "Arabia Saudita": "🇸🇦", "Eslovenia": "🇸🇮", "Eslovaquia": "🇸🇰",
+  "Serbia": "🇷🇸", "Uzbekistán": "🇺🇿", "Wales": "🏴󠁧󠁢󠁷󠁬󠁳󠁿", "Isla de Man": "🇮🇲",
+  "Canadá": "🇨🇦", "México": "🇲🇽", "Colombia": "🇨🇴", "Gales": "🏴󠁧󠁢󠁷󠁬󠁳󠁿"
+};
+
+const TEAM_FLAGS = {
+  "Alemania": "🇩🇪", "Argelia": "🇩🇿", "Argentina": "🇦🇷",
+  "Australia": "🇦🇺", "Bélgica": "🇧🇪", "Bosnia y Herzegovina": "🇧🇦",
+  "Cabo Verde": "🇨🇻", "Canadá": "🇨🇦", "Catar": "🇶🇦",
+  "Colombia": "🇨🇴", "Corea del Sur": "🇰🇷", "Costa de Marfil": "🇨🇮",
+  "Croacia": "🇭🇷", "Curazao": "🇨🇼", "Ecuador": "🇪🇨",
+  "Egipto": "🇪🇬", "Escocia": "🏴󠁧󠁢󠁳󠁣󠁴󠁿", "España": "🇪🇸",
+  "Estados Unidos": "🇺🇸", "Francia": "🇫🇷", "Ghana": "🇬🇭",
+  "Haití": "🇭🇹", "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Irak": "🇮🇶",
+  "Irán": "🇮🇷", "Italia": "🇮🇹", "Japón": "🇯🇵", "Jordania": "🇯🇴",
+  "Marruecos": "🇲🇦", "México": "🇲🇽", "Noruega": "🇳🇴",
+  "Nueva Zelanda": "🇳🇿", "Países Bajos": "🇳🇱", "Paraguay": "🇵🇾",
+  "Portugal": "🇵🇹", "RD Congo": "🇨🇩", "Senegal": "🇸🇳",
+  "Suiza": "🇨🇭", "Túnez": "🇹🇳", "Turquía": "🇹🇷",
+  "Uruguay": "🇺🇾", "Uzbekistán": "🇺🇿"
+};
+
+const data = [
+  // ALEMANIA
+  { player: "Waldemar Anton", origin: "Uzbekistán", team: "Alemania", conf: "UEFA" },
+  // ARGELIA  [corregido: Luca (no Lucas) Zidane; Belghali nació en Mechelen, BÉLGICA, no Alemania]
+  { player: "Luca Zidane", origin: "Francia", team: "Argelia", conf: "CAF" },
+  { player: "Melvin Mastil", origin: "Francia", team: "Argelia", conf: "CAF" },
+  { player: "Aissa Mandi", origin: "Francia", team: "Argelia", conf: "CAF" },
+  { player: "Rayan Ait-Nouri", origin: "Francia", team: "Argelia", conf: "CAF" },
+  { player: "Jaouen Hadjam", origin: "Francia", team: "Argelia", conf: "CAF" },
+  { player: "Samir Chergui", origin: "Francia", team: "Argelia", conf: "CAF" },
+  { player: "Nabil Bentaleb", origin: "Francia", team: "Argelia", conf: "CAF" },
+  { player: "Fares Chaibi", origin: "Francia", team: "Argelia", conf: "CAF" },
+  { player: "Houssem Aouar", origin: "Francia", team: "Argelia", conf: "CAF" },
+  { player: "Riyad Mahrez", origin: "Francia", team: "Argelia", conf: "CAF" },
+  { player: "Amine Gouiri", origin: "Francia", team: "Argelia", conf: "CAF" },
+  { player: "Anis Hadj Moussa", origin: "Francia", team: "Argelia", conf: "CAF" },
+  { player: "Fares Ghedjemis", origin: "Francia", team: "Argelia", conf: "CAF" },
+  { player: "Rafik Belghali", origin: "Bélgica", team: "Argelia", conf: "CAF" },
+  { player: "Ibrahim Maza", origin: "Alemania", team: "Argelia", conf: "CAF" },
+  { player: "Ramiz Zerrouki", origin: "Países Bajos", team: "Argelia", conf: "CAF" },
+  // ARGENTINA
+  { player: "Giuliano Simeone", origin: "Italia", team: "Argentina", conf: "CONMEBOL" },
+  { player: "Nico Paz", origin: "España", team: "Argentina", conf: "CONMEBOL" },
+  // AUSTRALIA
+  { player: "Harry Souttar", origin: "Escocia", team: "Australia", conf: "AFC" },
+  { player: "Cameron Burgess", origin: "Escocia", team: "Australia", conf: "AFC" },
+  { player: "Milos Degenek", origin: "Croacia", team: "Australia", conf: "AFC" },
+  { player: "Paul Okon-Engstler", origin: "Bélgica", team: "Australia", conf: "AFC" },
+  { player: "Mohamed Touré", origin: "Guinea", team: "Australia", conf: "AFC" },
+  { player: "Alessandro Circati", origin: "Italia", team: "Australia", conf: "AFC" },
+  { player: "Awer Mabil", origin: "Kenia", team: "Australia", conf: "AFC" },
+  { player: "Nestory Irankunda", origin: "Tanzania", team: "Australia", conf: "AFC" },
+  // BÉLGICA
+  { player: "Amadou Onana", origin: "Senegal", team: "Bélgica", conf: "UEFA" },
+  // BOSNIA Y HERZEGOVINA  [corregido: Bazdar nació en Novi Pazar, SERBIA, no Eslovaquia]
+  { player: "Dzenis Burnic", origin: "Alemania", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Kerim Alajbegovic", origin: "Alemania", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Sead Kolasinac", origin: "Alemania", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Ermedin Demirovic", origin: "Alemania", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Amar Dedic", origin: "Austria", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Ermin Mahmic", origin: "Austria", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Osman Hadzikic", origin: "Austria", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Armin Gigovic", origin: "Suecia", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Benjamin Hadzikadunic", origin: "Suecia", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Dennis Hadzikadunic", origin: "Suecia", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Samed Bazdar", origin: "Serbia", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Jovo Lukic", origin: "Eslovaquia", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Ivan Basic", origin: "Croacia", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Amir Hadziahmetovic", origin: "Dinamarca", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Tarik Muharemovic", origin: "Eslovenia", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Haris Tabakovic", origin: "Suiza", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  { player: "Esmir Bajraktarevic", origin: "Estados Unidos", team: "Bosnia y Herzegovina", conf: "UEFA" },
+  // CABO VERDE
+  { player: "Sidny Lopes Cabral", origin: "Países Bajos", team: "Cabo Verde", conf: "CAF" },
+  { player: "Jamiro Monteiro", origin: "Países Bajos", team: "Cabo Verde", conf: "CAF" },
+  { player: "Deroy Duarte", origin: "Países Bajos", team: "Cabo Verde", conf: "CAF" },
+  { player: "Laros Duarte", origin: "Países Bajos", team: "Cabo Verde", conf: "CAF" },
+  { player: "Garry Rodrigues", origin: "Países Bajos", team: "Cabo Verde", conf: "CAF" },
+  { player: "Dailon Livramento", origin: "Países Bajos", team: "Cabo Verde", conf: "CAF" },
+  { player: "Logan Costa", origin: "Francia", team: "Cabo Verde", conf: "CAF" },
+  { player: "Steven Moreira", origin: "Francia", team: "Cabo Verde", conf: "CAF" },
+  { player: "Willy Semedo", origin: "Francia", team: "Cabo Verde", conf: "CAF" },
+  { player: "Wagner Pina", origin: "Portugal", team: "Cabo Verde", conf: "CAF" },
+  { player: "Telmo Arcanjo", origin: "Portugal", team: "Cabo Verde", conf: "CAF" },
+  { player: "Hélio Varela", origin: "Portugal", team: "Cabo Verde", conf: "CAF" },
+  { player: "Roberto Lopes", origin: "Irlanda", team: "Cabo Verde", conf: "CAF" },
+  { player: "CJ dos Santos", origin: "Estados Unidos", team: "Cabo Verde", conf: "CAF" },
+  // CANADÁ
+  { player: "Owen Goodman", origin: "Inglaterra", team: "Canadá", conf: "CONCACAF" },
+  { player: "Luc de Fougerolles", origin: "Inglaterra", team: "Canadá", conf: "CONCACAF" },
+  { player: "Alfie Jones", origin: "Inglaterra", team: "Canadá", conf: "CONCACAF" },
+  { player: "Alphonso Davies", origin: "Ghana", team: "Canadá", conf: "CONCACAF" },
+  { player: "Ismael Kone", origin: "Costa de Marfil", team: "Canadá", conf: "CONCACAF" },
+  { player: "Tani Oluwaseyi", origin: "Nigeria", team: "Canadá", conf: "CONCACAF" },
+  { player: "Jonathan David", origin: "Estados Unidos", team: "Canadá", conf: "CONCACAF" },
+  // CATAR
+  { player: "Salah Zakaria", origin: "Egipto", team: "Catar", conf: "AFC" },
+  { player: "Ahmed Fathy", origin: "Egipto", team: "Catar", conf: "AFC" },
+  { player: "Ahmed Alaaeldin", origin: "Egipto", team: "Catar", conf: "AFC" },
+  { player: "Meshaal Barsham", origin: "Sudán", team: "Catar", conf: "AFC" },
+  { player: "Assim Madibo", origin: "Sudán", team: "Catar", conf: "AFC" },
+  { player: "Almoez Ali", origin: "Sudán", team: "Catar", conf: "AFC" },
+  { player: "Boualem Khoukhi", origin: "Argelia", team: "Catar", conf: "AFC" },
+  { player: "Edmilson Junior", origin: "Bélgica", team: "Catar", conf: "AFC" },
+  { player: "Lucas Mendes", origin: "Brasil", team: "Catar", conf: "AFC" },
+  { player: "Karim Boudiaf", origin: "Francia", team: "Catar", conf: "AFC" },
+  { player: "Mohamed Muntari", origin: "Ghana", team: "Catar", conf: "AFC" },
+  { player: "Pedro Miguel", origin: "Portugal", team: "Catar", conf: "AFC" },
+  { player: "Issa Laye", origin: "Senegal", team: "Catar", conf: "AFC" },
+  { player: "Yusuf Abdurisag", origin: "Somalia", team: "Catar", conf: "AFC" },
+  // COREA DEL SUR
+  { player: "Jens Castrop", origin: "Alemania", team: "Corea del Sur", conf: "AFC" },
+  // COSTA DE MARFIL
+  { player: "Yahia Fofana", origin: "Francia", team: "Costa de Marfil", conf: "CAF" },
+  { player: "Evan N'Dicka", origin: "Francia", team: "Costa de Marfil", conf: "CAF" },
+  { player: "Guéla Doué", origin: "Francia", team: "Costa de Marfil", conf: "CAF" },
+  { player: "Seko Fofana", origin: "Francia", team: "Costa de Marfil", conf: "CAF" },
+  { player: "Nicolás Pépé", origin: "Francia", team: "Costa de Marfil", conf: "CAF" },
+  { player: "Evann Guessand", origin: "Francia", team: "Costa de Marfil", conf: "CAF" },
+  { player: "Elye Wahi", origin: "Francia", team: "Costa de Marfil", conf: "CAF" },
+  { player: "Ange-Yoan Bonny", origin: "Francia", team: "Costa de Marfil", conf: "CAF" },
+  { player: "Alban Lafont", origin: "Burkina Faso", team: "Costa de Marfil", conf: "CAF" },
+  // CROACIA  [verificado: Baturina sí nació en Zúrich, Suiza]
+  { player: "Josip Stanisic", origin: "Alemania", team: "Croacia", conf: "UEFA" },
+  { player: "Marin Pongracic", origin: "Alemania", team: "Croacia", conf: "UEFA" },
+  { player: "Mario Pasalic", origin: "Alemania", team: "Croacia", conf: "UEFA" },
+  { player: "Mateo Kovacic", origin: "Austria", team: "Croacia", conf: "UEFA" },
+  { player: "Luka Sucic", origin: "Austria", team: "Croacia", conf: "UEFA" },
+  { player: "Josip Sutalo", origin: "Bosnia", team: "Croacia", conf: "UEFA" },
+  { player: "Petar Sucic", origin: "Bosnia", team: "Croacia", conf: "UEFA" },
+  { player: "Martin Baturina", origin: "Suiza", team: "Croacia", conf: "UEFA" },
+  // CURAZAO (25 jugadores de Países Bajos)  [corregido: Bodak]
+  { player: "Tyrick Bodak", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Trevor Doornbusch", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Eloy Room", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Riechedly Bazoer", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Joshua Brenet", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Roshon van Eijma", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Sherel Floranus", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Deveron Fonville", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Jurien Gaari", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Armando Obispo", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Shurandy Sambo", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Juninho Bacuna", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Leandro Bacuna", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Livano Comenencia", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Kevin Felida", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Ar'jany Martha", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Tyrese Noslin", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Godfried Roemeratoe", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Jeremy Antonisse", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Kenji Gorre", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Sontje Hansen", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Gervane Kastaneer", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Brandley Kuwas", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Jürgen Locadia", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  { player: "Jearl Margaritha", origin: "Países Bajos", team: "Curazao", conf: "CONCACAF" },
+  // ECUADOR
+  { player: "Hernán Galíndez", origin: "Argentina", team: "Ecuador", conf: "CONMEBOL" },
+  { player: "John Yeboah", origin: "Alemania", team: "Ecuador", conf: "CONMEBOL" },
+  { player: "Jeremy Arévalo", origin: "España", team: "Ecuador", conf: "CONMEBOL" },
+  // EGIPTO
+  { player: "Haissem Hassan", origin: "Francia", team: "Egipto", conf: "CAF" },
+  // ESCOCIA
+  { player: "Angus Gunn", origin: "Inglaterra", team: "Escocia", conf: "UEFA" },
+  { player: "Scott McTominay", origin: "Inglaterra", team: "Escocia", conf: "UEFA" },
+  { player: "Ché Adams", origin: "Inglaterra", team: "Escocia", conf: "UEFA" },
+  { player: "George Hirst", origin: "Inglaterra", team: "Escocia", conf: "UEFA" },
+  { player: "Tyler Fletcher", origin: "Inglaterra", team: "Escocia", conf: "UEFA" },
+  { player: "Lyndon Dykes", origin: "Australia", team: "Escocia", conf: "UEFA" },
+  { player: "Kieran Tierney", origin: "Isla de Man", team: "Escocia", conf: "UEFA" },
+  // ESPAÑA
+  { player: "Aymeric Laporte", origin: "Francia", team: "España", conf: "UEFA" },
+  // ESTADOS UNIDOS
+  { player: "Antonee Robinson", origin: "Inglaterra", team: "Estados Unidos", conf: "CONCACAF" },
+  { player: "Giovanni Reyna", origin: "Inglaterra", team: "Estados Unidos", conf: "CONCACAF" },
+  { player: "Sebastian Berhalter", origin: "Inglaterra", team: "Estados Unidos", conf: "CONCACAF" },
+  { player: "Malik Tillman", origin: "Alemania", team: "Estados Unidos", conf: "CONCACAF" },
+  { player: "Sergiño Dest", origin: "Países Bajos", team: "Estados Unidos", conf: "CONCACAF" },
+  { player: "Alejandro Zendejas", origin: "México", team: "Estados Unidos", conf: "CONCACAF" },
+  // FRANCIA  [corregido: Brice Samba nació en Linzolo, Congo (Brazzaville), no RD Congo]
+  { player: "Michael Olise", origin: "Inglaterra", team: "Francia", conf: "UEFA" },
+  { player: "Marcus Thuram", origin: "Italia", team: "Francia", conf: "UEFA" },
+  { player: "Brice Samba", origin: "Congo", team: "Francia", conf: "UEFA" },
+  // GHANA
+  { player: "Jerome Opoku", origin: "Inglaterra", team: "Ghana", conf: "CAF" },
+  { player: "Antoine Semenyo", origin: "Inglaterra", team: "Ghana", conf: "CAF" },
+  { player: "Brandon Thomas-Asante", origin: "Inglaterra", team: "Ghana", conf: "CAF" },
+  { player: "Marvin Senaya", origin: "Francia", team: "Ghana", conf: "CAF" },
+  { player: "Elisha Owusu", origin: "Francia", team: "Ghana", conf: "CAF" },
+  { player: "Jordan Ayew", origin: "Francia", team: "Ghana", conf: "CAF" },
+  { player: "Derrick Luckassen", origin: "Países Bajos", team: "Ghana", conf: "CAF" },
+  { player: "Iñaki Williams", origin: "España", team: "Ghana", conf: "CAF" },
+  // HAITÍ  [corregido: Casimir, Isidor, Lacroix]
+  { player: "Johny Placide", origin: "Francia", team: "Haití", conf: "CONCACAF" },
+  { player: "Alexandre Pierre", origin: "Francia", team: "Haití", conf: "CONCACAF" },
+  { player: "Martin Expérience", origin: "Francia", team: "Haití", conf: "CONCACAF" },
+  { player: "Jean-Kévin Duverne", origin: "Francia", team: "Haití", conf: "CONCACAF" },
+  { player: "Jean-Ricner Bellegarde", origin: "Francia", team: "Haití", conf: "CONCACAF" },
+  { player: "Dominique Simon", origin: "Francia", team: "Haití", conf: "CONCACAF" },
+  { player: "Duckens Nazon", origin: "Francia", team: "Haití", conf: "CONCACAF" },
+  { player: "Ruben Providence", origin: "Francia", team: "Haití", conf: "CONCACAF" },
+  { player: "Josué Casimir", origin: "Francia", team: "Haití", conf: "CONCACAF" },
+  { player: "Yassin Fortuné", origin: "Francia", team: "Haití", conf: "CONCACAF" },
+  { player: "Wilson Isidor", origin: "Francia", team: "Haití", conf: "CONCACAF" },
+  { player: "Lenny Joseph", origin: "Francia", team: "Haití", conf: "CONCACAF" },
+  { player: "Duke Lacroix", origin: "Estados Unidos", team: "Haití", conf: "CONCACAF" },
+  { player: "Derrick Etienne Jr.", origin: "Estados Unidos", team: "Haití", conf: "CONCACAF" },
+  { player: "Josué Duverger", origin: "Canadá", team: "Haití", conf: "CONCACAF" },
+  { player: "Keeto Thermoncy", origin: "Suiza", team: "Haití", conf: "CONCACAF" },
+  // INGLATERRA
+  { player: "Marc Guéhi", origin: "Costa de Marfil", team: "Inglaterra", conf: "UEFA" },
+  // IRAK
+  { player: "Hussein Ali", origin: "Suecia", team: "Irak", conf: "AFC" },
+  { player: "Amir Al-Ammari", origin: "Suecia", team: "Irak", conf: "AFC" },
+  { player: "Kevin Yakob", origin: "Suecia", team: "Irak", conf: "AFC" },
+  { player: "Ahmed Qasem", origin: "Suecia", team: "Irak", conf: "AFC" },
+  { player: "Merchas Doski", origin: "Alemania", team: "Irak", conf: "AFC" },
+  { player: "Youssef Amyn", origin: "Alemania", team: "Irak", conf: "AFC" },
+  { player: "Frans Putros", origin: "Dinamarca", team: "Irak", conf: "AFC" },
+  { player: "Zidane Iqbal", origin: "Inglaterra", team: "Irak", conf: "AFC" },
+  { player: "Marko Farji", origin: "Noruega", team: "Irak", conf: "AFC" },
+  // IRÁN
+  { player: "Dennis Eckert", origin: "Alemania", team: "Irán", conf: "AFC" },
+  { player: "Saman Ghoddos", origin: "Suecia", team: "Irán", conf: "AFC" },
+  // ITALIA  [añadido: faltaba en los datos originales]
+  { player: "Mateo Retegui", origin: "Argentina", team: "Italia", conf: "UEFA" },
+  // JAPÓN
+  { player: "Zion Suzuki", origin: "Estados Unidos", team: "Japón", conf: "AFC" },
+  // JORDANIA
+  { player: "Ali Azaizeh", origin: "Alemania", team: "Jordania", conf: "AFC" },
+  { player: "Mohammad Abu Hashish", origin: "Iraq", team: "Jordania", conf: "AFC" },
+  { player: "Mo Abualnadi", origin: "Estados Unidos", team: "Jordania", conf: "AFC" },
+  // MARRUECOS  [corregido: El Ouahdi]
+  { player: "Issa Diop", origin: "Francia", team: "Marruecos", conf: "CAF" },
+  { player: "Redouane Halhal", origin: "Francia", team: "Marruecos", conf: "CAF" },
+  { player: "Neil El Aynaoui", origin: "Francia", team: "Marruecos", conf: "CAF" },
+  { player: "Samir El Mourabet", origin: "Francia", team: "Marruecos", conf: "CAF" },
+  { player: "Ayyoub Bouaddi", origin: "Francia", team: "Marruecos", conf: "CAF" },
+  { player: "Gessime Yassine", origin: "Francia", team: "Marruecos", conf: "CAF" },
+  { player: "Munir Mohamedi", origin: "España", team: "Marruecos", conf: "CAF" },
+  { player: "Achraf Hakimi", origin: "España", team: "Marruecos", conf: "CAF" },
+  { player: "Chadi Riad", origin: "España", team: "Marruecos", conf: "CAF" },
+  { player: "Ismael Saibari", origin: "España", team: "Marruecos", conf: "CAF" },
+  { player: "Brahim Díaz", origin: "España", team: "Marruecos", conf: "CAF" },
+  { player: "Ayoube Amaimouni", origin: "España", team: "Marruecos", conf: "CAF" },
+  { player: "Zakaria El Ouahdi", origin: "Bélgica", team: "Marruecos", conf: "CAF" },
+  { player: "Bilal El Khannouss", origin: "Bélgica", team: "Marruecos", conf: "CAF" },
+  { player: "Chemsdine Talbi", origin: "Bélgica", team: "Marruecos", conf: "CAF" },
+  { player: "Noussair Mazraoui", origin: "Países Bajos", team: "Marruecos", conf: "CAF" },
+  { player: "Anass Salah-Eddine", origin: "Países Bajos", team: "Marruecos", conf: "CAF" },
+  { player: "Sofyan Amrabat", origin: "Países Bajos", team: "Marruecos", conf: "CAF" },
+  { player: "Yassine Bounou", origin: "Canadá", team: "Marruecos", conf: "CAF" },
+  // MÉXICO
+  { player: "Brian Gutiérrez", origin: "Estados Unidos", team: "México", conf: "CONCACAF" },
+  { player: "Obed Vargas", origin: "Estados Unidos", team: "México", conf: "CONCACAF" },
+  { player: "Santiago Giménez", origin: "Argentina", team: "México", conf: "CONCACAF" },
+  { player: "Álvaro Fidalgo", origin: "España", team: "México", conf: "CONCACAF" },
+  { player: "Julián Quiñones", origin: "Colombia", team: "México", conf: "CONCACAF" },
+  // NORUEGA  [corregido: Aasgaard]
+  { player: "Thelo Aasgaard", origin: "Inglaterra", team: "Noruega", conf: "UEFA" },
+  { player: "Erling Haaland", origin: "Inglaterra", team: "Noruega", conf: "UEFA" },
+  // NUEVA ZELANDA
+  { player: "Matthew Garbett", origin: "Inglaterra", team: "Nueva Zelanda", conf: "OFC" },
+  { player: "Lachlan Bayliss", origin: "Australia", team: "Nueva Zelanda", conf: "OFC" },
+  { player: "Nando Pijnaker", origin: "Países Bajos", team: "Nueva Zelanda", conf: "OFC" },
+  { player: "Callan Elliot", origin: "Escocia", team: "Nueva Zelanda", conf: "OFC" },
+  { player: "Alex Rufer", origin: "Suiza", team: "Nueva Zelanda", conf: "OFC" },
+  { player: "Finn Surman", origin: "Gales", team: "Nueva Zelanda", conf: "OFC" },
+  // PAÍSES BAJOS
+  { player: "Guus Til", origin: "Zambia", team: "Países Bajos", conf: "UEFA" },
+  // PARAGUAY
+  { player: "Juan José Cáceres", origin: "Argentina", team: "Paraguay", conf: "CONMEBOL" },
+  { player: "Alejandro Romero (Kaku)", origin: "Argentina", team: "Paraguay", conf: "CONMEBOL" },
+  { player: "Andrés Cubas", origin: "Argentina", team: "Paraguay", conf: "CONMEBOL" },
+  { player: "Maurício", origin: "Brasil", team: "Paraguay", conf: "CONMEBOL" },
+  { player: "Gastón Olivera", origin: "Uruguay", team: "Paraguay", conf: "CONMEBOL" },
+  // PORTUGAL  [corregido: Diogo Costa nació en Ginebra, SUIZA]
+  { player: "Matheus Nunes", origin: "Brasil", team: "Portugal", conf: "UEFA" },
+  { player: "Diogo Costa", origin: "Suiza", team: "Portugal", conf: "UEFA" },
+  // RD CONGO  [corregido: Matthieu Epolo, Ngal'ayel Mukau]
+  { player: "Lionel Mpasi", origin: "Francia", team: "RD Congo", conf: "CAF" },
+  { player: "Arthur Masuaku", origin: "Francia", team: "RD Congo", conf: "CAF" },
+  { player: "Gédéon Kalulu", origin: "Francia", team: "RD Congo", conf: "CAF" },
+  { player: "Dylan Batubinsika", origin: "Francia", team: "RD Congo", conf: "CAF" },
+  { player: "Steve Kapuadi", origin: "Francia", team: "RD Congo", conf: "CAF" },
+  { player: "Samuel Moutoussamy", origin: "Francia", team: "RD Congo", conf: "CAF" },
+  { player: "Gaël Kakuta", origin: "Francia", team: "RD Congo", conf: "CAF" },
+  { player: "Cédric Bakambu", origin: "Francia", team: "RD Congo", conf: "CAF" },
+  { player: "Yoane Wissa", origin: "Francia", team: "RD Congo", conf: "CAF" },
+  { player: "Nathanaël Mbuku", origin: "Francia", team: "RD Congo", conf: "CAF" },
+  { player: "Simon Banza", origin: "Francia", team: "RD Congo", conf: "CAF" },
+  { player: "Matthieu Epolo", origin: "Bélgica", team: "RD Congo", conf: "CAF" },
+  { player: "Joris Kayembe", origin: "Bélgica", team: "RD Congo", conf: "CAF" },
+  { player: "Noah Sadiki", origin: "Bélgica", team: "RD Congo", conf: "CAF" },
+  { player: "Ngal'ayel Mukau", origin: "Bélgica", team: "RD Congo", conf: "CAF" },
+  { player: "Théo Bongonda", origin: "Bélgica", team: "RD Congo", conf: "CAF" },
+  { player: "Aaron Wan-Bissaka", origin: "Inglaterra", team: "RD Congo", conf: "CAF" },
+  { player: "Aaron Tshibola", origin: "Inglaterra", team: "RD Congo", conf: "CAF" },
+  { player: "Timothy Fayulu", origin: "Suiza", team: "RD Congo", conf: "CAF" },
+  { player: "Charles Pickel", origin: "Suiza", team: "RD Congo", conf: "CAF" },
+  // SENEGAL
+  { player: "Édouard Mendy", origin: "Francia", team: "Senegal", conf: "CAF" },
+  { player: "Mory Diaw", origin: "Francia", team: "Senegal", conf: "CAF" },
+  { player: "Yehvann Diouf", origin: "Francia", team: "Senegal", conf: "CAF" },
+  { player: "Kalidou Koulibaly", origin: "Francia", team: "Senegal", conf: "CAF" },
+  { player: "Moussa Niakhaté", origin: "Francia", team: "Senegal", conf: "CAF" },
+  { player: "Mamadou Sarr", origin: "Francia", team: "Senegal", conf: "CAF" },
+  { player: "Antoine Mendy", origin: "Francia", team: "Senegal", conf: "CAF" },
+  { player: "Pape Gueye", origin: "Francia", team: "Senegal", conf: "CAF" },
+  { player: "Iliman N'Diaye", origin: "Francia", team: "Senegal", conf: "CAF" },
+  { player: "Ibrahim Mbaye", origin: "Francia", team: "Senegal", conf: "CAF" },
+  { player: "Nicolas Jackson", origin: "Gambia", team: "Senegal", conf: "CAF" },
+  { player: "Ismail Jakobs", origin: "Alemania", team: "Senegal", conf: "CAF" },
+  // SUIZA
+  { player: "Breel Embolo", origin: "Camerún", team: "Suiza", conf: "UEFA" },
+  { player: "Yvon Mvogo", origin: "Camerún", team: "Suiza", conf: "UEFA" },
+  { player: "Marvin Keller", origin: "Inglaterra", team: "Suiza", conf: "UEFA" },
+  // TÚNEZ
+  { player: "Montassar Talbi", origin: "Francia", team: "Túnez", conf: "CAF" },
+  { player: "Dylan Bronn", origin: "Francia", team: "Túnez", conf: "CAF" },
+  { player: "Yan Valery", origin: "Francia", team: "Túnez", conf: "CAF" },
+  { player: "Ellyes Skhiri", origin: "Francia", team: "Túnez", conf: "CAF" },
+  { player: "Hannibal Mejbri", origin: "Francia", team: "Túnez", conf: "CAF" },
+  { player: "Ismaël Gharbi", origin: "Francia", team: "Túnez", conf: "CAF" },
+  { player: "Elias Achouri", origin: "Francia", team: "Túnez", conf: "CAF" },
+  { player: "Rani Khedira", origin: "Alemania", team: "Túnez", conf: "CAF" },
+  { player: "Elias Saad", origin: "Alemania", team: "Túnez", conf: "CAF" },
+  { player: "Rayan Elloumi", origin: "Canadá", team: "Túnez", conf: "CAF" },
+  { player: "Anis Ben Slimane", origin: "Dinamarca", team: "Túnez", conf: "CAF" },
+  { player: "Omar Rekik", origin: "Países Bajos", team: "Túnez", conf: "CAF" },
+  { player: "Sebastian Tounekti", origin: "Noruega", team: "Túnez", conf: "CAF" },
+  { player: "Adem Arous", origin: "Arabia Saudita", team: "Túnez", conf: "CAF" },
+  { player: "Moutaz Neffati", origin: "Suecia", team: "Túnez", conf: "CAF" },
+  // TURQUÍA
+  { player: "Salih Özcan", origin: "Alemania", team: "Turquía", conf: "UEFA" },
+  { player: "Hakan Çalhanoğlu", origin: "Alemania", team: "Turquía", conf: "UEFA" },
+  { player: "Kaan Ayhan", origin: "Alemania", team: "Turquía", conf: "UEFA" },
+  { player: "Kenan Yıldız", origin: "Alemania", team: "Turquía", conf: "UEFA" },
+  { player: "Can Uzun", origin: "Alemania", team: "Turquía", conf: "UEFA" },
+  { player: "Ferdi Kadioglu", origin: "Países Bajos", team: "Turquía", conf: "UEFA" },
+  { player: "Orkun Kokçu", origin: "Países Bajos", team: "Turquía", conf: "UEFA" },
+  { player: "Oguz Aydin", origin: "Países Bajos", team: "Turquía", conf: "UEFA" },
+  { player: "Mert Müldür", origin: "Austria", team: "Turquía", conf: "UEFA" },
+  { player: "Deniz Gül", origin: "Suecia", team: "Turquía", conf: "UEFA" },
+  // URUGUAY  [corregido: Zalazar]
+  { player: "Fernando Muslera", origin: "Argentina", team: "Uruguay", conf: "CONMEBOL" },
+  { player: "Rodrigo Zalazar", origin: "España", team: "Uruguay", conf: "CONMEBOL" },
+  // UZBEKISTÁN
+  { player: "Utkir Yusupov", origin: "Kazajistán", team: "Uzbekistán", conf: "AFC" },
+];
+
+let allRows = [...data];
+let filtered = [...allRows];
+
+function getFlag(country, map) {
+  return map[country] || "🏳️";
+}
+
+function buildTable(rows) {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  let lastTeam = '';
+  let num = 0;
+
+  rows.forEach(row => {
+    if (row.team !== lastTeam) {
+      const secRow = document.createElement('tr');
+      secRow.className = 'section-row';
+      secRow.innerHTML = `<td colspan="5">${getFlag(row.team, TEAM_FLAGS)} ${row.team.toUpperCase()} — Confederación: ${row.conf}</td>`;
+      tbody.appendChild(secRow);
+      lastTeam = row.team;
+    }
+    num++;
+    const tr = document.createElement('tr');
+    const cClass = CONTINENT_CLASS[row.conf] || '';
+    tr.innerHTML = `
+      <td class="col-num">${num}</td>
+      <td class="col-player"><span class="flag">${getFlag(row.origin, COUNTRY_FLAGS)}</span>${row.player}</td>
+      <td class="col-origin">
+        <span class="flag-tag origin-tag">
+          <span class="flag">${getFlag(row.origin, COUNTRY_FLAGS)}</span>
+          ${row.origin}
+        </span>
+      </td>
+      <td class="col-team">
+        <span class="flag-tag team-tag">
+          <span class="flag">${getFlag(row.team, TEAM_FLAGS)}</span>
+          ${row.team}
+        </span>
+      </td>
+      <td class="col-continent">
+        <span class="badge ${cClass}">${CONTINENT_FLAGS[row.conf] || ''} ${row.conf}</span>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('countLabel').textContent = `${rows.length} jugadores encontrados`;
+
+  // Convert emoji to images so flags render correctly on Windows (Chrome/Edge)
+  if (window.twemoji) twemoji.parse(document.body, { folder: 'svg', ext: '.svg' });
+}
+
+function filterTable() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  const conf = document.getElementById('filterContinent').value;
+  filtered = allRows.filter(r => {
+    const matchQ = !q || r.player.toLowerCase().includes(q) || r.origin.toLowerCase().includes(q) || r.team.toLowerCase().includes(q);
+    const matchConf = !conf || r.conf === conf;
+    return matchQ && matchConf;
+  });
+  buildTable(filtered);
+}
+
+// Sort by team then player
+allRows.sort((a, b) => a.team.localeCompare(b.team, 'es') || a.player.localeCompare(b.player, 'es'));
+</script>
+<script src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/dist/twemoji.min.js" crossorigin="anonymous"
+        onload="buildTable(allRows)" onerror="buildTable(allRows)"></script>
+</body>
+</html>
