@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!-- viz · share card template — gallery cover (1200×630).
+     Rendered to /share.png by make.ps1. Not part of the site itself. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    width: 1200px; height: 630px; overflow: hidden; position: relative;
+    background-color: #faf6ec;
+    background-image: radial-gradient(rgba(60,50,30,.14) 1.2px, transparent 1.4px);
+    background-size: 23px 23px;
+    font-family: "Inter", sans-serif; color: #2c2a25;
+  }
+  .tape {
+    position: absolute; width: 240px; height: 56px;
+    background: linear-gradient(rgba(150,190,255,.5), rgba(150,190,255,.42));
+    box-shadow: 0 1px 4px rgba(60,50,30,.12);
+  }
+  .tape.tl { top: -18px; left: 70px; transform: rotate(-5deg); }
+  .tape.br {
+    bottom: -20px; right: 90px; transform: rotate(4deg);
+    background: linear-gradient(rgba(255,225,120,.55), rgba(255,225,120,.45));
+  }
+  .ring { position: absolute; right: 82px; top: 60px; opacity: .8; }
+  .wrap { position: absolute; left: 110px; top: 128px; width: 940px; }
+  .wordmark { font-family: "Caveat", cursive; font-weight: 700; font-size: 190px; line-height: .8; }
+  .wordmark img { width: 112px; height: 112px; margin-left: 16px; transform: translateY(10px); }
+  .caption {
+    font-family: "Caveat", cursive; font-weight: 600; font-size: 54px; line-height: 1.25;
+    color: #2b50c8; transform: rotate(-1.6deg); margin: 42px 0 0 10px;
+  }
+  .caption .hl { background: linear-gradient(transparent 55%, #ffef9e 55%, #ffef9e 92%, transparent 92%); padding: 0 6px; }
+  .sig { font-family: "JetBrains Mono", monospace; font-size: 21px; color: #8a857c; margin: 30px 0 0 14px; }
+</style>
+</head>
+<body>
+  <div class="tape tl"></div>
+  <div class="tape br"></div>
+  <svg class="ring" width="150" height="150" viewBox="0 0 100 100" fill="none">
+    <circle cx="50" cy="50" r="38" stroke="rgba(150,100,50,.30)" stroke-width="7"/>
+    <circle cx="50" cy="50" r="38" stroke="rgba(150,100,50,.16)" stroke-width="11" stroke-dasharray="40 28 65 30"/>
+  </svg>
+  <div class="wrap">
+    <div class="wordmark">viz<img src="../../logo.svg" alt=""></div>
+    <div class="caption">a <span class="hl">data field notebook</span> — charts of whatever I'm currently questioning</div>
+    <div class="sig">— u/ArchiTechOfTheFuture &nbsp;❄️❄️❄️</div>
+  </div>
+</body>
+</html>

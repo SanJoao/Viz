@@ -17,6 +17,8 @@ viz/
 ├── index.html          ← the notebook (gallery)
 ├── logo.svg            ← 7-petal streak rose (one week of streaks)
 ├── analytics.js        ← Firebase Analytics (reserved URLs, zero config)
+├── share.jpg           ← link-preview image (og:image), 1200×630
+├── tools/share-cards/  ← share-card templates + make.ps1 (regenerates all share.jpg)
 ├── tools/gen-logo.mjs  ← regenerates the logo (node tools/gen-logo.mjs)
 ├── firebase.json       ← hosting config
 └── worldcup2026/       ← entry 001, self-contained
@@ -31,6 +33,7 @@ Each entry is a self-contained folder with its own vibe.
 3. Add the favicon: `<link rel="icon" type="image/svg+xml" href="../logo.svg">`.
 4. Add analytics: `<script src="../analytics.js"></script>` (automatic page views; log custom events with `vizTrack("name", {...})` — safe to call anywhere, no-ops outside Firebase Hosting).
 5. Register the entry in the `posts` array of `index.html` at the root.
+6. Link preview: copy the `og:*` meta block from `worldcup2026/index.html` (change title, description, URLs), then make a 1200×630 `share.jpg` for the folder — duplicate a template in `tools/share-cards/`, point it at the new entry, add a line to `make.ps1`, run it. Keep it under ~300 KB or WhatsApp won't show it.
 
 ## Deploy
 
