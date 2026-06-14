@@ -977,7 +977,8 @@ function drawChart() {
     .text(d => {
       const c = names[d.index];
       const {out, inn} = totals[c];
-      return `${cname(c)} (${out > inn ? "−" + out : "+" + inn})`;
+      const net = out - inn; // net flow: − = net exporter, + = net importer
+      return `${cname(c)} (${net > 0 ? "−" + net : net < 0 ? "+" + (-net) : "±0"})`;
     });
 
   function unfocus() {
