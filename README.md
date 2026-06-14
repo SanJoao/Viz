@@ -34,6 +34,7 @@ Each entry is a self-contained folder with its own vibe.
 4. Add analytics: `<script src="../analytics.js"></script>` (automatic page views; log custom events with `vizTrack("name", {...})` — safe to call anywhere, no-ops outside Firebase Hosting).
 5. Register the entry in the `posts` array of `index.html` at the root.
 6. Link preview: copy the `og:*` meta block from `worldcup2026/index.html` (change title, description, URLs), then make a 1200×630 `share.jpg` for the folder — duplicate a template in `tools/share-cards/`, point it at the new entry, add a line to `make.ps1`, run it. Keep it under ~300 KB or WhatsApp won't show it.
+7. Coffee CTA: paste the note from [`snippets/coffee-cta.html`](snippets/coffee-cta.html) at the end of the entry (auto-themes via `--accent`/`--muted`). If the entry has an `@media print` block, add `.coffee-cta` to its hide list.
 
 ## Deploy
 

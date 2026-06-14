@@ -92,11 +92,15 @@
     transition: opacity .2s, transform .3s;
   }
   .moon-doodle:hover { opacity: 1; transform: rotate(-12deg); }
-  .coffee-ring {
-    position: absolute; right: 44px; top: 158px;
-    width: 86px; height: 86px; pointer-events: none; opacity: .8;
+  /* coffee ring doubles as a secret Ko-fi link (easter egg) */
+  .coffee-ring-link {
+    position: absolute; right: 44px; top: 158px; z-index: 5;
+    width: 86px; height: 86px; opacity: .8;
+    transition: opacity .2s, transform .3s;
   }
-  @media (max-width: 1020px) { .coffee-ring { display: none; } }
+  .coffee-ring-link:hover { opacity: 1; transform: rotate(8deg) scale(1.06); }
+  .coffee-ring { display: block; width: 100%; height: 100%; pointer-events: none; }
+  @media (max-width: 1020px) { .coffee-ring-link { display: none; } }
   .constellation {
     display: block; margin: 4px auto -8px; width: 340px; max-width: 86vw;
     opacity: .75; overflow: visible;
@@ -115,7 +119,7 @@
     to { transform: translateY(110vh) rotate(340deg); opacity: .2; }
   }
   @media (max-width: 760px) {
-    .moon-doodle, .coffee-ring, .flame-doodle, .doodle { display: none; }
+    .moon-doodle, .coffee-ring-link, .flame-doodle, .doodle { display: none; }
   }
   .wordmark {
     font-family: "Caveat", cursive;
@@ -277,6 +281,18 @@
   footer a { color: var(--pen); text-decoration: none; }
   footer .snow { letter-spacing: 3px; }
 
+  /* handwritten Ko-fi note above the footer */
+  .coffee-note {
+    text-align: center; font-family: "Caveat", cursive; font-weight: 600;
+    font-size: 22px; color: var(--pen); margin: 18px auto 0;
+    transform: rotate(-.5deg);
+  }
+  .coffee-note a {
+    color: var(--pen); text-decoration: none; white-space: nowrap;
+    border-bottom: 1.5px dashed rgba(43,80,200,.4); padding-bottom: 1px;
+  }
+  .coffee-note a:hover { border-bottom-style: solid; }
+
   /* ── language switcher — little paper tabs in the margin ── */
   .viz-lang {
     position: fixed; top: 14px; right: 14px; z-index: 100;
@@ -315,11 +331,13 @@
     </div>
   </div>
 
-  <!-- coffee ring — every real notebook has one -->
-  <svg class="coffee-ring" viewBox="0 0 90 90" fill="none">
-    <circle cx="45" cy="45" r="36" stroke="rgba(135,85,35,.22)" stroke-width="6" stroke-dasharray="40 7 28 4 52 9"/>
-    <circle cx="45" cy="45" r="30" stroke="rgba(135,85,35,.13)" stroke-width="2" stroke-dasharray="60 12 30 8"/>
-  </svg>
+  <!-- coffee ring — every real notebook has one (and it's a secret Ko-fi link) -->
+  <a class="coffee-ring-link" href="https://ko-fi.com/architechofthefuture" target="_blank" rel="noopener" data-i18n-attr="title:coffeeRingTitle" title="☕ buy me a coffee?" aria-label="Buy me a coffee on Ko-fi">
+    <svg class="coffee-ring" viewBox="0 0 90 90" fill="none">
+      <circle cx="45" cy="45" r="36" stroke="rgba(135,85,35,.22)" stroke-width="6" stroke-dasharray="40 7 28 4 52 9"/>
+      <circle cx="45" cy="45" r="30" stroke="rgba(135,85,35,.13)" stroke-width="2" stroke-dasharray="60 12 30 8"/>
+    </svg>
+  </a>
 
   <p class="intro">
     <span data-i18n-html="intro">Hi! I'm Juan — an observer who builds. Systems shape life, and life shapes systems,
@@ -385,6 +403,11 @@
   </g>
 </svg>
 
+<p class="coffee-note">
+  <span data-i18n="coffeeNote">If these rabbit holes are fun, you can</span>
+  <a href="https://ko-fi.com/architechofthefuture" target="_blank" rel="noopener">☕ <span data-i18n="coffeeLink">buy me a coffee</span></a>
+</p>
+
 <footer>
   viz · <span data-i18n="footerBy">a field notebook by</span> <a href="https://luarai.com" target="_blank" rel="noopener">Luarai</a> ·
   <span data-i18n="footerBuilt">built by hand, charted in d3</span> · <span class="snow snow-trigger" title="❄">❄️❄️❄️</span>
@@ -411,6 +434,9 @@ const DICT = {
     starSevero: "Severo — the streak rose came from here",
     footerBy: "a field notebook by",
     footerBuilt: "built by hand, charted in d3",
+    coffeeNote: "If these rabbit holes are fun, you can",
+    coffeeLink: "buy me a coffee",
+    coffeeRingTitle: "☕ buy me a coffee?",
     soon: "soon…",
     posts: [
       { entry: "entry 001 · jun 12 2026 · rabbit hole ⚽", caption: "everyone's from France!?", label: "A quarter of all World Cup players were born outside the country they represent. Every single one, traced on a circular sankey.", sig: "— Juan · 12.jun.2026" },
@@ -428,6 +454,9 @@ const DICT = {
     starSevero: "Severo — de aquí salió la rosa de las rachas",
     footerBy: "una libreta de campo de",
     footerBuilt: "hecha a mano, graficada en d3",
+    coffeeNote: "Si estos viajes te divierten, puedes",
+    coffeeLink: "invitarme un café",
+    coffeeRingTitle: "☕ ¿me invitas un café?",
     soon: "pronto…",
     posts: [
       { entry: "entrada 001 · 12 jun 2026 · madriguera ⚽", caption: "¡¿todos son de Francia?!", label: "Una cuarta parte de los jugadores del Mundial nacieron fuera del país que representan. Todos y cada uno, trazados en un sankey circular.", sig: "— Juan · 12.jun.2026" },
@@ -445,6 +474,9 @@ const DICT = {
     starSevero: "Severo — a rosa das sequências nasceu aqui",
     footerBy: "um caderno de campo por",
     footerBuilt: "feito à mão, traçado em d3",
+    coffeeNote: "Se estas tocas de coelho são divertidas, você pode",
+    coffeeLink: "me pagar um café",
+    coffeeRingTitle: "☕ me paga um café?",
     soon: "em breve…",
     posts: [
       { entry: "entrada 001 · 12 jun 2026 · toca ⚽", caption: "todo mundo é da França?!", label: "Um quarto de todos os jogadores da Copa do Mundo nasceu fora do país que representa. Cada um deles, traçado em um sankey circular.", sig: "— Juan · 12.jun.2026" },
@@ -462,6 +494,9 @@ const DICT = {
     starSevero: "Severo — la rose des séries vient d'ici",
     footerBy: "un carnet de terrain par",
     footerBuilt: "fait main, tracé en d3",
+    coffeeNote: "Si ces explorations vous plaisent, vous pouvez",
+    coffeeLink: "m'offrir un café",
+    coffeeRingTitle: "☕ on m'offre un café ?",
     soon: "bientôt…",
     posts: [
       { entry: "entrée 001 · 12 juin 2026 · terrier ⚽", caption: "tout le monde vient de France ?!", label: "Un quart des joueurs de la Coupe du monde sont nés hors du pays qu'ils représentent. Tous, sans exception, tracés sur un sankey circulaire.", sig: "— Juan · 12.juin.2026" },
@@ -479,6 +514,9 @@ const DICT = {
     starSevero: "Severo — die Streak-Rose stammt von hier",
     footerBy: "ein Feldnotizbuch von",
     footerBuilt: "von Hand gebaut, in d3 gezeichnet",
+    coffeeNote: "Wenn dir diese Streifzüge gefallen, kannst du",
+    coffeeLink: "mir einen Kaffee spendieren",
+    coffeeRingTitle: "☕ einen Kaffee spendieren?",
     soon: "bald…",
     posts: [
       { entry: "Eintrag 001 · 12. Juni 2026 · Kaninchenbau ⚽", caption: "alle kommen aus Frankreich?!", label: "Ein Viertel aller WM-Spieler wurde außerhalb des Landes geboren, das sie vertreten. Jeder Einzelne, nachgezeichnet auf einem kreisförmigen Sankey.", sig: "— Juan · 12.Juni.2026" },
