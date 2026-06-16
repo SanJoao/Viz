@@ -1,0 +1,16 @@
+rules_version = '2';
+// The leaderboard is public to read and only writable by the Cloud Function
+// (the Admin SDK bypasses these rules). Documents hold no PII — supporters are
+// keyed by a hash of their email, which is never stored.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /supporters/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /meta/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
