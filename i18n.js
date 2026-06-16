@@ -1,7 +1,7 @@
 /* viz · tiny i18n runtime (shared across every entry)
  *
  * No build step, no dependency. A page calls vizI18n.init({ dict, onApply }):
- *   - dict   = { en:{...}, es:{...}, pt:{...}, fr:{...}, de:{...} }
+ *   - dict   = { en:{...}, es:{...}, pt:{...}, fr:{...}, de:{...}, nl:{...}, ar:{...} }
  *   - onApply(lang, strings) runs after each (re)translation so the page can
  *     redraw anything generated in JS (cards, charts, tables…).
  *
@@ -9,7 +9,10 @@
  *   1. a previous manual choice saved in localStorage (always wins), else
  *   2. the visitor's own browser language (navigator.languages), else
  *   3. English.
- * A small EN/ES/PT/FR/DE switcher is mounted top-right; the choice persists.
+ * A small EN/ES/PT/FR/DE/NL/AR switcher is mounted top-right; the choice persists.
+ *
+ * Arabic (ar) is right-to-left: apply() flips <html dir> to "rtl" so the
+ * browser mirrors layout, text flow and the corner controls (see [dir=rtl] CSS).
  *
  * Static text is translated by tagging elements:
  *   data-i18n="key"                 -> sets textContent
@@ -17,9 +20,10 @@
  *   data-i18n-attr="placeholder:key;title:key2"  -> sets attributes
  */
 (function () {
-  const SUPPORTED = ["en", "es", "pt", "fr", "de"];
-  const SHORT = { en: "EN", es: "ES", pt: "PT", fr: "FR", de: "DE" };
-  const FULL  = { en: "English", es: "Español", pt: "Português", fr: "Français", de: "Deutsch" };
+  const SUPPORTED = ["en", "es", "pt", "fr", "de", "nl", "ar"];
+  const SHORT = { en: "EN", es: "ES", pt: "PT", fr: "FR", de: "DE", nl: "NL", ar: "AR" };
+  const FULL  = { en: "English", es: "Español", pt: "Português", fr: "Français", de: "Deutsch", nl: "Nederlands", ar: "العربية" };
+  const RTL = ["ar"];
   const STORE_KEY = "viz_lang";
 
   function detect() {
@@ -46,6 +50,7 @@
   function apply() {
     const s = strings();
     document.documentElement.lang = current;
+    document.documentElement.dir = RTL.includes(current) ? "rtl" : "ltr";
 
     document.querySelectorAll("[data-i18n]").forEach(el => {
       const v = s[el.getAttribute("data-i18n")];
@@ -80,6 +85,7 @@
     paintSwitcher();
     if (onApply) onApply(current, strings());
     listeners.forEach(fn => { try { fn(current); } catch (e) {} });
+    if (window.vizTrack) { try { vizTrack("lang_change", { lang: code }); } catch (e) {} }
   }
 
   function buildSwitcher() {

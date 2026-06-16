@@ -178,6 +178,28 @@
     .viz-lang-opt { padding: 4px 7px; font-size: 11px; }
   }
 
+  /* ── right-to-left (Arabic) ──
+     <html dir="rtl"> (set by i18n.js) mirrors text flow for free; here we
+     swap the two fixed corner pills, flip the back-arrow, and right-align
+     the tables so the data reads correctly. The circular chart is
+     direction-agnostic, so it's left as is. */
+  [dir="rtl"] .viz-home { left: auto; right: 14px; padding: 7px 10px 7px 14px; }
+  [dir="rtl"] .viz-lang { right: auto; left: 14px; }
+  [dir="rtl"] .viz-home .vh-arrow { transform: scaleX(-1); }
+  [dir="rtl"] .viz-home:hover .vh-arrow { transform: scaleX(-1) translateX(-3px); }
+  [dir="rtl"] th, [dir="rtl"] td { text-align: right; }
+  [dir="rtl"] td.num, [dir="rtl"] th.num { text-align: left; }
+  [dir="rtl"] .coffee-cta a { margin-left: 0; margin-right: 4px; }
+  /* The circular chart is laid out geometrically (D3 computes each label's
+     angle, anchor and offset for an LTR canvas). Letting it inherit rtl
+     mirrors text-anchor and flips the outer labels back into the ring, so
+     pin the figure to ltr — Arabic glyphs inside each label still shape
+     correctly; only the outward placement is preserved. */
+  [dir="rtl"] #chart { direction: ltr; }
+  @media (max-width: 760px) {
+    [dir="rtl"] .viz-lang { right: auto; left: 10px; }
+  }
+
   /* ── light / print theme (via the ☀ toggle, or any print) ──
      The dark chart relies on screen-blended ribbons that glow on black;
      on white that blend would vanish, so we flip it to multiply (which
@@ -651,6 +673,119 @@ const I18N = {
       "Egypt":"Ägypten","South Korea":"Südkorea","Ivory Coast":"Elfenbeinküste","Kenya":"Kenia",
       "Tanzania":"Tansania","Cameroon":"Kamerun","Jordan":"Jordanien","Kazakhstan":"Kasachstan",
       "Saudi Arabia":"Saudi-Arabien","Czech Republic":"Tschechien","South Africa":"Südafrika"
+    }
+  },
+  nl: {
+    pageTitle: "WK 2026 — Daar geboren, hier aan de bal",
+    metaDescription: "Een kwart van alle WK 2026-spelers werd geboren buiten het land dat ze vertegenwoordigen — allemaal, speler voor speler in kaart gebracht op één cirkelvormige grafiek.",
+    backTitle: "Terug naar het notitieboek",
+    h1: "⚽ WK 2026: daar geboren, hier aan de bal",
+    introP1: `Een cirkelvormige sankey van de geboorteplaatsen van spelers. Elk lint loopt van het land waar spelers zijn <b>geboren</b> naar het nationale elftal dat ze <b>vertegenwoordigen</b> op het WK 2026, met pijlpunten die naar het team wijzen.`,
+    introP2: `Ongeveer <span class="stat">een kwart van de 1.248 spelers</span> op het toernooi werd geboren buiten het land dat ze vertegenwoordigen — meer dan ooit (289 volgens de telling van TUDN/Macías, 310 volgens de telling van Flashscore). Deze grafiek brengt er <span class="stat" id="hdr-count">…</span> bij naam in kaart.`,
+    hdrCount: "spelers",
+    toggleLabel: `Alleen landen tonen <b>die meedoen aan het WK 2026</b> <span id="toggle-info"></span>`,
+    toggleHiding: "({n} spelers verborgen die geboren zijn in niet-gekwalificeerde landen)",
+    hint: "Beweeg over een boog of lint om de stromen van een land te isoleren. Pijlpunten wijzen naar het nationale elftal.",
+    themeLabel: "☀ Lichte modus",
+    themeTitle: "Lichte achtergrond — goed om af te drukken",
+    coffeeNote: "Genoten van dit konijnenhol?",
+    coffeeLink: "trakteer me op een koffie",
+    lbTitle: "⚽ Supportersliga",
+    lbSub: "Denk je dat jouw vlag bovenaan kan staan? Steun het notitieboek en klim omhoog.",
+    lbCta: "⚽ kom op het scoreformulier",
+    lbHow: `voeg je vlag (emoji) + een sociale link toe in het Ko-fi-bericht, bijv. <img src="https://flagcdn.com/w20/co.png" alt="" style="height:10px;vertical-align:-1px;border-radius:2px"> https://x.com/jij`,
+    lbColSupporter: "Supporter", lbColTotal: "Totaal", lbColGoals: "Doelpunten",
+    lbNote: "Dit zijn voorbeeldsupporters — wees de eerste echte naam op het bord ⚽",
+    lbSim: "▶ een doelpunt simuleren",
+    lbEmpty: "Nog geen supporters — wees de eerste die scoort!",
+    lbGolden: "👟 Gouden Schoen", lbAnon: "Anoniem", lbSomeone: "Iemand", lbLink: "link ↗", lbExample: "voorbeeld",
+    lbTickGoal: "⚽ DOELPUNT! {who} heeft net {amt} gescoord — naar #{n}!",
+    lbTickJoin: "⚽ {who} trad toe tot de liga op #{n} met {amt}!",
+    lbTickHold: "⚽ {who} scoorde {amt} — houdt #{n} vast",
+    secPlayers: "Alle in het buitenland geboren spelers",
+    searchPlaceholder: `Filter op speler, team of geboorteland — bijv. 'Mexico', 'Quiñones', 'Frankrijk'…`,
+    thPlayer: "Speler", thBornIn: "Geboren in", thPlaysFor: "Speelt voor", thAge: "Leeftijd",
+    secFlow: "Stroomoverzicht (geboorteland → nationaal elftal)",
+    fthPlayers: "Spelers",
+    rowCount: "{v} van {t} in het buitenland geboren spelers",
+    rowCountWcOnly: " · alleen WK-landen",
+    rowCountFiltered: " · gefilterd",
+    ttBornElsewhere: "Hier geboren, elders spelend:",
+    ttForeignInSquad: "In het buitenland geboren spelers in de selectie:",
+    ttPlayer: "speler", ttPlayers: "spelers",
+    srcHighlightsLabel: "Hoogtepunten:", srcDataLabel: "Opmerkingen bij de data:", srcSourcesLabel: "Bronnen:", flagsBy: "Vlaggen door",
+    srcHighlights: `De in Colombia geboren Julián Quiñones maakte het openingsdoelpunt van het toernooi — voor Mexico. De selectie van Curaçao is 25/26 in Nederland geboren (alleen Tahith Chong werd op het eiland geboren). Frankrijk is 's werelds grootste talentexporteur — 13 spelers voor Algerije, 12 voor Haïti, 11 voor DR Congo, 10 voor Senegal. De 17 in het buitenland geboren spelers van Bosnië weerspiegelen de vluchtelingendiaspora van de jaren 90 (Duitsland, Oostenrijk, Zweden…) — en ze schakelden Italië uit in de play-offfinale, waardoor de Azzurri (en de in Argentinië geboren Mateo Retegui) een derde WK op rij missen. Brazilië, Colombia, Panama, Oostenrijk, Zweden, Saoedi-Arabië, Tsjechië en Zuid-Afrika kwamen met volledig eigen spelers.`,
+    srcData: `leeftijden bij de aftrap van het toernooi (juni 2026). De dataset combineert de telling van TUDN/Jaime F. Macías met geverifieerde correcties: Rafik Belghali geboren in Mechelen, <i>België</i>; Diogo Costa geboren in Genève, <i>Zwitserland</i>; Brice Samba geboren in Linzolo, <i>Congo-Brazzaville</i>; Samed Baždar en Jovo Lukić beiden geboren in <i>Servië</i> (Novi Pazar en Šabac); Martin Baturina geboren in Zürich, Zwitserland.`,
+    country: {
+      "England":"Engeland","Spain":"Spanje","Netherlands":"Nederland","Germany":"Duitsland",
+      "Belgium":"België","Switzerland":"Zwitserland","Italy":"Italië","Sweden":"Zweden","USA":"VS",
+      "Brazil":"Brazilië","Algeria":"Algerije","Haiti":"Haïti","Morocco":"Marokko","Tunisia":"Tunesië",
+      "Scotland":"Schotland","New Zealand":"Nieuw-Zeeland","Norway":"Noorwegen","Iraq":"Irak",
+      "Bosnia & Herz.":"Bosnië & Herz.","Turkey":"Turkije","Uzbekistan":"Oezbekistan","Croatia":"Kroatië",
+      "Slovenia":"Slovenië","Denmark":"Denemarken","Cape Verde":"Kaapverdië","Ireland":"Ierland",
+      "Egypt":"Egypte","Sudan":"Soedan","South Korea":"Zuid-Korea","Ivory Coast":"Ivoorkust","Kenya":"Kenia",
+      "Cameroon":"Kameroen","Jordan":"Jordanië","Kazakhstan":"Kazachstan","Isle of Man":"Man",
+      "Saudi Arabia":"Saoedi-Arabië","Czech Republic":"Tsjechië","South Africa":"Zuid-Afrika",
+      "France":"Frankrijk","Austria":"Oostenrijk","Serbia":"Servië","Guinea":"Guinee","Somalia":"Somalië",
+      "Australia":"Australië","Argentina":"Argentinië"
+    }
+  },
+  ar: {
+    pageTitle: "كأس العالم 2026 — وُلدوا هناك، يلعبون هنا",
+    metaDescription: "رُبع لاعبي كأس العالم 2026 وُلدوا خارج البلد الذي يمثّلونه — جميعهم، مُتتبَّعون لاعبًا بلاعب في رسم بياني دائري واحد.",
+    backTitle: "العودة إلى الدفتر",
+    h1: "⚽ كأس العالم 2026: وُلدوا هناك، يلعبون هنا",
+    introP1: `مخطط سانكي دائري لأماكن ميلاد اللاعبين. ينساب كل شريط من البلد الذي <b>وُلد</b> فيه اللاعبون إلى المنتخب الذي <b>يمثّلونه</b> في كأس العالم 2026، مع رؤوس أسهم تشير إلى الفريق.`,
+    introP2: `نحو <span class="stat">رُبع اللاعبين البالغ عددهم 1248</span> في البطولة وُلدوا خارج البلد الذي يمثّلونه — وهو الأكثر على الإطلاق (289 وفق إحصاء TUDN/ماسياس، و310 وفق إحصاء فلاش سكور). يرسم هذا المخطط <span class="stat" id="hdr-count">…</span> منهم بالاسم.`,
+    hdrCount: "لاعبًا",
+    toggleLabel: `عرض البلدان <b>المشاركة في كأس العالم 2026</b> فقط <span id="toggle-info"></span>`,
+    toggleHiding: "(إخفاء {n} لاعبًا وُلدوا في بلدان غير متأهلة)",
+    hint: "مرّر فوق قوس أو شريط لعزل تدفقات بلد ما. تشير رؤوس الأسهم إلى المنتخب.",
+    themeLabel: "☀ الوضع الفاتح",
+    themeTitle: "خلفية فاتحة — مناسبة للطباعة",
+    coffeeNote: "هل استمتعت بهذه الرحلة؟",
+    coffeeLink: "اشترِ لي قهوة",
+    lbTitle: "⚽ دوري الداعمين",
+    lbSub: "أتظن أن عَلَمك يمكنه تصدّر الجدول؟ ادعم الدفتر وارتقِ.",
+    lbCta: "⚽ سجّل اسمك في قائمة الهدافين",
+    lbHow: `أضِف عَلَمك (إيموجي) + رابطًا اجتماعيًا في رسالة Ko-fi، مثل <img src="https://flagcdn.com/w20/co.png" alt="" style="height:10px;vertical-align:-1px;border-radius:2px"> https://x.com/you`,
+    lbColSupporter: "داعم", lbColTotal: "الإجمالي", lbColGoals: "الأهداف",
+    lbNote: "هؤلاء داعمون توضيحيون — كن أول اسم حقيقي على اللوحة ⚽",
+    lbSim: "▶ محاكاة هدف",
+    lbEmpty: "لا داعمين بعد — كن أول من يسجّل!",
+    lbGolden: "👟 الحذاء الذهبي", lbAnon: "مجهول", lbSomeone: "شخص ما", lbLink: "رابط ↗", lbExample: "مثال",
+    lbTickGoal: "⚽ هدف! سجّل {who} للتو {amt} — صعد إلى #{n}!",
+    lbTickJoin: "⚽ انضم {who} إلى الدوري في المركز #{n} بـ {amt}!",
+    lbTickHold: "⚽ سجّل {who} {amt} — يحافظ على المركز #{n}",
+    secPlayers: "جميع اللاعبين المولودين في الخارج",
+    searchPlaceholder: `تصفية حسب اللاعب أو المنتخب أو بلد الميلاد — مثل ‹المكسيك›، ‹كينيونيس›، ‹فرنسا›…`,
+    thPlayer: "اللاعب", thBornIn: "وُلد في", thPlaysFor: "يلعب لـ", thAge: "العمر",
+    secFlow: "ملخص التدفقات (بلد الميلاد ← المنتخب)",
+    fthPlayers: "اللاعبون",
+    rowCount: "{v} من {t} لاعبًا مولودين في الخارج",
+    rowCountWcOnly: " · بلدان كأس العالم فقط",
+    rowCountFiltered: " · مُصفّى",
+    ttBornElsewhere: "وُلدوا هنا، يلعبون في مكان آخر:",
+    ttForeignInSquad: "لاعبون مولودون في الخارج ضمن التشكيلة:",
+    ttPlayer: "لاعب", ttPlayers: "لاعبون",
+    srcHighlightsLabel: "أبرز النقاط:", srcDataLabel: "ملاحظات حول البيانات:", srcSourcesLabel: "المصادر:", flagsBy: "الأعلام من",
+    srcHighlights: `سجّل الكولومبي المولد خوليان كينيونيس أول هدف في البطولة — للمكسيك. تشكيلة كوراساو وُلد 25 من أصل 26 منها في هولندا (وحده تاهيث تشونغ وُلد في الجزيرة). فرنسا أكبر مُصدّر للمواهب في العالم — 13 لاعبًا للجزائر، و12 لهايتي، و11 لجمهورية الكونغو الديمقراطية، و10 للسنغال. يعكس لاعبو البوسنة الـ17 المولودون في الخارج شتات اللاجئين في التسعينيات (ألمانيا والنمسا والسويد…) — وقد أقصَوا إيطاليا في نهائي الملحق، فغابت الأتزوري (والأرجنتيني المولد ماتيو ريتيغي) عن ثالث كأس عالم على التوالي. أما البرازيل وكولومبيا وبنما والنمسا والسويد والسعودية وتشيكيا وجنوب أفريقيا فقد جاءت بتشكيلات محلية بالكامل.`,
+    srcData: `الأعمار عند انطلاق البطولة (يونيو 2026). تدمج مجموعة البيانات إحصاء TUDN/خايمي ف. ماسياس مع تصحيحات موثّقة: رفيق بلغالي وُلد في مكلن، <i>بلجيكا</i>؛ ديوغو كوستا وُلد في جنيف، <i>سويسرا</i>؛ بريس سامبا وُلد في لينزولو، <i>الكونغو-برازافيل</i>؛ سامد باجدار ويوفو لوكيتش كلاهما وُلد في <i>صربيا</i> (نوفي بازار وشاباتس)؛ مارتن باتورينا وُلد في زيورخ، سويسرا.`,
+    country: {
+      "England":"إنجلترا","Spain":"إسبانيا","Netherlands":"هولندا","Germany":"ألمانيا","Belgium":"بلجيكا",
+      "Switzerland":"سويسرا","Italy":"إيطاليا","Sweden":"السويد","USA":"الولايات المتحدة","Canada":"كندا",
+      "Brazil":"البرازيل","Curaçao":"كوراساو","Algeria":"الجزائر","Haiti":"هايتي","DR Congo":"الكونغو الديمقراطية",
+      "Morocco":"المغرب","Tunisia":"تونس","Scotland":"اسكتلندا","Wales":"ويلز","New Zealand":"نيوزيلندا",
+      "Norway":"النرويج","Iraq":"العراق","Mexico":"المكسيك","Bosnia & Herz.":"البوسنة والهرسك","Turkey":"تركيا",
+      "Uzbekistan":"أوزبكستان","Croatia":"كرواتيا","Slovenia":"سلوفينيا","Denmark":"الدنمارك","Cape Verde":"الرأس الأخضر",
+      "Ireland":"أيرلندا","Qatar":"قطر","Egypt":"مصر","Sudan":"السودان","South Korea":"كوريا الجنوبية",
+      "Ivory Coast":"ساحل العاج","Kenya":"كينيا","Cameroon":"الكاميرون","Japan":"اليابان","Jordan":"الأردن",
+      "Iran":"إيران","Kazakhstan":"كازاخستان","Isle of Man":"جزيرة مان","Saudi Arabia":"السعودية","Panama":"بنما",
+      "Czech Republic":"تشيكيا","South Africa":"جنوب أفريقيا","France":"فرنسا","Senegal":"السنغال","Colombia":"كولومبيا",
+      "Austria":"النمسا","Serbia":"صربيا","Guinea":"غينيا","Gambia":"غامبيا","Nigeria":"نيجيريا","Zambia":"زامبيا",
+      "Tanzania":"تنزانيا","Somalia":"الصومال","Ecuador":"الإكوادور","Uruguay":"الأوروغواي","Paraguay":"الباراغواي",
+      "Congo":"الكونغو","Australia":"أستراليا","Argentina":"الأرجنتين","Burkina Faso":"بوركينا فاسو",
+      "Ghana":"غانا","Portugal":"البرتغال"
     }
   }
 };
@@ -1305,7 +1440,7 @@ document.querySelectorAll("#player-table th.sortable").forEach(th => {
   });
 });
 
-// Detect language, translate the static chrome, mount the EN/ES/PT/FR/DE
+// Detect language, translate the static chrome, mount the EN/ES/PT/FR/DE/NL/AR
 // switcher, and (re)draw the chart + tables whenever the language changes.
 vizI18n.init({
   dict: I18N,
@@ -1335,6 +1470,30 @@ vizI18n.init({
   const ticker = root.querySelector(".lb-ticker");
   const noteEl = root.querySelector(".lb-note");
   const simEl = root.querySelector(".lb-sim");
+
+  // Engagement tracking (delegated so it also catches links re-rendered on
+  // each live snapshot / language switch): the Ko-fi CTA is the donation
+  // funnel; supporter social links measure click-through to real backers.
+  root.addEventListener("click", (e) => {
+    const a = e.target.closest("a[href]");
+    if (!a) return;
+    if (a.closest(".lb-head")) vizTrack("kofi_click", { where: "supporters_cta" });
+    else if (a.closest(".lb-podium, .lb-table")) vizTrack("supporter_link_click", { href: a.href });
+  });
+
+  // One-shot: did the visitor actually scroll the leaderboard into view? This
+  // gives kofi_click a denominator (saw the CTA → clicked = conversion rate).
+  if ("IntersectionObserver" in window) {
+    const seen = new IntersectionObserver((entries, obs) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        vizTrack("reached_supporters");
+        obs.disconnect(); // fire exactly once per page load
+      }
+    }, { threshold: 0.3 }); // ~a third on screen counts as "seen"
+    seen.observe(root);
+  } else {
+    vizTrack("reached_supporters"); // very old browser: just count the load
+  }
 
   // Example rows — deliberately tiny amounts; one anonymous supporter.
   // Example rows carry NO links (they'd point at real accounts). The link

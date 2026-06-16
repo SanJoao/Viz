@@ -313,6 +313,17 @@
   .viz-lang-opt:hover { color: var(--ink); }
   .viz-lang-opt.is-on { color: var(--ink); background: var(--hl); }
   @media (max-width: 760px) { .viz-lang { top: 10px; right: 10px; } }
+
+  /* ── right-to-left (Arabic) ──
+     <html dir="rtl"> (set by i18n.js) handles text flow; we just move the
+     switcher tab to the left margin. The hand-drawn doodles stay put. */
+  [dir="rtl"] .viz-lang { right: auto; left: 14px; }
+  @media (max-width: 760px) { [dir="rtl"] .viz-lang { right: auto; left: 10px; } }
+  /* The preview iframe is 420%-wide and scaled from its top-left corner. In
+     an rtl document that corner is pushed off-screen (the box is laid out
+     from the right), so the scaled thumbnail lands outside the frame and the
+     card reads as black. Keep the thumb ltr so the preview anchors correctly. */
+  [dir="rtl"] .thumb { direction: ltr; }
 </style>
 </head>
 <body>
@@ -523,6 +534,46 @@ const DICT = {
       { entry: "Eintrag 002 · bald · luarai-labor ✿", caption: "Streaks, aber als Blumen", label: "Jede Nutzer-Streak in der App als Blume gezeichnet — ein Blütenblatt pro überlebter Woche. Manche blühten viel länger als erwartet.", sig: "— Juan · am Skizzieren…" },
       { entry: "Eintrag 003 · bald · Leute ▥", caption: "wer nutzt das eigentlich?", label: "Demografie unserer Nutzer — Alterspyramiden, Tageszeit-Rhythmen, und ein Land, das ich nie in den Top 5 erwartet hätte.", sig: "— Juan · sammle Daten…" }
     ]
+  },
+  nl: {
+    pageTitle: "viz — Juans dataveldnotitieboek",
+    metaDescription: "Grafieken van wat ik op dit moment ook in twijfel trek. Soms Luarai-experimenten, soms konijnenholen waar ik in viel.",
+    intro: `Hoi! Ik ben Juan — een waarnemer die bouwt. Systemen vormen het leven, en het leven vormt systemen, dus houd ik een <span class="hl">dataveldnotitieboek</span> bij: grafieken van wat ik op dit moment ook in twijfel trek. Soms zijn het Luarai-experimenten, soms gewoon konijnenholen waar ik in viel.`,
+    startHere: "begin hier, deze verraste me ↓",
+    flameNote: "1,1 mln dagen?!",
+    roseBubble: "← een week aan reeksen!",
+    starSevero: "Severo — de reeksenroos komt hiervandaan",
+    footerBy: "een veldnotitieboek van",
+    footerBuilt: "met de hand gemaakt, getekend in d3",
+    coffeeNote: "Als deze konijnenholen leuk zijn, kun je",
+    coffeeLink: "me op een koffie trakteren",
+    coffeeRingTitle: "☕ me op een koffie trakteren?",
+    soon: "binnenkort…",
+    posts: [
+      { entry: "invoer 001 · 12 jun 2026 · konijnenhol ⚽", caption: "iedereen komt uit Frankrijk?!", label: "Een kwart van alle WK-spelers werd geboren buiten het land dat ze vertegenwoordigen. Elke speler, getekend op een cirkelvormige sankey.", sig: "— Juan · 12.jun.2026" },
+      { entry: "invoer 002 · binnenkort · luarai-lab ✿", caption: "reeksen, maar dan als bloemen", label: "Elke gebruikersreeks in de app getekend als een bloem — één bloemblad per overleefde week. Sommige bloeiden veel langer dan verwacht.", sig: "— Juan · aan het schetsen…" },
+      { entry: "invoer 003 · binnenkort · mensen ▥", caption: "wie gebruikt dit eigenlijk?", label: "Demografie van onze gebruikers — leeftijdspiramides, dagritmes, en één land dat ik nooit in de top 5 had verwacht.", sig: "— Juan · data aan het verzamelen…" }
+    ]
+  },
+  ar: {
+    pageTitle: "viz — دفتر بيانات خوان الميداني",
+    metaDescription: "رسوم بيانية لكل ما أتساءل عنه حاليًا. أحيانًا تجارب Luarai، وأحيانًا متاهات وقعتُ فيها.",
+    intro: `مرحبًا! أنا خوان — مراقبٌ يبني. الأنظمة تُشكّل الحياة، والحياة تُشكّل الأنظمة، لذا أحتفظ بـ<span class="hl">دفتر بيانات ميداني</span>: رسوم بيانية لكل ما أتساءل عنه حاليًا. أحيانًا تجارب Luarai، وأحيانًا مجرد متاهات وقعتُ فيها.`,
+    startHere: "ابدأ من هنا، هذه فاجأتني ↓",
+    flameNote: "1.1 مليون يوم؟!",
+    roseBubble: "← أسبوع كامل من السلاسل!",
+    starSevero: "سيفيرو — وردة السلاسل أتت من هنا",
+    footerBy: "دفتر ميداني من إعداد",
+    footerBuilt: "مصنوع يدويًا، مرسوم بـ d3",
+    coffeeNote: "إن كانت هذه المتاهات ممتعة، يمكنك أن",
+    coffeeLink: "تشتري لي قهوة",
+    coffeeRingTitle: "☕ تشتري لي قهوة؟",
+    soon: "قريبًا…",
+    posts: [
+      { entry: "مدخل 001 · 12 يونيو 2026 · متاهة ⚽", caption: "الجميع من فرنسا؟!", label: "رُبع لاعبي كأس العالم وُلدوا خارج البلد الذي يمثّلونه. كل واحد منهم، مرسوم على مخطط سانكي دائري.", sig: "— خوان · 12.يونيو.2026" },
+      { entry: "مدخل 002 · قريبًا · مختبر luarai ✿", caption: "سلاسل، لكن على شكل أزهار", label: "كل سلسلة مستخدم في التطبيق مرسومة كزهرة — بتلة واحدة لكل أسبوع صمد. بعضها أزهر أطول بكثير مما هو متوقع.", sig: "— خوان · قيد الرسم…" },
+      { entry: "مدخل 003 · قريبًا · أشخاص ▥", caption: "من يستخدم هذا فعلًا؟", label: "ديموغرافيا مستخدمينا — أهرامات الأعمار، وإيقاعات أوقات اليوم، وبلد لم أتوقعه قط ضمن أفضل 5.", sig: "— خوان · يجمع البيانات…" }
+    ]
   }
 };
 
@@ -610,7 +661,7 @@ function renderGrid(S) {
   });
 }
 
-// Detect language, translate the static copy, mount the EN/ES/PT/FR/DE switcher,
+// Detect language, translate the static copy, mount the EN/ES/PT/FR/DE/NL/AR switcher,
 // and (re)render the entry cards whenever the language changes.
 vizI18n.init({ dict: DICT, onApply: (lang, S) => renderGrid(S) });
 
