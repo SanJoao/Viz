@@ -11,7 +11,9 @@
  * before vs after and write meta/ticker so the page can flash a GOAL! banner.
  */
 const { onRequest } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
+const { BigQuery } = require("@google-cloud/bigquery");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
 
@@ -134,6 +136,106 @@ exports.kofi = onRequest(
     } catch (err) {
       console.error("kofi webhook error", err);
       return res.status(500).send("error");
+    }
+  }
+);
+
+/* ───────────────────────────────────────────────────────────────────────
+ * viz · visitor heatmap
+ *
+ * Mirrors Severo's country map (LanguageProject/functions/country_stats.js)
+ * but counts *visitors* to this notebook, not engaged app users.
+ *
+ * GA4 streams page_view events into the BigQuery export dataset for this
+ * Firebase project. A nightly job tallies COUNT(DISTINCT user_pseudo_id)
+ * by geo.country across ALL exported days (all-time, cumulative — the
+ * notebook is new and the story is "everyone who's ever wandered through"),
+ * then writes one tiny, PII-free aggregate doc to Firestore. The main page
+ * reads that doc directly from the client (public read; see firestore.rules)
+ * — no serving function needed, same pattern as the supporters board.
+ * ─────────────────────────────────────────────────────────────────────── */
+
+// GA4 export dataset for the GA4 property linked to this project. New daily
+// tables appear as events_YYYYMMDD (and events_intraday_* while a day is in
+// flight); the events_* wildcard sweeps them all and DISTINCT dedupes any
+// overlap. Find this id in BigQuery if the GA4 property is ever relinked.
+const GA4_DATASET = "analytics_541579771";
+const VISITOR_DOC_PATH = "public_stats/visitor_heatmap";
+
+const bigquery = new BigQuery();
+
+async function computeVisitorStats() {
+  const query = `
+    SELECT
+      geo.country AS country,
+      COUNT(DISTINCT user_pseudo_id) AS visitors
+    FROM \`${GA4_DATASET}.events_*\`
+    WHERE event_name = "page_view"
+      AND geo.country IS NOT NULL
+      AND geo.country != ""
+      AND geo.country != "(not set)"
+    GROUP BY country
+    ORDER BY visitors DESC
+  `;
+
+  const [rows] = await bigquery.query({ query, useLegacySql: false });
+
+  const countries = {};
+  let totalVisitors = 0;
+  for (const row of rows) {
+    const name = row.country;
+    const visitors = Number(row.visitors) || 0;
+    if (!name || visitors <= 0) continue;
+    countries[name] = visitors;
+    totalVisitors += visitors;
+  }
+
+  return {
+    countries,
+    totalCountries: Object.keys(countries).length,
+    totalVisitors,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// Nightly at 03:30 UTC (after GA4's daily export, which lands a few hours
+// after midnight in the property's timezone).
+exports.updateVisitorStats = onSchedule(
+  {
+    schedule: "30 3 * * *",
+    timeZone: "UTC",
+    timeoutSeconds: 120,
+    memory: "256MiB",
+  },
+  async () => {
+    const stats = await computeVisitorStats();
+    await db.doc(VISITOR_DOC_PATH).set(stats);
+    console.log(
+      `[visitor-stats] wrote ${stats.totalCountries} countries, ` +
+        `${stats.totalVisitors} visitors (all-time)`
+    );
+  }
+);
+
+// Manual trigger so the doc can be populated immediately after deploy
+// instead of waiting for the nightly run. Protect with a token set via:
+//   firebase functions:secrets:set VISITOR_STATS_ADMIN_TOKEN
+const VISITOR_TOKEN = defineSecret("VISITOR_STATS_ADMIN_TOKEN");
+
+exports.refreshVisitorStatsNow = onRequest(
+  { secrets: [VISITOR_TOKEN], cors: false, timeoutSeconds: 120, memory: "256MiB" },
+  async (req, res) => {
+    const token = req.query.token || req.headers["x-admin-token"];
+    if (!token || token !== VISITOR_TOKEN.value()) {
+      return res.status(403).json({ error: "forbidden" });
+    }
+    try {
+      const stats = await computeVisitorStats();
+      await db.doc(VISITOR_DOC_PATH).set(stats);
+      return res.json({ ok: true, ...stats });
+    } catch (err) {
+      console.error("[visitor-stats] manual refresh error:", err);
+      return res.status(500).json({ error: err.message || "internal" });
     }
   }
 );

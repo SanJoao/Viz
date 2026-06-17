@@ -281,6 +281,49 @@
   footer a { color: var(--pen); text-decoration: none; }
   footer .snow { letter-spacing: 3px; }
 
+  /* ── visitor heatmap — a paper inset map near the footer ── */
+  .visitor-panel {
+    position: relative;
+    max-width: 720px; margin: 64px auto 0;
+    background: #fffdf7;
+    padding: 22px 20px 18px;
+    border-radius: 3px;
+    box-shadow: 0 2px 4px var(--shadow), 0 14px 32px rgba(60,50,30,.13);
+    transform: rotate(-.6deg);
+  }
+  .visitor-tape {
+    width: 132px;
+    background: linear-gradient(rgba(255,225,120,.55), rgba(255,225,120,.45));
+    transform: translateX(-50%) rotate(2deg);
+  }
+  .visitor-heading {
+    font-family: "Caveat", cursive; font-weight: 700;
+    font-size: 30px; line-height: 1; color: var(--pen);
+    text-align: center; margin-bottom: 12px; transform: rotate(-.5deg);
+  }
+  .visitor-map { width: 100%; }
+  .visitor-map svg { width: 100%; height: auto; display: block; }
+  /* the reader's own country, picked out in red marker */
+  .visitor-map .country-shape.is-you {
+    stroke: var(--red); stroke-width: 1.6;
+  }
+  .visitor-caption {
+    text-align: center; margin: 8px auto 2px; max-width: 56ch;
+    font-family: "Caveat", cursive; font-weight: 600;
+    font-size: 21px; line-height: 1.25; color: #5d574b;
+  }
+  .visitor-caption .visitor-you { color: var(--red); white-space: nowrap; }
+  .visitor-caption .visitor-sample {
+    display: block; margin-top: 4px;
+    font-family: "JetBrains Mono", monospace; font-weight: 400;
+    font-size: 10.5px; letter-spacing: .5px; color: var(--pencil);
+  }
+  @media (max-width: 560px) {
+    .visitor-panel { margin-top: 44px; padding: 18px 12px 14px; }
+    .visitor-heading { font-size: 25px; }
+    .visitor-caption { font-size: 19px; }
+  }
+
   /* handwritten Ko-fi note above the footer */
   .coffee-note {
     text-align: center; font-family: "Caveat", cursive; font-weight: 600;
@@ -414,6 +457,15 @@
   </g>
 </svg>
 
+<!-- who's been reading the notebook — a paper inset world map, live visitor
+     counts from Firebase Analytics (see visitor-map.js) -->
+<section class="visitor-panel" aria-labelledby="visitor-heading">
+  <div class="tape visitor-tape"></div>
+  <h2 id="visitor-heading" class="visitor-heading" data-i18n="visitorHeading">who's wandered through</h2>
+  <div id="visitor-map" class="visitor-map"></div>
+  <p id="visitor-caption" class="visitor-caption" data-i18n="visitorLoading">counting visitors…</p>
+</section>
+
 <p class="coffee-note">
   <span data-i18n="coffeeNote">If these rabbit holes are fun, you can</span>
   <a href="https://ko-fi.com/architechofthefuture" target="_blank" rel="noopener">☕ <span data-i18n="coffeeLink">buy me a coffee</span></a>
@@ -449,6 +501,11 @@ const DICT = {
     coffeeLink: "buy me a coffee",
     coffeeRingTitle: "☕ buy me a coffee?",
     soon: "soon…",
+    visitorHeading: "who's wandered through",
+    visitorLoading: "counting visitors…",
+    visitorReach: "{visitors} curious minds from {countries} countries have flipped through this notebook",
+    visitorYou: "one of them is you ✦",
+    visitorSample: "(sample numbers — live once deployed)",
     posts: [
       { entry: "entry 001 · jun 12 2026 · rabbit hole ⚽", caption: "everyone's from France!?", label: "A quarter of all World Cup players were born outside the country they represent. Every single one, traced on a circular sankey.", sig: "— Juan · 12.jun.2026" },
       { entry: "entry 002 · soon · luarai lab ✿", caption: "streaks, but make them flowers", label: "Every user streak in the app drawn as a flower — one petal per week survived. Some bloomed way longer than expected.", sig: "— Juan · sketching…" },
@@ -469,6 +526,11 @@ const DICT = {
     coffeeLink: "invitarme un café",
     coffeeRingTitle: "☕ ¿me invitas un café?",
     soon: "pronto…",
+    visitorHeading: "quién ha pasado por aquí",
+    visitorLoading: "contando visitantes…",
+    visitorReach: "{visitors} mentes curiosas de {countries} países han hojeado esta libreta",
+    visitorYou: "una de ellas eres tú ✦",
+    visitorSample: "(números de muestra — en vivo al desplegar)",
     posts: [
       { entry: "entrada 001 · 12 jun 2026 · madriguera ⚽", caption: "¡¿todos son de Francia?!", label: "Una cuarta parte de los jugadores del Mundial nacieron fuera del país que representan. Todos y cada uno, trazados en un sankey circular.", sig: "— Juan · 12.jun.2026" },
       { entry: "entrada 002 · pronto · laboratorio luarai ✿", caption: "rachas, pero hechas flores", label: "Cada racha de usuario en la app dibujada como una flor: un pétalo por cada semana sobrevivida. Algunas florecieron mucho más de lo esperado.", sig: "— Juan · bocetando…" },
@@ -489,6 +551,11 @@ const DICT = {
     coffeeLink: "me pagar um café",
     coffeeRingTitle: "☕ me paga um café?",
     soon: "em breve…",
+    visitorHeading: "quem passou por aqui",
+    visitorLoading: "contando visitantes…",
+    visitorReach: "{visitors} mentes curiosas de {countries} países folhearam este caderno",
+    visitorYou: "uma delas é você ✦",
+    visitorSample: "(números de amostra — ao vivo quando publicado)",
     posts: [
       { entry: "entrada 001 · 12 jun 2026 · toca ⚽", caption: "todo mundo é da França?!", label: "Um quarto de todos os jogadores da Copa do Mundo nasceu fora do país que representa. Cada um deles, traçado em um sankey circular.", sig: "— Juan · 12.jun.2026" },
       { entry: "entrada 002 · em breve · laboratório luarai ✿", caption: "sequências, mas viram flores", label: "Cada sequência de usuário no app desenhada como uma flor — uma pétala por semana sobrevivida. Algumas floresceram muito mais do que o esperado.", sig: "— Juan · esboçando…" },
@@ -509,6 +576,11 @@ const DICT = {
     coffeeLink: "m'offrir un café",
     coffeeRingTitle: "☕ on m'offre un café ?",
     soon: "bientôt…",
+    visitorHeading: "qui est passé par ici",
+    visitorLoading: "comptage des visiteurs…",
+    visitorReach: "{visitors} esprits curieux de {countries} pays ont feuilleté ce carnet",
+    visitorYou: "l'un d'eux, c'est vous ✦",
+    visitorSample: "(chiffres d'exemple — en direct une fois déployé)",
     posts: [
       { entry: "entrée 001 · 12 juin 2026 · terrier ⚽", caption: "tout le monde vient de France ?!", label: "Un quart des joueurs de la Coupe du monde sont nés hors du pays qu'ils représentent. Tous, sans exception, tracés sur un sankey circulaire.", sig: "— Juan · 12.juin.2026" },
       { entry: "entrée 002 · bientôt · labo luarai ✿", caption: "des séries, mais en fleurs", label: "Chaque série d'utilisateur dans l'app dessinée comme une fleur — un pétale par semaine survécue. Certaines ont fleuri bien plus que prévu.", sig: "— Juan · en croquis…" },
@@ -529,6 +601,11 @@ const DICT = {
     coffeeLink: "mir einen Kaffee spendieren",
     coffeeRingTitle: "☕ einen Kaffee spendieren?",
     soon: "bald…",
+    visitorHeading: "wer hier durchgeblättert hat",
+    visitorLoading: "zähle Besucher…",
+    visitorReach: "{visitors} neugierige Köpfe aus {countries} Ländern haben dieses Notizbuch durchgeblättert",
+    visitorYou: "einer davon bist du ✦",
+    visitorSample: "(Beispielzahlen — live nach dem Deploy)",
     posts: [
       { entry: "Eintrag 001 · 12. Juni 2026 · Kaninchenbau ⚽", caption: "alle kommen aus Frankreich?!", label: "Ein Viertel aller WM-Spieler wurde außerhalb des Landes geboren, das sie vertreten. Jeder Einzelne, nachgezeichnet auf einem kreisförmigen Sankey.", sig: "— Juan · 12.Juni.2026" },
       { entry: "Eintrag 002 · bald · luarai-labor ✿", caption: "Streaks, aber als Blumen", label: "Jede Nutzer-Streak in der App als Blume gezeichnet — ein Blütenblatt pro überlebter Woche. Manche blühten viel länger als erwartet.", sig: "— Juan · am Skizzieren…" },
@@ -549,6 +626,11 @@ const DICT = {
     coffeeLink: "me op een koffie trakteren",
     coffeeRingTitle: "☕ me op een koffie trakteren?",
     soon: "binnenkort…",
+    visitorHeading: "wie hier doorheen bladerde",
+    visitorLoading: "bezoekers tellen…",
+    visitorReach: "{visitors} nieuwsgierige geesten uit {countries} landen bladerden door dit notitieboek",
+    visitorYou: "één daarvan ben jij ✦",
+    visitorSample: "(voorbeeldcijfers — live na deploy)",
     posts: [
       { entry: "invoer 001 · 12 jun 2026 · konijnenhol ⚽", caption: "iedereen komt uit Frankrijk?!", label: "Een kwart van alle WK-spelers werd geboren buiten het land dat ze vertegenwoordigen. Elke speler, getekend op een cirkelvormige sankey.", sig: "— Juan · 12.jun.2026" },
       { entry: "invoer 002 · binnenkort · luarai-lab ✿", caption: "reeksen, maar dan als bloemen", label: "Elke gebruikersreeks in de app getekend als een bloem — één bloemblad per overleefde week. Sommige bloeiden veel langer dan verwacht.", sig: "— Juan · aan het schetsen…" },
@@ -569,6 +651,11 @@ const DICT = {
     coffeeLink: "تشتري لي قهوة",
     coffeeRingTitle: "☕ تشتري لي قهوة؟",
     soon: "قريبًا…",
+    visitorHeading: "من تصفّح هذا الدفتر",
+    visitorLoading: "جارٍ عدّ الزوار…",
+    visitorReach: "تصفّح هذا الدفتر {visitors} عقلًا فضوليًا من {countries} دولة",
+    visitorYou: "أحدهم هو أنت ✦",
+    visitorSample: "(أرقام تجريبية — مباشرة بعد النشر)",
     posts: [
       { entry: "مدخل 001 · 12 يونيو 2026 · متاهة ⚽", caption: "الجميع من فرنسا؟!", label: "رُبع لاعبي كأس العالم وُلدوا خارج البلد الذي يمثّلونه. كل واحد منهم، مرسوم على مخطط سانكي دائري.", sig: "— خوان · 12.يونيو.2026" },
       { entry: "مدخل 002 · قريبًا · مختبر luarai ✿", caption: "سلاسل، لكن على شكل أزهار", label: "كل سلسلة مستخدم في التطبيق مرسومة كزهرة — بتلة واحدة لكل أسبوع صمد. بعضها أزهر أطول بكثير مما هو متوقع.", sig: "— خوان · قيد الرسم…" },
@@ -697,5 +784,6 @@ document.querySelectorAll(".snow-trigger").forEach(el => {
   el.addEventListener("click", e => { e.preventDefault(); letItSnow(); });
 });
 </script>
+<script src="visitor-map.js"></script>
 </body>
 </html>

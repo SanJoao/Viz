@@ -12,5 +12,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+    // Public aggregate stats (e.g. the visitor heatmap). PII-free country
+    // counts written only by the Cloud Function; read directly by the client.
+    match /public_stats/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
   }
 }

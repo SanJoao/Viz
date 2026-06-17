@@ -1,9 +1,12 @@
 {
   "name": "viz-functions",
-  "description": "Cloud Functions for the viz notebook (Ko-fi supporters leaderboard)",
+  "description": "Cloud Functions for the viz notebook (Ko-fi supporters leaderboard + visitor heatmap)",
   "main": "index.js",
-  "engines": { "node": "22" },
+  "engines": {
+    "node": "22"
+  },
   "dependencies": {
+    "@google-cloud/bigquery": "^7.9.4",
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.1.0"
   },
