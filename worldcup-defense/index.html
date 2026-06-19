@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>To win the World Cup, defend.</title>
+<meta name="description" content="Every team at every men's World Cup (1930–2022), mapped by attack vs defense. Champions concede barely half as many goals as the field — but score all over the map. Defense is the fingerprint of a winner.">
+<!-- link previews -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="viz">
+<meta property="og:title" content="To win the World Cup, defend.">
+<meta property="og:description" content="A great attack is optional — an elite defense is not. Every men's World Cup team, 1930–2022, mapped by attack vs defense.">
+<meta property="og:url" content="https://viz-luarai.web.app/worldcup-defense/">
+<meta property="og:image" content="https://viz-luarai.web.app/worldcup-defense/share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="../logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="../analytics.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<style>
+  :root {
+    --bg: #e9eef7;          /* album page, cool */
+    --panel: #ffffff;       /* sticker white */
+    --ink: #15224d;         /* deep navy ink */
+    --muted: #6b7488;       /* faded ink */
+    --line: rgba(20,30,70,.14);
+    --accent: #1f5fd0;      /* Panini blue */
+    --accent2: #d8232a;     /* Panini red */
+    --gold: #e3b23c;  --gold-e: #9c7715;
+    --silver: #b9bdc4; --silver-e: #7d828b;
+    --bronze: #c47f3e; --bronze-e: #8a5421;
+    --field: #aeb6c5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink);
+    background:
+      radial-gradient(circle at 1px 1px, rgba(31,95,208,.06) 1px, transparent 0) 0 0 / 22px 22px,
+      linear-gradient(180deg, #eef2fa 0%, #e6ecf6 100%);
+    background-attachment: fixed;
+    font-family: "Barlow", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  header { text-align: center; padding: 30px 18px 6px; }
+  header h1 {
+    margin: 0 0 12px; font-family: "Anton", Impact, sans-serif; font-weight: 400;
+    font-size: clamp(30px, 6vw, 56px); letter-spacing: .5px; line-height: .98;
+    text-transform: uppercase; color: var(--ink);
+    text-shadow: 2px 2px 0 #fff, 3px 3px 0 rgba(31,95,208,.25);
+  }
+  header p { margin: 6px auto; max-width: 720px; color: var(--ink); font-size: 15px; line-height: 1.6; }
+  header .stat { color: var(--accent2); font-weight: 700; }
+  .ui { font-family: "Barlow", "Segoe UI", system-ui, sans-serif; }
+
+  /* controls */
+  .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin: 14px auto 4px; padding: 0 16px; }
+  .ctl-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .ctl-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-right: 2px; }
+  .pill {
+    font-family: "Segoe UI", system-ui, sans-serif; font-size: 12.5px;
+    background: var(--panel); border: 1px solid var(--line); color: var(--ink);
+    border-radius: 999px; padding: 5px 12px; cursor: pointer; user-select: none;
+    transition: border-color .15s, background .15s, opacity .15s;
+  }
+  .pill:hover { border-color: var(--accent); }
+  .pill.off { opacity: .38; }
+  .pill .dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 6px; vertical-align: 0; box-shadow: 0 0 0 1.5px #fff, 0 1px 2px rgba(0,0,0,.25); }
+  .pill .star { margin-right: 5px; font-size: 13px; line-height: 1; }
+  .pill.era.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  /* segmented Dots|Flags toggle */
+  .seg { display: inline-flex; gap: 2px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 999px; padding: 3px; box-shadow: inset 0 1px 2px rgba(21,34,77,.06); }
+  .seg-opt { font-family: "Barlow", sans-serif; font-size: 12.5px; font-weight: 600; color: var(--muted);
+    background: none; border: 0; border-radius: 999px; padding: 5px 13px; cursor: pointer;
+    transition: color .15s, background .15s; }
+  .seg-opt:hover { color: var(--ink); }
+  .seg-opt.is-on { color: #fff; background: var(--accent); box-shadow: 0 1px 3px rgba(31,95,208,.4); }
+
+  #chart-wrap { display: flex; justify-content: center; padding: 8px 12px 0; }
+  #chart {
+    max-width: 1000px; width: 100%; position: relative;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(21,34,77,.10); padding: 8px;
+  }
+  svg { display: block; width: 100%; height: auto; }
+  .hint { text-align: center; color: var(--muted); font-size: 12.5px; margin: 2px 0 8px; }
+
+  .axis text { fill: var(--muted); font-size: 12px; font-family: "Barlow", sans-serif; }
+  .axis line, .axis path { stroke: var(--line); }
+  .grid line { stroke: var(--line); stroke-dasharray: 1 4; }
+  .quad-label { fill: var(--muted); font-family: "Anton", Impact, sans-serif;
+    font-size: 13px; letter-spacing: .04em; opacity: .55; text-transform: uppercase; }
+  .axis-title { fill: var(--ink); font-size: 13px; font-weight: 600; font-family: "Barlow", sans-serif; }
+  .marg-note { fill: var(--ink); font-size: 11.5px; font-style: italic; font-family: "Barlow", sans-serif; }
+  .pt { cursor: pointer; }
+  .pt.dim { opacity: .08 !important; }
+  .pt.pinned { outline: none; }
+  .sticker-shadow { filter: drop-shadow(0 1px 1.5px rgba(21,34,77,.35)); }
+
+  #tooltip {
+    position: fixed; pointer-events: none;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 13px; font-size: 13px; max-width: 300px;
+    box-shadow: 0 8px 22px rgba(60,50,30,.25);
+    opacity: 0; transition: opacity .12s; z-index: 10;
+    font-family: "Segoe UI", system-ui, sans-serif;
+  }
+  #tooltip .tt-team { font-weight: 700; font-size: 14px; }
+  #tooltip .tt-fin { font-size: 11.5px; }
+  #tooltip .tt-row { color: var(--muted); margin-top: 3px; }
+
+  /* timeline controls */
+  #timeline-ui { max-width: 1000px; margin: 10px auto 0; padding: 0 22px; }
+  .tl-controls { display: flex; align-items: center; gap: 14px; }
+  #tl-play { font-family: "Barlow", sans-serif; font-weight: 700; font-size: 13px; color: #fff;
+    background: var(--accent); border: 0; border-radius: 999px; padding: 8px 18px; cursor: pointer;
+    white-space: nowrap; transition: background .15s; }
+  #tl-play:hover { background: #1a52b8; }
+  #tl-range { flex: 1; accent-color: var(--accent); height: 6px; cursor: pointer; }
+  .tl-rule { margin: 9px 2px 0; font-size: 13.5px; color: var(--muted); min-height: 22px; line-height: 1.4; }
+  .tl-rule.on { color: var(--accent2); }
+  .tl-rule b { color: var(--accent2); }
+
+  /* detail card */
+  #detail {
+    max-width: 640px; margin: 8px auto 0; padding: 0 16px;
+    font-family: "Segoe UI", system-ui, sans-serif;
+  }
+  .detail-card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px; position: relative; box-shadow: 0 4px 14px rgba(60,50,30,.12);
+  }
+  .detail-card .close { position: absolute; top: 10px; right: 14px; cursor: pointer;
+    color: var(--muted); font-size: 18px; line-height: 1; background: none; border: 0; }
+  .detail-card h3 { margin: 0 0 2px; font-family: "Anton", Impact, sans-serif; font-weight: 400; font-size: 26px; text-transform: uppercase; letter-spacing: .4px; }
+  .detail-card .sub { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+  .detail-card .medal { font-weight: 700; }
+  .detail-card .crest { display: flex; align-items: center; gap: 12px; }
+  .detail-card .crest img { width: 46px; height: 32px; object-fit: cover; border-radius: 4px; box-shadow: 0 0 0 2px #fff, 0 2px 6px rgba(0,0,0,.25); }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 12px 0 0; }
+  .stat-grid .s { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 9px 6px; text-align: center; }
+  .stat-grid .s b { display: block; font-size: 20px; font-family: "Barlow", sans-serif; font-weight: 700; }
+  .stat-grid .s span { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .detail-card .note { font-style: italic; color: var(--ink); font-family: "Barlow", sans-serif; font-size: 14px; margin-top: 12px; line-height: 1.5; }
+  /* foil top-stripe by tier */
+  .detail-card.t-Champion { border-color: var(--gold-e); box-shadow: 0 6px 18px rgba(156,119,21,.25); }
+  .detail-card.t-Champion::before, .detail-card.t-Runnerup::before, .detail-card.t-Third::before {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 6px; border-radius: 12px 12px 0 0; }
+  .detail-card.t-Champion::before { background: linear-gradient(90deg, #b8860b, #ffe9a3, #e3b23c, #fff3cf, #c79a2e); }
+  .detail-card.t-Runnerup::before { background: linear-gradient(90deg, #8d929b, #eef0f3, #b9bdc4, #9aa0a6); }
+  .detail-card.t-Third::before { background: linear-gradient(90deg, #8a5421, #e6a766, #c47f3e, #a96a2c); }
+
+  /* table */
+  section.table-wrap { max-width: 860px; margin: 26px auto 10px; padding: 0 16px; font-family: "Segoe UI", system-ui, sans-serif; }
+  details > summary { cursor: pointer; list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary h2 { display: flex; align-items: center; justify-content: space-between;
+    font-size: 20px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; margin: 0 0 4px;
+    font-family: "Anton", Impact, sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: .3px; }
+  details > summary .caret { font-size: 12px; color: var(--muted); transition: transform .2s; transform: rotate(-90deg); }
+  details[open] > summary .caret { transform: rotate(0); }
+  #search { width: 100%; padding: 9px 12px; margin: 12px 0 10px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 14px; outline: none; }
+  #search:focus { border-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+  th.sortable:hover { color: var(--accent); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: var(--panel); }
+  .medal-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+
+  .curios { max-width: 760px; margin: 20px auto 6px; padding: 0 18px; }
+  .curios h2 { font-size: 22px; border-bottom: 2px solid var(--accent); padding-bottom: 8px;
+    font-family: "Anton", Impact, sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: .3px; }
+  .curios li { margin: 12px 0; line-height: 1.6; font-size: 15px; }
+  .curios li b { color: var(--accent2); }
+  .sources { max-width: 860px; margin: 18px auto 40px; padding: 0 16px; color: var(--muted); font-size: 12px; line-height: 1.7; font-family: "Segoe UI", system-ui, sans-serif; }
+  .sources a { color: var(--accent); text-decoration: none; }
+
+  /* shared chrome */
+  .viz-home {
+    --vh-bg: rgba(255,253,247,.88); --vh-fg: #2c2a25; --vh-border: rgba(60,50,30,.25); --vh-accent: #1c5a63;
+    position: fixed; top: 14px; left: 14px; z-index: 100;
+    display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 10px;
+    background: var(--vh-bg); border: 1px solid var(--vh-border); border-radius: 999px;
+    color: var(--vh-fg); font-size: 13px; text-decoration: none; backdrop-filter: blur(8px);
+    transition: border-color .15s; font-family: "Segoe UI", system-ui, sans-serif;
+  }
+  .viz-home:hover { border-color: var(--vh-accent); }
+  .viz-home img { height: 17px; width: 17px; transition: transform .4s ease; }
+  .viz-home:hover img { transform: rotate(360deg); }
+  .viz-home .vh-arrow { color: var(--vh-accent); transition: transform .15s; }
+  .viz-home:hover .vh-arrow { transform: translateX(-3px); }
+  @media (max-width: 760px) { .viz-home .vh-label { display: none; } header { padding-top: 56px; } }
+
+  .coffee-cta { text-align: center; margin: 6px auto 50px; padding: 0 16px; font-size: 14px; color: var(--muted); font-family: "Segoe UI", system-ui, sans-serif; }
+  .coffee-cta a { color: var(--accent); text-decoration: none; margin-left: 4px; white-space: nowrap; border-bottom: 1px dashed currentColor; padding-bottom: 1px; }
+  .coffee-cta a:hover { border-bottom-style: solid; }
+  .sig { text-align: center; color: var(--accent); letter-spacing: 6px; margin: 0 0 10px; }
+
+  @media print {
+    .viz-home, .controls, .hint, #tooltip, #search, .coffee-cta, details > summary .caret { display: none !important; }
+  }
+  @media (max-width: 560px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+
+<a class="viz-home" href="../index.html" title="Back to the notebook">
+  <span class="vh-arrow">&larr;</span>
+  <img src="../logo.svg" alt="">
+  <span class="vh-label">viz<b>.</b></span>
+</a>
+
+<header>
+  <h1>Goals win games. Defenses win World Cups.</h1>
+  <p>Champions are elite at both ends — but here's the twist: the two teams that reach the final
+     attack about <span class="stat">equally well</span>. What separates the winner from the runner-up is
+     almost entirely <span class="stat">defense</span> — champions concede 0.8 goals a game, runners-up 1.1.
+     Every men's World Cup team, 1930–2022.</p>
+</header>
+
+<div class="controls ui">
+  <div class="ctl-group">
+    <span class="ctl-label">View</span>
+    <div class="seg" id="view-seg" role="tablist">
+      <button class="seg-opt is-on" data-view="map">▦ Map</button>
+      <button class="seg-opt" data-view="timeline">↻ Timeline</button>
+    </div>
+  </div>
+  <span id="map-controls" style="display:contents">
+  <div class="ctl-group">
+    <span class="ctl-label">Show</span>
+    <button class="pill tier on" data-tier="Champion"><span class="star" style="color:var(--gold)">★</span>Champions</button>
+    <button class="pill tier on" data-tier="Runner-up"><span class="dot" style="background:var(--silver)"></span>Runners-up</button>
+    <button class="pill tier on" data-tier="Third"><span class="dot" style="background:var(--bronze)"></span>Third</button>
+    <button class="pill tier on" data-tier="Field"><span class="dot" style="background:var(--field)"></span>Everyone else</button>
+  </div>
+  <div class="ctl-group" id="era-group">
+    <span class="ctl-label">Era</span>
+    <button class="pill era on" data-era="all">All</button>
+  </div>
+  </span>
+  <div class="ctl-group">
+    <span class="ctl-label">Markers</span>
+    <div class="seg" id="marker-seg" role="tablist">
+      <button class="seg-opt is-on" data-mode="dots">◆ Dots</button>
+      <button class="seg-opt" data-mode="flags">⚑ Flags</button>
+    </div>
+  </div>
+</div>
+
+<div class="hint ui">Hover a dot for the quick read · click it to pin the full story · click a table row too</div>
+
+<div id="chart-wrap"><div id="chart"></div></div>
+<div id="tooltip"></div>
+
+<div id="timeline-ui" class="ui" hidden>
+  <div class="tl-controls">
+    <button id="tl-play">▶ Play</button>
+    <input id="tl-range" type="range" min="0" max="0" step="1" value="0" list="tl-ticks" aria-label="tournament">
+    <datalist id="tl-ticks"></datalist>
+  </div>
+  <div id="tl-rule" class="tl-rule"></div>
+</div>
+
+<div id="detail" class="ui"></div>
+
+<section class="table-wrap">
+  <details>
+    <summary><h2>Every team, every World Cup — browse &amp; search all 489 <span class="caret">▾</span></h2></summary>
+    <input id="search" class="ui" type="text" placeholder="Search a team… (e.g. Brazil, Italy, Cameroon)">
+    <table id="tbl">
+      <thead><tr>
+        <th class="sortable" data-k="year">Year</th>
+        <th class="sortable" data-k="team">Team</th>
+        <th class="sortable" data-k="finishRank">Finish</th>
+        <th class="sortable num" data-k="gf_pg">Scored /g</th>
+        <th class="sortable num" data-k="ga_pg">Conceded /g</th>
+        <th class="sortable num" data-k="gd_pg">Goal diff /g</th>
+        <th class="num">Record (W-D-L)</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="hint ui" id="count-note"></p>
+  </details>
+</section>
+
+<section class="curios">
+  <h2>Notes from the margins</h2>
+  <ul>
+    <li><b>The final is decided at the back.</b> The two finalists attack about equally — champions average <b>2.40</b> goals a game, runners-up <b>2.16</b>, a gap that's statistical noise (p=0.39). But champions concede significantly fewer: <b>0.79</b> vs <b>1.09</b> (p=0.03). When two great teams meet in the final, the better defense lifts the cup.</li>
+    <li><b>You can win it without a prolific attack.</b> Spain 2010 scored just 1.14 per game — below the all-time average — yet lifted the trophy on a defense that conceded only <b>2 goals in 7 matches</b>.</li>
+    <li><b>Leaking goals is (almost) disqualifying.</b> The stingiest title runs — France ’98, Italy ’06, Spain ’10 — each conceded about <b>0.29</b> per game, roughly two goals across the whole tournament. The lone exception, West Germany ’54, shipped goals but outscored everyone.</li>
+    <li><b>The tragic scorers.</b> Hungary ’54 scored more per game (<b>4.2</b>) than any finalist in history — and still lost the final. Beautiful, prolific, runners-up.</li>
+    <li><b>Attack and defense are independent.</b> Across all 489 teams the correlation between scoring and conceding is essentially zero (r = −0.05) — knowing how much a team scores tells you nothing about how much it concedes.</li>
+  </ul>
+</section>
+
+<p class="sig ui">❄ ❄ ❄</p>
+<p class="coffee-cta">
+  Enjoyed this rabbit hole?
+  <a href="https://ko-fi.com/architechofthefuture" target="_blank" rel="noopener">☕ buy me a coffee</a>
+</p>
+
+<div class="sources">
+  Data: <a href="https://github.com/jfjelstul/worldcup" target="_blank" rel="noopener">Fjelstul World Cup Database</a>
+  (men's tournaments, 1930–2022). “Defense” = goals conceded per game; “attack” = goals scored per game; a penalty-shootout win counts as a win.
+  Marginal curves compare champions with the whole field, all years. Built by hand in d3.
+</div>
+
+<script>
+const COLORS = {
+  Champion: {fill:"#e3b23c", edge:"#9c7715"},
+  "Runner-up": {fill:"#b9bdc4", edge:"#7d828b"},
+  Third: {fill:"#c47f3e", edge:"#8a5421"},
+  Field: {fill:"#aeb6c5", edge:"#7d828b"},
+};
+const RANK = {Champion:0, "Runner-up":1, Third:2, Field:3};
+const W = 1000, H = 820;
+const PADL = 120, PADR = 44, PADT = 126, PADB = 80;
+const PX0 = PADL, PX1 = W - PADR, PY0 = PADT, PY1 = H - PADB;  // plot box
+const TOP_BAND = [20, PADT - 12];      // top marginal y-range
+const LEFT_BAND = [8, 78];             // attack ridgeline on the far left (left of the y-axis)
+
+const tooltip = d3.select("#tooltip");
+function placeTooltip(ev) {
+  const node = tooltip.node();
+  let x = ev.clientX + 14, y = ev.clientY + 14;
+  if (x + node.offsetWidth > window.innerWidth - 8) x = Math.max(8, ev.clientX - node.offsetWidth - 14);
+  if (y + node.offsetHeight > window.innerHeight - 8) y = Math.max(8, ev.clientY - node.offsetHeight - 14);
+  tooltip.style("left", x + "px").style("top", y + "px");
+}
+
+let DATA = [], MGA, MGF, pinned = null;
+const state = { tiers: new Set(["Champion","Runner-up","Third","Field"]), era: "all", markers: "dots", view: "map" };
+let sortKey = "year", sortDir = 1;
+
+// ISO codes for flag images (flagcdn.com). Defunct nations (USSR, Yugoslavia,
+// Czechoslovakia, East Germany, Zaire, Serbia & Montenegro, Dutch East Indies)
+// have no flagcdn flag → they fall back to a sticker dot.
+const ISO = {
+  "Algeria":"dz","Angola":"ao","Argentina":"ar","Australia":"au","Austria":"at","Belgium":"be",
+  "Bolivia":"bo","Bosnia and Herzegovina":"ba","Brazil":"br","Bulgaria":"bg","Cameroon":"cm",
+  "Canada":"ca","Chile":"cl","China":"cn","Colombia":"co","Costa Rica":"cr","Croatia":"hr",
+  "Cuba":"cu","Czech Republic":"cz","Denmark":"dk","Ecuador":"ec","Egypt":"eg","El Salvador":"sv",
+  "England":"gb-eng","France":"fr","Germany":"de","Ghana":"gh","Greece":"gr","Haiti":"ht",
+  "Honduras":"hn","Hungary":"hu","Iceland":"is","Iran":"ir","Iraq":"iq","Israel":"il","Italy":"it",
+  "Ivory Coast":"ci","Jamaica":"jm","Japan":"jp","Kuwait":"kw","Mexico":"mx","Morocco":"ma",
+  "Netherlands":"nl","New Zealand":"nz","Nigeria":"ng","North Korea":"kp","Northern Ireland":"gb-nir",
+  "Norway":"no","Panama":"pa","Paraguay":"py","Peru":"pe","Poland":"pl","Portugal":"pt","Qatar":"qa",
+  "Republic of Ireland":"ie","Romania":"ro","Russia":"ru","Saudi Arabia":"sa","Scotland":"gb-sct",
+  "Senegal":"sn","Serbia":"rs","Slovakia":"sk","Slovenia":"si","South Africa":"za","South Korea":"kr",
+  "Spain":"es","Sweden":"se","Switzerland":"ch","Togo":"tg","Trinidad and Tobago":"tt","Tunisia":"tn",
+  "Turkey":"tr","Ukraine":"ua","United Arab Emirates":"ae","United States":"us","Uruguay":"uy",
+  "Wales":"gb-wls","West Germany":"de"
+};
+const flagUrl = c => `https://flagcdn.com/w80/${ISO[c]}.png`;
+
+d3.csv("data.csv", d => ({
+  year: +d.year, era: d.era, team: d.team,
+  finish: d.finish, finishRank: RANK[d.finish],
+  position: d.position ? +d.position : null, reached: d.reached,
+  matches: +d.matches, wins: +d.wins, draws: +d.draws, losses: +d.losses,
+  gf: +d.goals_for, ga: +d.goals_against,
+  gf_pg: +d.gf_pg, ga_pg: +d.ga_pg, gd_pg: +d.gd_pg, note: d.note,
+})).then(rows => {
+  DATA = rows;
+  MGA = d3.mean(rows, d => d.ga_pg);
+  MGF = d3.mean(rows, d => d.gf_pg);
+  buildEraPills();
+  draw();
+  buildTable();
+});
+
+// ---- scales ----------------------------------------------------------
+const x = d3.scaleLinear().domain([0, 4.35]).range([PX0, PX1]); // 0 conceded on the left (standard)
+const y = d3.scaleLinear().domain([0, 5.7]).range([PY1, PY0]);
+const sym = d3.symbol();
+function sizeFor(d){ return d.finish==="Field"?14 : d.finish==="Champion"?150:70; }
+function shapeFor(d){ return d.finish==="Champion"?d3.symbolStar:d3.symbolCircle; }
+
+// ---- main draw -------------------------------------------------------
+function draw() {
+  const svg = d3.select("#chart").selectAll("svg").data([0]).join("svg")
+      .attr("viewBox", `0 0 ${W} ${H}`);
+  svg.selectAll("*").remove();
+
+  addDefs(svg);
+
+  // elite-quadrant tint (low conceded, high scored = top-LEFT now)
+  svg.append("rect").attr("x", PX0).attr("y", PY0)
+     .attr("width", x(MGA) - PX0).attr("height", y(MGF) - PY0)
+     .attr("fill", "#e3b23c").attr("opacity", 0.12);
+
+  // "everyone else" density cloud (map view only). OPAQUE nested bands so alpha
+  // never compounds into a stain; low group opacity melts the light edges away.
+  if (state.view === "map") {
+    const fieldPts = DATA.filter(d=>d.finish==="Field");
+    const contours = d3.contourDensity()
+       .x(d=>x(d.ga_pg)).y(d=>y(d.gf_pg)).size([W,H])
+       .bandwidth(26).thresholds(11)(fieldPts);
+    const cmax = d3.max(contours, c=>c.value) || 1;
+    const cloudRamp = d3.interpolateRgb("#f4f8fd", "#9fb6e0");
+    svg.append("g").attr("clip-path","url(#plotclip)").attr("opacity",0.5)
+       .selectAll("path.cloud").data(contours).join("path").attr("class","cloud")
+       .attr("d", d3.geoPath())
+       .attr("fill", c => (c.value/cmax) < 0.07 ? "none" : cloudRamp(c.value/cmax))
+       .attr("stroke","none");
+  }
+
+  // quadrant guide lines
+  svg.append("g").attr("class","grid")
+     .call(g => { g.append("line").attr("x1",x(MGA)).attr("x2",x(MGA)).attr("y1",PY0).attr("y2",PY1);
+                  g.append("line").attr("y1",y(MGF)).attr("y2",y(MGF)).attr("x1",PX0).attr("x2",PX1); });
+
+  // axes
+  const ax = svg.append("g").attr("class","axis").attr("transform",`translate(0,${PY1})`)
+     .call(d3.axisBottom(x).tickValues([0,1,2,3,4]).tickFormat(d3.format("d")));
+  const ay = svg.append("g").attr("class","axis").attr("transform",`translate(${PX0},0)`)
+     .call(d3.axisLeft(y).tickValues([0,1,2,3,4,5]).tickFormat(d3.format("d")));
+  svg.append("text").attr("class","axis-title").attr("text-anchor","middle")
+     .attr("x",(PX0+PX1)/2).attr("y",H-30).text("Goals conceded per game    « stingier · leakier »");
+  svg.append("text").attr("class","axis-title").attr("text-anchor","middle")
+     .attr("transform",`translate(${PX1+26},${(PY0+PY1)/2}) rotate(90)`).text("Goals scored per game   «attack»");
+
+  // quadrant labels (raised above the cloud & markers at the end of draw)
+  const ql = svg.append("g").attr("class","quads");
+  ql.append("text").attr("class","quad-label").attr("x",PX0+8).attr("y",PY0+16).text("THE UNTOUCHABLES");
+  ql.append("text").attr("class","quad-label").attr("x",PX1-8).attr("y",PY0+16).attr("text-anchor","end").text("CAVALIERS");
+  ql.append("text").attr("class","quad-label").attr("x",PX1-8).attr("y",PY1-8).attr("text-anchor","end").text("CANNON FODDER");
+  ql.append("text").attr("class","quad-label").attr("x",PX0+8).attr("y",PY1-8).text("BUS-PARKERS");
+
+  if (state.view === "map") {
+    drawMarginals(svg);
+    drawClimb(svg);
+    drawPoints(svg);
+  } else {
+    drawTimeline(svg);
+  }
+  svg.select("g.climb").raise();       // avg line + centroids above the stickers
+  svg.select("g.marg-emph").raise();   // hover connectors above everything
+  svg.select("g.quads").raise();       // quadrant labels above everything
+}
+
+// "the climb to glory": the AVERAGE team at each finish, walked as a path.
+function drawClimb(svg){
+  const order = ["Field","Third","Runner-up","Champion"];
+  const labels = {Field:"the average also-ran", Third:"the average 3rd place",
+                  "Runner-up":"the average runner-up", Champion:"the average champion"};
+  const cents = order.map(o => { const g = DATA.filter(d=>d.finish===o);
+    const ga=d3.mean(g,d=>d.ga_pg), gf=d3.mean(g,d=>d.gf_pg);
+    return {key:o, x:x(ga), y:y(gf), ga, gf, label:labels[o]}; });
+  const cg = svg.append("g").attr("class","climb");   // raised above the stickers
+  cg.append("path").attr("d", d3.line().x(d=>d.x).y(d=>d.y)(cents))
+     .attr("fill","none").attr("stroke","#d8232a").attr("stroke-width",1.6)
+     .attr("stroke-dasharray","5 4").attr("opacity",.75);
+  // medal-coloured average markers (gold/silver/bronze foil + grey field) with a
+  // red outline so they're easy to spot among the stickers
+  cg.append("g").selectAll("circle").data(cents).join("circle")
+     .attr("class","sticker-shadow")
+     .attr("cx",d=>d.x).attr("cy",d=>d.y).attr("r",6.5)
+     .attr("fill",d=>TIER_FILL[d.key]).attr("stroke","#d8232a").attr("stroke-width",2)
+     .style("cursor","help")
+     .on("mouseover",(ev,d)=>{ const medal={Champion:"🏆 1st",["Runner-up"]:"🥈 2nd",Third:"🥉 3rd",Field:"the field"}[d.key];
+       tooltip.html(
+         `<div class="tt-team">${d.label} <span style="color:var(--muted)">(${medal})</span></div>
+          <div class="tt-row">⚽ scores <b>${d.gf.toFixed(2)}</b>/g &nbsp;·&nbsp; 🛡 concedes <b>${d.ga.toFixed(2)}</b>/g</div>
+          <div class="tt-row" style="font-style:italic">the dashed line is the path from also-ran to champion — flat in attack, dropping in defense</div>`)
+         .style("opacity",1); placeTooltip(ev); })
+     .on("mousemove",placeTooltip).on("mouseout",()=>tooltip.style("opacity",0));
+}
+
+// ---- TIMELINE view ---------------------------------------------------
+// Rule changes keyed to the first World Cup they applied at (descriptive context).
+const RULES = {
+  1970: "Substitutes (2 allowed) + yellow & red cards introduced",
+  1994: "Back-pass ban (1992) + 3 points for a win — football pushes back against defensive caution",
+  1998: "Tackle from behind that endangers an opponent = red card",
+  2018: "VAR introduced (more penalties awarded)",
+  2022: "Up to 5 substitutions allowed",
+};
+let tlYears = [], tlByYear = new Map(), tlIdx = 0, tlTimer = null;
+function tlSetup(){
+  tlByYear = d3.group(DATA, d=>d.year);
+  tlYears = Array.from(tlByYear.keys()).sort((a,b)=>a-b);
+}
+function tlAvg(year){
+  const g = tlByYear.get(year);
+  return { ga: d3.mean(g,d=>d.ga_pg), gf: d3.mean(g,d=>d.gf_pg), n: g.length };
+}
+function drawTimeline(svg){
+  if (!tlYears.length) tlSetup();
+  svg.append("text").attr("class","tl-year").attr("x",PX0+14).attr("y",PY0+54)
+     .attr("font-family","Anton, sans-serif").attr("font-size",46).attr("fill","#15224d").attr("opacity",.16);
+  svg.append("text").attr("class","tl-sub").attr("x",PX0+16).attr("y",PY0+74)
+     .attr("font-family","Barlow, sans-serif").attr("font-size",13).attr("fill","#6b7488");
+  svg.append("path").attr("class","tl-trail").attr("fill","none")
+     .attr("stroke","#1f5fd0").attr("stroke-width",2.2).attr("opacity",.4).attr("stroke-linecap","round");
+  svg.append("g").attr("class","tl-teams");
+  svg.append("g").attr("class","tl-marker");
+  buildScrubber();
+  tlRender(tlIdx);
+}
+function tlRender(i){
+  tlIdx = Math.max(0, Math.min(tlYears.length-1, i));
+  const svg = d3.select("#chart svg");
+  const year = tlYears[tlIdx];
+  const trail = tlYears.slice(0, tlIdx+1).map(yr => { const a=tlAvg(yr); return [x(a.ga), y(a.gf)]; });
+  svg.select(".tl-trail").attr("d", d3.line().curve(d3.curveCatmullRom)(trail));
+  // that tournament's teams, faint, reusing the marker renderer (dots/flags)
+  const teams = tlByYear.get(year);
+  const sel = svg.select(".tl-teams").selectAll("g.tlt").data(teams, d=>d.team+d.year);
+  sel.exit().transition().duration(300).attr("opacity",0).remove();
+  const ent = sel.enter().append("g").attr("class","tlt").attr("opacity",0)
+     .attr("transform", d=>`translate(${x(d.ga_pg)},${y(d.gf_pg)})`)
+     .each(function(d){ renderMarker(d3.select(this), d); })
+     .on("mouseover",(ev,d)=>showTip(ev,d)).on("mousemove",placeTooltip)
+     .on("mouseout",()=>tooltip.style("opacity",0));
+  ent.merge(sel).transition().duration(450)
+     .attr("transform", d=>`translate(${x(d.ga_pg)},${y(d.gf_pg)})`).attr("opacity",.6);
+  // moving average-team marker
+  const a = tlAvg(year);
+  let dot = svg.select(".tl-marker").selectAll("circle.am").data([a]);
+  dot = dot.enter().append("circle").attr("class","am").attr("r",9)
+     .attr("fill","#d8232a").attr("stroke","#fff").attr("stroke-width",2)
+     .attr("cx",x(a.ga)).attr("cy",y(a.gf)).merge(dot);
+  dot.transition().duration(450).attr("cx",x(a.ga)).attr("cy",y(a.gf));
+  svg.select(".tl-year").text(year);
+  svg.select(".tl-sub").text(`● avg of ${a.n} teams — scored ${a.gf.toFixed(2)}, conceded ${a.ga.toFixed(2)} per game · faint = each team`);
+  updateScrubber(year);
+}
+function buildScrubber(){
+  const range = document.getElementById("tl-range");
+  range.max = tlYears.length-1; range.value = tlIdx;
+  const dl = document.getElementById("tl-ticks"); dl.innerHTML = "";
+  Object.keys(RULES).forEach(yr => { const i = tlYears.indexOf(+yr);
+    if (i>=0){ const o=document.createElement("option"); o.value=i; dl.appendChild(o); } });
+  range.oninput = () => { tlStop(); tlRender(+range.value); };
+}
+function updateScrubber(year){
+  document.getElementById("tl-range").value = tlIdx;
+  const r = document.getElementById("tl-rule");
+  if (RULES[year]) { r.innerHTML = `<b>${year} ⚑</b> &nbsp;${RULES[year]}`; r.classList.add("on"); }
+  else { r.innerHTML = `<span style="opacity:.7">Drag the slider or press play — rule-change years are ticked ⚑ below.</span>`; r.classList.remove("on"); }
+}
+function tlPlay(){
+  if (tlTimer) return tlStop();
+  if (tlIdx >= tlYears.length-1) tlIdx = 0;
+  document.getElementById("tl-play").textContent = "❚❚ Pause";
+  tlTimer = setInterval(() => {
+    if (tlIdx >= tlYears.length-1) { tlStop(); return; }
+    tlRender(tlIdx+1);
+  }, 950);
+}
+function tlStop(){ if (tlTimer){ clearInterval(tlTimer); tlTimer=null; } document.getElementById("tl-play").textContent = "▶ Play"; }
+
+// ---- marker defs (foil gradients + flag clip paths) ------------------
+function addDefs(svg){
+  const defs = svg.append("defs");
+  defs.append("clipPath").attr("id","plotclip").append("rect")
+     .attr("x",PX0).attr("y",PY0).attr("width",PX1-PX0).attr("height",PY1-PY0);
+  const foil = (id, stops) => {
+    const g = defs.append("linearGradient").attr("id",id)
+      .attr("x1","0").attr("y1","0").attr("x2","1").attr("y2","1");
+    stops.forEach(([o,col]) => g.append("stop").attr("offset",o).attr("stop-color",col));
+  };
+  foil("foilGold",   [["0%","#9c7715"],["32%","#ffe9a3"],["52%","#e3b23c"],["72%","#fff3cf"],["100%","#c79a2e"]]);
+  foil("foilSilver", [["0%","#7d828b"],["32%","#f2f4f6"],["52%","#b9bdc4"],["72%","#ffffff"],["100%","#9aa0a6"]]);
+  foil("foilBronze", [["0%","#8a5421"],["32%","#e6a766"],["52%","#c47f3e"],["72%","#f0c79b"],["100%","#a96a2c"]]);
+  // screen-space (45°) foil for the big ridges, so the shine runs the SAME
+  // top-left→bottom-right direction as the stickers (cohesive light source).
+  // Seamless (start = end colour) and tiled so the sheen reads across wide shapes.
+  const foilU = (id, stops, tile=130) => {
+    const g = defs.append("linearGradient").attr("id",id).attr("gradientUnits","userSpaceOnUse")
+      .attr("x1",0).attr("y1",0).attr("x2",tile).attr("y2",tile).attr("spreadMethod","repeat");
+    stops.forEach(([o,c]) => g.append("stop").attr("offset",o).attr("stop-color",c));
+  };
+  foilU("foilGoldR",   [["0%","#c79a2e"],["38%","#ffe9a3"],["50%","#e3b23c"],["62%","#fff3cf"],["100%","#c79a2e"]]);
+  foilU("foilSilverR", [["0%","#9aa0a6"],["38%","#eef0f3"],["50%","#c4c8cf"],["62%","#ffffff"],["100%","#9aa0a6"]]);
+  foilU("foilBronzeR", [["0%","#a96a2c"],["38%","#e6a766"],["50%","#c47f3e"],["62%","#f0c79b"],["100%","#a96a2c"]]);
+  Object.entries(FDIM).forEach(([k,f]) => {
+    defs.append("clipPath").attr("id","fclip-"+cssKey(k)).append("rect")
+      .attr("x",-f.w/2).attr("y",-f.h/2).attr("width",f.w).attr("height",f.h).attr("rx",2);
+  });
+}
+
+// ---- point rendering (sticker dots OR flags) -------------------------
+const DIM  = { Field:{w:7,h:7}, "Runner-up":{w:15,h:15}, Third:{w:15,h:15}, Champion:{w:0,h:0} };
+const FDIM = { Field:{w:11,h:7.5}, "Runner-up":{w:15,h:10}, Third:{w:15,h:10}, Champion:{w:17,h:11.5} };
+const FOIL = { Champion:"url(#foilGold)", "Runner-up":"url(#foilSilver)", Third:"url(#foilBronze)" };
+function cssKey(s){ return s.replace(/[^A-Za-z]/g,""); }
+
+function drawPoints(svg){
+  svg.selectAll("g.pts").remove();
+  const g = svg.append("g").attr("class","pts");
+  const pts = DATA.slice().sort((a,b)=> b.finishRank - a.finishRank);
+  g.selectAll("g.pt").data(pts, d=>d.team+d.year).join("g")
+    .attr("class","pt")
+    .attr("transform", d=>`translate(${x(d.ga_pg)},${y(d.gf_pg)})`)
+    .each(function(d){ renderMarker(d3.select(this), d); })
+    .on("mouseover",(ev,d)=>showTip(ev,d))
+    .on("mousemove",placeTooltip)
+    .on("mouseout",()=>tooltip.style("opacity",0))
+    .on("click",(ev,d)=>{ ev.stopPropagation(); pin(d); vizTrack("dot_click",{team:d.team,year:d.year}); });
+  applyFilter();
+  markPinned();
+}
+
+function renderMarker(sel, d){
+  sel.selectAll("*").remove();
+  const c = COLORS[d.finish];
+  const useFlag = state.markers==="flags" && ISO[d.team];
+  if (useFlag) {
+    const f = FDIM[d.finish];
+    sel.append("image").attr("href", flagUrl(d.team)).attr("xlink:href", flagUrl(d.team))
+       .attr("x",-f.w/2).attr("y",-f.h/2).attr("width",f.w).attr("height",f.h)
+       .attr("preserveAspectRatio","xMidYMid slice")
+       .attr("clip-path",`url(#fclip-${cssKey(d.finish)})`).attr("class","sticker-shadow");
+    sel.append("rect").attr("x",-f.w/2).attr("y",-f.h/2).attr("width",f.w).attr("height",f.h)
+       .attr("rx",2).attr("fill","none").attr("stroke","#fff").attr("stroke-width",.9);
+    // foil medal sticker in the TOP-RIGHT corner — same look as the dots view
+    // (gold star for champions, silver/bronze box for medalists), a bit bigger
+    if (d.finish!=="Field") {
+      const bx = f.w/2, by = -f.h/2;
+      if (d.finish==="Champion") {
+        sel.append("path").attr("d", d3.symbol().type(d3.symbolStar).size(80)())
+           .attr("transform",`translate(${bx},${by})`)
+           .attr("fill","url(#foilGold)").attr("stroke","#fff").attr("stroke-width",1)
+           .attr("class","sticker-shadow");
+      } else {
+        sel.append("rect").attr("x",bx-4.5).attr("y",by-4.5).attr("width",9).attr("height",9).attr("rx",2)
+           .attr("fill",FOIL[d.finish]).attr("stroke","#fff").attr("stroke-width",1)
+           .attr("class","sticker-shadow");
+      }
+    }
+    return;
+  }
+  if (d.finish==="Champion") {
+    sel.append("path").attr("d", d3.symbol().type(d3.symbolStar).size(150)())
+       .attr("fill","url(#foilGold)").attr("stroke","#fff").attr("stroke-width",1)
+       .attr("class","sticker-shadow");
+  } else if (d.finish==="Field") {
+    sel.append("rect").attr("x",-3.5).attr("y",-3.5).attr("width",7).attr("height",7).attr("rx",1.5)
+       .attr("fill",c.fill).attr("stroke","#fff").attr("stroke-width",.6).attr("opacity",.9);
+  } else {
+    const s = DIM[d.finish];
+    sel.append("rect").attr("x",-s.w/2).attr("y",-s.h/2).attr("width",s.w).attr("height",s.h).attr("rx",3)
+       .attr("fill",FOIL[d.finish]).attr("stroke","#fff").attr("stroke-width",1.2)
+       .attr("class","sticker-shadow");
+  }
+}
+
+function tierCentroid(key){
+  const g = DATA.filter(d=>d.finish===key);
+  return { ga: d3.mean(g,d=>d.ga_pg), gf: d3.mean(g,d=>d.gf_pg) };
+}
+const TIER_FILL = { Champion:"url(#foilGold)", "Runner-up":"url(#foilSilver)", Third:"url(#foilBronze)", Field:"#b9c0cc" };
+
+function drawMarginals(svg){
+  // RIDGELINE with the album foil shine, gently overlapping, each tier hoverable
+  // to draw a connector down to its medal-coloured average point in the scatter.
+  const TIERS = [
+    { key:"Champion",  edge:"#9c7715", lbl:"1st" },
+    { key:"Runner-up", edge:"#6f7681", lbl:"2nd" },
+    { key:"Third",     edge:"#8a5421", lbl:"3rd" },
+  ];
+  function kde(vals, lo, hi, bw){
+    const grid = d3.range(lo, hi, (hi-lo)/120);
+    return grid.map(g => ({c:g, d: d3.mean(vals, v => {
+      const u=(g-v)/bw; return Math.exp(-0.5*u*u)/(Math.sqrt(2*Math.PI)*bw);
+    })}));
+  }
+  const data = t => DATA.filter(d=>d.finish===t.key);
+  const RIDGE_FILL = { Champion:"url(#foilGoldR)", "Runner-up":"url(#foilSilverR)", Third:"url(#foilBronzeR)" };
+  const layout = {};
+  const emph = svg.append("g").attr("class","marg-emph").style("pointer-events","none");
+  function linkTo(t){
+    emph.selectAll("*").remove();
+    const c = tierCentroid(t.key), L = layout[t.key];
+    [L.def, L.atk].forEach(end => emph.append("line")
+      .attr("x1",end[0]).attr("y1",end[1]).attr("x2",x(c.ga)).attr("y2",y(c.gf))
+      .attr("stroke","#d8232a").attr("stroke-width",1.4).attr("stroke-dasharray","3 3").attr("opacity",.85));
+    emph.append("circle").attr("cx",x(c.ga)).attr("cy",y(c.gf)).attr("r",11).attr("fill","none")
+      .attr("stroke","#d8232a").attr("stroke-width",2.4).attr("opacity",.95);
+  }
+  const clearLink = () => emph.selectAll("*").remove();
+
+  // ---- DEFENSE (top): overlapping ridges; gold→bronze so BRONZE is on top.
+  // Each red mean line is drawn INSIDE its ridge group, so ridges stacked on top
+  // correctly occlude it (1st's line sits behind 2nd & 3rd, never over them). ----
+  const nearest = (dens, v) => dens.reduce((a,b)=> Math.abs(b.c-v)<Math.abs(a.c-v)?b:a);
+  const bh = TOP_BAND[1]-TOP_BAND[0], pitch = bh/4, hT = pitch*1.6;
+  const defK = TIERS.map(t => kde(data(t).map(d=>d.ga_pg), 0, 4.35, 0.45));
+  const defMax = d3.max(defK.flat(), p=>p.d);
+  [0,1,2].forEach(pi => {
+    const t = TIERS[pi], dens = defK[pi];
+    const baseY = TOP_BAND[0] + hT + pitch*pi;       // flat baseline toward the PLOT (bottom)
+    const yv = p => baseY - p.d/defMax*hT;            // density grows UP toward the top edge
+    const mean = d3.mean(data(t), d=>d.ga_pg), tipY = yv(nearest(dens, mean));
+    const g = svg.append("g").style("cursor","pointer")
+      .on("mouseover",()=>linkTo(t)).on("mouseout",clearLink);
+    g.append("path").attr("d", d3.area().x(p=>x(p.c)).y0(baseY).y1(yv).curve(d3.curveBasis)(dens))
+      .attr("fill",RIDGE_FILL[t.key]).attr("opacity",.96);
+    g.append("path").attr("d", d3.line().x(p=>x(p.c)).y(yv).curve(d3.curveBasis)(dens))
+      .attr("fill","none").attr("stroke",t.edge).attr("stroke-width",1.1);
+    g.append("line").attr("x1",x(mean)).attr("x2",x(mean))
+      .attr("y1",baseY).attr("y2", tipY)                       // baseline → curve at mean
+      .attr("stroke","#d8232a").attr("stroke-width",1.6).attr("opacity",.95);
+    g.append("text").attr("class","marg-note").attr("x",PX0+1).attr("y",baseY-2)
+      .attr("fill",t.edge).attr("font-weight",700).text(t.lbl);
+    layout[t.key] = {...(layout[t.key]||{}), def:[x(mean), baseY]};
+  });
+
+  // ---- ATTACK (on the LEFT): columns with the FLAT side toward the plot (right)
+  // and the density growing LEFT toward the edge. 1st outermost (reaches the edge);
+  // bronze drawn last (on top). Same per-ridge red mean line. ----
+  const bw = LEFT_BAND[1]-LEFT_BAND[0], pitchW = bw/3.6, wR = pitchW*1.6;
+  const atkK = TIERS.map(t => kde(data(t).map(d=>d.gf_pg), 0, 5.7, 0.5));
+  const atkMax = d3.max(atkK.flat(), p=>p.d);
+  [0,1,2].forEach(pi => {
+    const t = TIERS[pi], dens = atkK[pi], vc = pi;
+    const flatX = LEFT_BAND[0] + pitchW*vc + wR;   // flat baseline on the RIGHT (toward plot)
+    const xv = p => flatX - p.d/atkMax*wR;          // density grows LEFT toward the edge
+    const mean = d3.mean(data(t), d=>d.gf_pg);
+    const g = svg.append("g").style("cursor","pointer")
+      .on("mouseover",()=>linkTo(t)).on("mouseout",clearLink);
+    g.append("path").attr("d", d3.area().y(p=>y(p.c)).x0(flatX).x1(xv).curve(d3.curveBasis)(dens))
+      .attr("fill",RIDGE_FILL[t.key]).attr("opacity",.96);
+    g.append("path").attr("d", d3.line().y(p=>y(p.c)).x(xv).curve(d3.curveBasis)(dens))
+      .attr("fill","none").attr("stroke",t.edge).attr("stroke-width",1.1);
+    g.append("line").attr("y1",y(mean)).attr("y2",y(mean))
+      .attr("x1",flatX).attr("x2", xv(nearest(dens, mean)))     // baseline → curve at mean
+      .attr("stroke","#d8232a").attr("stroke-width",1.6).attr("opacity",.95);
+    layout[t.key] = {...(layout[t.key]||{}), atk:[flatX, y(mean)]};
+  });
+
+  svg.append("text").attr("class","marg-note").attr("x",PX0).attr("y",TOP_BAND[0]-5)
+     .text("DEFENSE — by podium place · hover a ridge · stingier ←");
+  svg.append("text").attr("class","marg-note").attr("x",LEFT_BAND[0]).attr("y",PY1+12)
+     .attr("text-anchor","start").text("ATTACK — all overlap");
+}
+
+// ---- interactions ----------------------------------------------------
+function showTip(ev,d){
+  const c = COLORS[d.finish];
+  tooltip.html(`
+    <div class="tt-team">${d.team} <span style="color:var(--muted);font-weight:400">'${String(d.year).slice(2)}</span></div>
+    <div class="tt-fin" style="color:${c.edge}">${finishLabel(d)}</div>
+    <div class="tt-row">⚽ scored <b>${d.gf_pg.toFixed(2)}</b>/g &nbsp;·&nbsp; 🛡 conceded <b>${d.ga_pg.toFixed(2)}</b>/g</div>
+    <div class="tt-row">${d.wins}W ${d.draws}D ${d.losses}L over ${d.matches} matches</div>`)
+    .style("opacity",1);
+  placeTooltip(ev);
+}
+function finishLabel(d){
+  if (d.finish==="Champion")  return "🏆 Champion";
+  if (d.finish==="Runner-up") return "🥈 Runner-up";
+  if (d.finish==="Third")     return "🥉 Third place";
+  if (d.position===4)         return "4th place";
+  if (d.reached==="Group stage") return "Out in the group stage";
+  return d.reached ? `Reached the ${d.reached.toLowerCase()}` : "Did not medal";
+}
+function pin(d){
+  pinned = d;
+  const c = COLORS[d.finish];
+  const crest = ISO[d.team]
+    ? `<img src="${flagUrl(d.team)}" alt="">`
+    : `<span style="display:inline-block;width:46px;height:32px;border-radius:4px;background:${c.fill};box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.25)"></span>`;
+  d3.select("#detail").html(`
+    <div class="detail-card t-${cssKey(d.finish)}">
+      <button class="close" title="close">×</button>
+      <div class="crest">
+        ${crest}
+        <div>
+          <h3>${d.team} ${d.year}</h3>
+          <div class="sub"><span class="medal" style="color:${c.edge}">${finishLabel(d)}</span> · ${d.era} · ${d.matches} matches</div>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="s"><b>${d.gf_pg.toFixed(2)}</b><span>Scored /game</span></div>
+        <div class="s"><b>${d.ga_pg.toFixed(2)}</b><span>Conceded /game</span></div>
+        <div class="s"><b>${d.gd_pg>=0?"+":""}${d.gd_pg.toFixed(2)}</b><span>Goal diff /game</span></div>
+        <div class="s"><b>${d.wins}-${d.draws}-${d.losses}</b><span>W-D-L</span></div>
+      </div>
+      ${d.note ? `<div class="note">“${d.note}”</div>` : ""}
+    </div>`);
+  d3.select("#detail .close").on("click", unpin);
+  markPinned();
+  d3.select("#detail").node().scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+function unpin(){ pinned=null; d3.select("#detail").html(""); markPinned(); }
+function markPinned(){
+  d3.selectAll(".pin-ring").remove();
+  if (!pinned) return;
+  d3.selectAll("g.pt").filter(d=>d===pinned).each(function(){
+    d3.select(this).insert("circle",":first-child").attr("class","pin-ring")
+      .attr("r",16).attr("fill","none").attr("stroke","#1f5fd0").attr("stroke-width",2.5).attr("opacity",.95);
+  }).raise();
+}
+document.body.addEventListener("click", () => { /* outside click keeps pin; close via × */ });
+
+// ---- filters ---------------------------------------------------------
+function applyFilter(){
+  d3.selectAll(".pt").classed("dim", d =>
+    !state.tiers.has(d.finish) || (state.era!=="all" && d.era!==state.era));
+}
+function buildEraPills(){
+  const eras = Array.from(new Set(DATA.map(d=>d.era)));
+  const g = d3.select("#era-group");
+  eras.forEach(e => g.append("button").attr("class","pill era").attr("data-era",e).text(e));
+}
+d3.selectAll(".pill.tier").each(function(){
+  this.addEventListener("click", () => {
+    const t = this.dataset.tier, on = this.classList.toggle("off");
+    if (on) state.tiers.delete(t); else state.tiers.add(t);
+    applyFilter(); buildTable();
+  });
+});
+document.addEventListener("click", e => {
+  const p = e.target.closest(".pill.era"); if(!p) return;
+  d3.selectAll(".pill.era").classed("on",false);
+  p.classList.add("on");
+  state.era = p.dataset.era;
+  applyFilter(); buildTable();
+  vizTrack("era_filter",{era:state.era});
+});
+document.querySelectorAll("#marker-seg .seg-opt").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (btn.classList.contains("is-on")) return;
+    document.querySelectorAll("#marker-seg .seg-opt").forEach(b => b.classList.remove("is-on"));
+    btn.classList.add("is-on");
+    state.markers = btn.dataset.mode;
+    if (state.view === "map") drawPoints(d3.select("#chart svg"));
+    else tlRender(tlIdx);
+    vizTrack("marker_mode",{mode:state.markers});
+  });
+});
+// View toggle: Map ⇄ Timeline
+document.querySelectorAll("#view-seg .seg-opt").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (btn.classList.contains("is-on")) return;
+    document.querySelectorAll("#view-seg .seg-opt").forEach(b => b.classList.remove("is-on"));
+    btn.classList.add("is-on");
+    state.view = btn.dataset.view;
+    const tl = state.view === "timeline";
+    document.getElementById("timeline-ui").hidden = !tl;
+    document.getElementById("map-controls").style.display = tl ? "none" : "contents";
+    document.querySelector(".hint").textContent = tl
+      ? "Press play to watch the average team drift across 90 years · ⚑ marks rule-change years"
+      : "Hover a dot for the quick read · click it to pin the full story · click a table row too";
+    if (!tl) tlStop();
+    unpin();
+    draw();
+    vizTrack("view_mode",{view:state.view});
+  });
+});
+document.getElementById("tl-play").addEventListener("click", tlPlay);
+
+// ---- table -----------------------------------------------------------
+function buildTable(){
+  const q = (document.getElementById("search").value||"").toLowerCase();
+  let rows = DATA.filter(d => state.tiers.has(d.finish)
+      && (state.era==="all"||d.era===state.era)
+      && d.team.toLowerCase().includes(q));
+  rows.sort((a,b)=>{
+    let v = a[sortKey]>b[sortKey]?1:a[sortKey]<b[sortKey]?-1:0;
+    if (sortKey==="team") v = a.team.localeCompare(b.team);
+    return v*sortDir || a.year-b.year;
+  });
+  const tb = d3.select("#tbl tbody");
+  tb.html("");
+  rows.slice(0,400).forEach(d=>{
+    const c = COLORS[d.finish];
+    const tr = tb.append("tr").on("click",()=>{ pin(d);
+      document.getElementById("chart").scrollIntoView({behavior:"smooth",block:"center"}); });
+    tr.html(`<td>${d.year}</td>
+      <td><span class="medal-dot" style="background:${c.fill}"></span>${d.team}</td>
+      <td>${finishShort(d)}</td>
+      <td class="num">${d.gf_pg.toFixed(2)}</td>
+      <td class="num">${d.ga_pg.toFixed(2)}</td>
+      <td class="num">${d.gd_pg>=0?"+":""}${d.gd_pg.toFixed(2)}</td>
+      <td class="num">${d.wins}-${d.draws}-${d.losses}</td>`);
+  });
+  d3.select("#count-note").text(`${rows.length} team-tournaments shown` + (rows.length>400?" (top 400 listed)":""));
+}
+const REACHED_SHORT = {"Group stage":"Group","Round of 16":"R16","Quarter-finals":"QF",
+  "Semi-finals":"SF","2nd group stage":"R2","Final round":"Final rd","Final":"Final"};
+function finishShort(d){
+  if (d.finish==="Champion")  return "🏆 1st";
+  if (d.finish==="Runner-up") return "🥈 2nd";
+  if (d.finish==="Third")     return "🥉 3rd";
+  if (d.position===4)         return "4th";
+  return REACHED_SHORT[d.reached] || "—";
+}
+document.getElementById("search").addEventListener("input", buildTable);
+d3.selectAll("th.sortable").each(function(){
+  this.addEventListener("click", ()=>{
+    const k=this.dataset.k;
+    if (sortKey===k) sortDir*=-1; else { sortKey=k; sortDir=1; }
+    buildTable();
+  });
+});
+</script>
+</body>
+</html>
