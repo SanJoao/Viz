@@ -36,9 +36,9 @@
     --accent: #1f5fd0;      /* Panini blue */
     --accent2: #d8232a;     /* Panini red */
     --gold: #e3b23c;  --gold-e: #9c7715;
-    --silver: #b9bdc4; --silver-e: #7d828b;
+    --silver: #969ca6; --silver-e: #646973;
     --bronze: #c47f3e; --bronze-e: #8a5421;
-    --field: #aeb6c5;
+    --field: #c4cad3;
   }
   * { box-sizing: border-box; }
   body {
@@ -167,7 +167,7 @@
   .detail-card.t-Champion::before, .detail-card.t-Runnerup::before, .detail-card.t-Third::before {
     content: ""; position: absolute; inset: 0 0 auto 0; height: 6px; border-radius: 12px 12px 0 0; }
   .detail-card.t-Champion::before { background: linear-gradient(90deg, #b8860b, #ffe9a3, #e3b23c, #fff3cf, #c79a2e); }
-  .detail-card.t-Runnerup::before { background: linear-gradient(90deg, #8d929b, #eef0f3, #b9bdc4, #9aa0a6); }
+  .detail-card.t-Runnerup::before { background: linear-gradient(90deg, #646973, #d8dce1, #878c95, #565a62); }
   .detail-card.t-Third::before { background: linear-gradient(90deg, #8a5421, #e6a766, #c47f3e, #a96a2c); }
 
   /* table */
@@ -902,9 +902,9 @@ year,era,team,position,finish,reached,matches,wins,draws,losses,goals_for,goals_
 <script>
 const COLORS = {
   Champion: {fill:"#e3b23c", edge:"#9c7715"},
-  "Runner-up": {fill:"#b9bdc4", edge:"#7d828b"},
+  "Runner-up": {fill:"#969ca6", edge:"#646973"},
   Third: {fill:"#c47f3e", edge:"#8a5421"},
-  Field: {fill:"#aeb6c5", edge:"#7d828b"},
+  Field: {fill:"#c4cad3", edge:"#9aa0a9"},
 };
 const RANK = {Champion:0, "Runner-up":1, Third:2, Field:3};
 const W = 1000, H = 820;
@@ -1221,7 +1221,7 @@ function addDefs(svg){
     stops.forEach(([o,col]) => g.append("stop").attr("offset",o).attr("stop-color",col));
   };
   foil("foilGold",   [["0%","#9c7715"],["32%","#ffe9a3"],["52%","#e3b23c"],["72%","#fff3cf"],["100%","#c79a2e"]]);
-  foil("foilSilver", [["0%","#7d828b"],["32%","#f2f4f6"],["52%","#b9bdc4"],["72%","#ffffff"],["100%","#9aa0a6"]]);
+  foil("foilSilver", [["0%","#565a62"],["32%","#d8dce1"],["52%","#878c95"],["72%","#f4f6f8"],["100%","#646973"]]);
   foil("foilBronze", [["0%","#8a5421"],["32%","#e6a766"],["52%","#c47f3e"],["72%","#f0c79b"],["100%","#a96a2c"]]);
   // screen-space (45°) foil for the big ridges, so the shine runs the SAME
   // top-left→bottom-right direction as the stickers (cohesive light source).
@@ -1232,7 +1232,7 @@ function addDefs(svg){
     stops.forEach(([o,c]) => g.append("stop").attr("offset",o).attr("stop-color",c));
   };
   foilU("foilGoldR",   [["0%","#c79a2e"],["38%","#ffe9a3"],["50%","#e3b23c"],["62%","#fff3cf"],["100%","#c79a2e"]]);
-  foilU("foilSilverR", [["0%","#9aa0a6"],["38%","#eef0f3"],["50%","#c4c8cf"],["62%","#ffffff"],["100%","#9aa0a6"]]);
+  foilU("foilSilverR", [["0%","#767c85"],["38%","#dde1e5"],["50%","#969ca6"],["62%","#f5f7f9"],["100%","#767c85"]]);
   foilU("foilBronzeR", [["0%","#a96a2c"],["38%","#e6a766"],["50%","#c47f3e"],["62%","#f0c79b"],["100%","#a96a2c"]]);
   Object.entries(FDIM).forEach(([k,f]) => {
     defs.append("clipPath").attr("id","fclip-"+cssKey(k)).append("rect")
@@ -1297,7 +1297,7 @@ function renderMarker(sel, d){
        .attr("class","sticker-shadow");
   } else if (d.finish==="Field") {
     sel.append("rect").attr("x",-3.5).attr("y",-3.5).attr("width",7).attr("height",7).attr("rx",1.5)
-       .attr("fill",c.fill).attr("stroke","#fff").attr("stroke-width",.6).attr("opacity",.9);
+       .attr("fill",c.fill).attr("stroke","#fff").attr("stroke-width",.6).attr("opacity",.62);
   } else {
     const s = DIM[d.finish];
     sel.append("rect").attr("x",-s.w/2).attr("y",-s.h/2).attr("width",s.w).attr("height",s.h).attr("rx",3)
@@ -1310,7 +1310,7 @@ function tierCentroid(key){
   const g = DATA.filter(d=>d.finish===key);
   return { ga: d3.mean(g,d=>d.ga_pg), gf: d3.mean(g,d=>d.gf_pg) };
 }
-const TIER_FILL = { Champion:"url(#foilGold)", "Runner-up":"url(#foilSilver)", Third:"url(#foilBronze)", Field:"#b9c0cc" };
+const TIER_FILL = { Champion:"url(#foilGold)", "Runner-up":"url(#foilSilver)", Third:"url(#foilBronze)", Field:"#c4cad3" };
 
 function drawMarginals(svg){
   // RIDGELINE with the album foil shine, gently overlapping, each tier hoverable
