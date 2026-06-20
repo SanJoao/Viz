@@ -1014,7 +1014,7 @@ function draw() {
   svg.append("text").attr("class","axis-title").attr("text-anchor","middle")
      .attr("x",(PX0+PX1)/2).attr("y",H-30).text(L("axX","Goals conceded per game    « stingier · leakier »"));
   svg.append("text").attr("class","axis-title").attr("text-anchor","middle")
-     .attr("transform",`translate(${PX1+26},${(PY0+PY1)/2}) rotate(90)`).text(L("axY","Goals scored per game   «attack»"));
+     .attr("transform",`translate(${PX1+26},${(PY0+PY1)/2}) rotate(90)`).text(L("axY","Goals scored per game · more attack ←"));
 
   // quadrant labels (raised above the cloud & markers at the end of draw)
   const ql = svg.append("g").attr("class","quads");
@@ -1857,7 +1857,7 @@ Object.assign(DICT.ar, {
 });
 // in-chart text: axis titles, quadrant labels, marginal notes, tooltips, timeline, rules
 Object.assign(DICT.es, {
-  axX:"Goles recibidos por partido    « más tacaño · más goleado »", axY:"Goles marcados por partido   «ataque»",
+  axX:"Goles recibidos por partido    « más tacaño · más goleado »", axY:"Goles marcados por partido · más ataque ←",
   quadUnt:"LOS INTOCABLES", quadCav:"LOS TEMERARIOS", quadCan:"CARNE DE CAÑÓN", quadBus:"ATRINCHERADOS",
   margDef:"DEFENSA — por puesto en el podio · pasa sobre una cresta · más tacaño ←", margAtk:"ATAQUE — todos se superponen",
   ord1:"1.º", ord2:"2.º", ord3:"3.º",
@@ -1871,7 +1871,7 @@ Object.assign(DICT.es, {
   rule1970:"Sustituciones (2) + tarjetas amarilla y roja", rule1982:"El torneo se amplía: 16 → 24 equipos (más clasificados, más desequilibrios)", rule1990:"Fuera de juego a favor del atacante (a la par = habilitado) + la falta táctica pasa a tarjeta roja — tras Italia '90, el Mundial menos goleador de la historia", rule1994:"Prohibición del pase atrás (1992) + 3 puntos por victoria — el fútbol reacciona contra el juego defensivo", rule1998:"El torneo se amplía: 24 → 32 equipos · y la entrada por detrás pasa a tarjeta roja", rule2014:"Llega la tecnología de línea de gol", rule2018:"Llega el VAR (más penales)", rule2022:"Hasta 5 sustituciones",
 });
 Object.assign(DICT.pt, {
-  axX:"Gols sofridos por jogo    « mais econômico · mais vazado »", axY:"Gols feitos por jogo   «ataque»",
+  axX:"Gols sofridos por jogo    « mais econômico · mais vazado »", axY:"Gols feitos por jogo · mais ataque ←",
   quadUnt:"OS INTOCÁVEIS", quadCav:"OS DESTEMIDOS", quadCan:"BUCHA DE CANHÃO", quadBus:"NA RETRANCA",
   margDef:"DEFESA — por posição no pódio · passe o cursor numa crista · mais econômico ←", margAtk:"ATAQUE — todos se sobrepõem",
   ord1:"1º", ord2:"2º", ord3:"3º",
@@ -1885,7 +1885,7 @@ Object.assign(DICT.pt, {
   rule1970:"Substituições (2) + cartões amarelo e vermelho", rule1982:"O torneio cresce: 16 → 24 seleções (mais classificados, mais goleadas)", rule1990:"Impedimento a favor do atacante (na linha = legal) + a falta tática vira cartão vermelho — após a Itália '90, a Copa de menos gols da história", rule1994:"Proibição do recuo para o goleiro (1992) + 3 pontos por vitória — o futebol reage ao jogo defensivo", rule1998:"O torneio cresce: 24 → 32 seleções · e o carrinho por trás vira cartão vermelho", rule2014:"Chega a tecnologia da linha do gol", rule2018:"Chega o VAR (mais pênaltis)", rule2022:"Até 5 substituições",
 });
 Object.assign(DICT.fr, {
-  axX:"Buts encaissés par match    « plus avare · plus perméable »", axY:"Buts marqués par match   «attaque»",
+  axX:"Buts encaissés par match    « plus avare · plus perméable »", axY:"Buts marqués par match · plus d'attaque ←",
   quadUnt:"LES INTOUCHABLES", quadCav:"LES CAVALIERS", quadCan:"CHAIR À CANON", quadBus:"LE BÉTON",
   margDef:"DÉFENSE — par place sur le podium · survolez une crête · plus avare ←", margAtk:"ATTAQUE — tout se superpose",
   ord1:"1er", ord2:"2e", ord3:"3e",
@@ -1899,7 +1899,7 @@ Object.assign(DICT.fr, {
   rule1970:"Remplacements (2) + cartons jaune et rouge", rule1982:"Le tournoi s'agrandit : 16 → 24 équipes (plus de qualifiés, plus de déséquilibres)", rule1990:"Hors-jeu en faveur de l'attaquant (à hauteur = autorisé) + la faute professionnelle devient un carton rouge — après Italia '90, la Coupe la moins prolifique de l'histoire", rule1994:"Interdiction de la passe en retrait (1992) + 3 points par victoire — le foot réagit au jeu défensif", rule1998:"Le tournoi s'agrandit : 24 → 32 équipes · et le tacle par-derrière devient un carton rouge", rule2014:"Arrivée de la technologie sur la ligne de but", rule2018:"Arrivée de la VAR (plus de penalties)", rule2022:"Jusqu'à 5 remplacements",
 });
 Object.assign(DICT.de, {
-  axX:"Gegentore pro Spiel    « geiziger · durchlässiger »", axY:"Erzielte Tore pro Spiel   «Angriff»",
+  axX:"Gegentore pro Spiel    « geiziger · durchlässiger »", axY:"Erzielte Tore pro Spiel · mehr Angriff ←",
   quadUnt:"DIE UNANTASTBAREN", quadCav:"DIE DRAUFGÄNGER", quadCan:"KANONENFUTTER", quadBus:"MAUERN",
   margDef:"ABWEHR — nach Podestplatz · fahre über einen Kamm · geiziger ←", margAtk:"ANGRIFF — alles überlappt",
   ord1:"1.", ord2:"2.", ord3:"3.",
@@ -1913,7 +1913,7 @@ Object.assign(DICT.de, {
   rule1970:"Auswechslungen (2) + Gelbe & Rote Karten eingeführt", rule1982:"Das Turnier wächst: 16 → 24 Teams (mehr Qualifikanten, mehr Kantersiege)", rule1990:"Abseits zugunsten des Angreifers (auf gleicher Höhe = onside) + das taktische Foul wird Rote Karte — nach Italia '90, der torärmsten WM aller Zeiten", rule1994:"Rückpassverbot (1992) + 3 Punkte pro Sieg — der Fußball wehrt sich gegen die defensive Vorsicht", rule1998:"Das Turnier wächst: 24 → 32 Teams · und die Grätsche von hinten wird Rote Karte", rule2014:"Torlinientechnik kommt", rule2018:"VAR eingeführt (mehr Elfmeter)", rule2022:"Bis zu 5 Auswechslungen",
 });
 Object.assign(DICT.nl, {
-  axX:"Tegendoelpunten per wedstrijd    « zuiniger · meer tegen »", axY:"Gemaakte doelpunten per wedstrijd   «aanval»",
+  axX:"Tegendoelpunten per wedstrijd    « zuiniger · meer tegen »", axY:"Gemaakte doelpunten per wedstrijd · meer aanval ←",
   quadUnt:"DE ONAANTASTBAREN", quadCav:"DE WAAGHALZEN", quadCan:"KANONNENVLEES", quadBus:"DE BUS",
   margDef:"VERDEDIGING — per podiumplaats · beweeg over een rug · zuiniger ←", margAtk:"AANVAL — alles overlapt",
   ord1:"1e", ord2:"2e", ord3:"3e",
@@ -1927,7 +1927,7 @@ Object.assign(DICT.nl, {
   rule1970:"Wissels (2) + gele & rode kaarten ingevoerd", rule1982:"Het toernooi groeit: 16 → 24 teams (meer deelnemers, meer mismatches)", rule1990:"Buitenspel in het voordeel van de aanvaller (gelijk = onside) + de tactische overtreding wordt rood — na Italia '90, het WK met de minste goals ooit", rule1994:"Terugspeelverbod (1992) + 3 punten per zege — het voetbal verzet zich tegen verdedigend spel", rule1998:"Het toernooi groeit: 24 → 32 teams · en de tackle van achteren wordt rood", rule2014:"Doellijntechnologie doet zijn intrede", rule2018:"VAR ingevoerd (meer penalty's)", rule2022:"Tot 5 wissels",
 });
 Object.assign(DICT.ar, {
-  axX:"الأهداف المستقبَلة في المباراة    « أكثر تقشفًا · أكثر استقبالًا »", axY:"الأهداف المسجَّلة في المباراة   «الهجوم»",
+  axX:"الأهداف المستقبَلة في المباراة    « أكثر تقشفًا · أكثر استقبالًا »", axY:"الأهداف المسجَّلة في المباراة · هجوم أكثر ←",
   quadUnt:"الذين لا يُقهَرون", quadCav:"المغامرون", quadCan:"وقود المدافع", quadBus:"حافلة الدفاع",
   margDef:"الدفاع — حسب مركز المنصة · مرّر فوق منحنى · أكثر تقشفًا ←", margAtk:"الهجوم — الكل يتداخل",
   ord1:"الأول", ord2:"الثاني", ord3:"الثالث",
