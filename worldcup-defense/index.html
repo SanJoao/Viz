@@ -182,7 +182,9 @@
   #search { width: 100%; padding: 9px 12px; margin: 12px 0 10px; background: var(--panel);
     border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 14px; outline: none; }
   #search:focus { border-color: var(--accent); }
+  .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  #tbl { min-width: 460px; }  /* keep columns legible; the wrapper scrolls on narrow screens */
   th, td { text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--line); }
   th { color: var(--muted); font-weight: 600; }
   th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
@@ -351,6 +353,7 @@
   <details>
     <summary><h2><span data-i18n="tableTitle">Every team, every World Cup — browse &amp; search all 489</span> <span class="caret">▾</span></h2></summary>
     <input id="search" class="ui" type="text" data-i18n-attr="placeholder:searchPh" placeholder="Search a team… (e.g. Brazil, Italy, Cameroon)">
+    <div class="tbl-scroll">
     <table id="tbl">
       <thead><tr>
         <th class="sortable" data-k="year" data-i18n="thYear">Year</th>
@@ -363,6 +366,7 @@
       </tr></thead>
       <tbody></tbody>
     </table>
+    </div>
     <p class="hint ui" id="count-note"></p>
   </details>
 </section>
@@ -910,6 +914,9 @@ const TOP_BAND = [20, PADT - 12];      // top marginal y-range
 const LEFT_BAND = [8, 78];             // attack ridgeline on the far left (left of the y-axis)
 
 const tooltip = d3.select("#tooltip");
+// touch devices have no hover, so a tooltip shown on tap would never clear —
+// on touch we skip the hover tooltip entirely; a tap pins the full detail card instead
+const TOUCH = !!(window.matchMedia && window.matchMedia("(hover: none)").matches);
 function placeTooltip(ev) {
   const node = tooltip.node();
   let x = ev.clientX + 14, y = ev.clientY + 14;
@@ -1047,7 +1054,7 @@ function drawClimb(svg){
      .attr("cx",d=>d.x).attr("cy",d=>d.y).attr("r",6.5)
      .attr("fill",d=>TIER_FILL[d.key]).attr("stroke","#d8232a").attr("stroke-width",2)
      .style("cursor","help")
-     .on("mouseover",(ev,d)=>{ const medal={Champion:L("sh1","🏆 1st"),["Runner-up"]:L("sh2","🥈 2nd"),Third:L("sh3","🥉 3rd"),Field:L("clField","the field")}[d.key];
+     .on("mouseover",(ev,d)=>{ if (TOUCH) return; const medal={Champion:L("sh1","🏆 1st"),["Runner-up"]:L("sh2","🥈 2nd"),Third:L("sh3","🥉 3rd"),Field:L("clField","the field")}[d.key];
        tooltip.html(
          `<div class="tt-team">${d.label} <span style="color:var(--muted)">(${medal})</span></div>
           <div class="tt-row">⚽ ${L("clScores","scores")} <b>${d.gf.toFixed(2)}</b>/g &nbsp;·&nbsp; 🛡 ${L("clConcedes","concedes")} <b>${d.ga.toFixed(2)}</b>/g</div>
@@ -1394,6 +1401,7 @@ function drawMarginals(svg){
 
 // ---- interactions ----------------------------------------------------
 function showTip(ev,d){
+  if (TOUCH) return;
   const c = COLORS[d.finish];
   tooltip.html(`
     <div class="tt-team">${teamName(d.team)} <span style="color:var(--muted);font-weight:400">'${String(d.year).slice(2)}</span></div>
@@ -2106,11 +2114,13 @@ vizI18n.init({ dict: DICT, onApply: () => {
       if (!doc.exists) return; showGoal(doc.data(), tickerSeen); tickerSeen = true;
     });
   } else {
+    // no live Firestore (running locally) → show an example board so the layout is
+    // testable; the "simulate a goal" control is dev-only, gated behind ?mock=1
     demoState = DEMO.map(r => ({ ...r }));
     prevRanks = { ...DEMO_PREV };
-    simEl.hidden = false;
     render(demoState);
     showGoal({ name: "Mateo", flag: "co", amount: 1, currency: "USD", toRank: 1, jump: 0 }, false);
+    if (forceMock) simEl.hidden = false;
     simEl.addEventListener("click", () => {
       const i = 1 + Math.floor(Math.random() * (demoState.length - 1));
       const r = demoState[i], above = demoState[i - 1], oldRank = i + 1;
