@@ -105,7 +105,7 @@
   .axis-title { fill: var(--ink); font-size: 13px; font-weight: 600; font-family: "Barlow", sans-serif; }
   .marg-note { fill: var(--ink); font-size: 11.5px; font-style: italic; font-family: "Barlow", sans-serif; }
   .pt { cursor: pointer; }
-  .pt.dim { opacity: .08 !important; }
+  .pt.dim { opacity: .06 !important; pointer-events: none; }  /* filtered-out: faint context, but not hoverable */
   .pt.pinned { outline: none; }
   .sticker-shadow { filter: drop-shadow(0 1px 1.5px rgba(21,34,77,.35)); }
 
@@ -908,10 +908,10 @@ const COLORS = {
 };
 const RANK = {Champion:0, "Runner-up":1, Third:2, Field:3};
 const W = 1000, H = 820;
-const PADL = 120, PADR = 44, PADT = 126, PADB = 80;
+const PADL = 52, PADR = 96, PADT = 126, PADB = 80;
 const PX0 = PADL, PX1 = W - PADR, PY0 = PADT, PY1 = H - PADB;  // plot box
-const TOP_BAND = [20, PADT - 12];      // top marginal y-range
-const LEFT_BAND = [8, 78];             // attack ridgeline on the far left (left of the y-axis)
+const TOP_BAND = [20, PADT - 12];          // top marginal y-range (defense, opposite its axis numbers)
+const RIGHT_BAND = [PX1 + 8, W - 10];      // attack ridgeline on the far right (opposite its y-axis numbers)
 
 const tooltip = d3.select("#tooltip");
 // touch devices have no hover, so a tooltip shown on tap would never clear —
@@ -926,6 +926,11 @@ function placeTooltip(ev) {
 }
 
 let DATA = [], MGA, MGF, pinned = null;
+// the marginals expose their hover-connector so the climb centroids can trigger it too
+let margLinkTo = null, margClearLink = null;
+// data limited to the selected era — drives the ridgelines, climb line & centroids,
+// so the podium summary reflects the era you're looking at (not all-time)
+function eraData(){ return state.era === "all" ? DATA : DATA.filter(d => d.era === state.era); }
 const state = { tiers: new Set(["Champion","Runner-up","Third","Field"]), era: "all", markers: "dots", view: "map" };
 let sortKey = "year", sortDir = 1;
 
@@ -1014,7 +1019,7 @@ function draw() {
   svg.append("text").attr("class","axis-title").attr("text-anchor","middle")
      .attr("x",(PX0+PX1)/2).attr("y",H-30).text(L("axX","Goals conceded per game    « stingier · leakier »"));
   svg.append("text").attr("class","axis-title").attr("text-anchor","middle")
-     .attr("transform",`translate(${PX1+26},${(PY0+PY1)/2}) rotate(90)`).text(L("axY","Goals scored per game · more attack ←"));
+     .attr("transform",`translate(16,${(PY0+PY1)/2}) rotate(-90)`).text(L("axY","Goals scored per game · more attack →"));
 
   // quadrant labels (raised above the cloud & markers at the end of draw)
   const ql = svg.append("g").attr("class","quads");
@@ -1040,7 +1045,7 @@ function drawClimb(svg){
   const order = ["Field","Third","Runner-up","Champion"];
   const labels = {Field:L("clAlsoRan","the average also-ran"), Third:L("clThird","the average 3rd place"),
                   "Runner-up":L("clRunner","the average runner-up"), Champion:L("clChampion","the average champion")};
-  const cents = order.map(o => { const g = DATA.filter(d=>d.finish===o);
+  const cents = order.map(o => { const g = eraData().filter(d=>d.finish===o);
     const ga=d3.mean(g,d=>d.ga_pg), gf=d3.mean(g,d=>d.gf_pg);
     return {key:o, x:x(ga), y:y(gf), ga, gf, label:labels[o]}; });
   const cg = svg.append("g").attr("class","climb");   // raised above the stickers
@@ -1054,13 +1059,15 @@ function drawClimb(svg){
      .attr("cx",d=>d.x).attr("cy",d=>d.y).attr("r",6.5)
      .attr("fill",d=>TIER_FILL[d.key]).attr("stroke","#d8232a").attr("stroke-width",2)
      .style("cursor","help")
-     .on("mouseover",(ev,d)=>{ if (TOUCH) return; const medal={Champion:L("sh1","🏆 1st"),["Runner-up"]:L("sh2","🥈 2nd"),Third:L("sh3","🥉 3rd"),Field:L("clField","the field")}[d.key];
+     .on("mouseover",(ev,d)=>{ if (TOUCH) return;
+       if (margLinkTo && d.key !== "Field") margLinkTo({ key:d.key });   // same connector as hovering the distribution
+       const medal={Champion:L("sh1","🏆 1st"),["Runner-up"]:L("sh2","🥈 2nd"),Third:L("sh3","🥉 3rd"),Field:L("clField","the field")}[d.key];
        tooltip.html(
          `<div class="tt-team">${d.label} <span style="color:var(--muted)">(${medal})</span></div>
           <div class="tt-row">⚽ ${L("clScores","scores")} <b>${d.gf.toFixed(2)}</b>/g &nbsp;·&nbsp; 🛡 ${L("clConcedes","concedes")} <b>${d.ga.toFixed(2)}</b>/g</div>
           <div class="tt-row" style="font-style:italic">${L("clPath","the dashed line is the path from also-ran to champion — flat in attack, dropping in defense")}</div>`)
          .style("opacity",1); placeTooltip(ev); })
-     .on("mousemove",placeTooltip).on("mouseout",()=>tooltip.style("opacity",0));
+     .on("mousemove",placeTooltip).on("mouseout",()=>{ tooltip.style("opacity",0); if (margClearLink) margClearLink(); });
 }
 
 // ---- TIMELINE view ---------------------------------------------------
@@ -1099,11 +1106,11 @@ function tlPrepDens(){
 }
 // ridge generators — flat baseline toward the plot, density toward the edge (matches map view)
 const tlHTop  = () => (TOP_BAND[1]-TOP_BAND[0]) - 4;
-const tlWLeft = () => (LEFT_BAND[1]-LEFT_BAND[0]) - 3;
+const tlWRight = () => (RIGHT_BAND[1]-RIGHT_BAND[0]) - 3;
 const tlTopArea = d => d3.area().x(p=>x(p.c)).y0(TOP_BAND[1]).y1(p=>TOP_BAND[1] - p.d/tlMaxGa*tlHTop()).curve(d3.curveBasis)(d);
 const tlTopLine = d => d3.line().x(p=>x(p.c)).y(p=>TOP_BAND[1] - p.d/tlMaxGa*tlHTop()).curve(d3.curveBasis)(d);
-const tlLeftArea = d => d3.area().y(p=>y(p.c)).x0(LEFT_BAND[1]).x1(p=>LEFT_BAND[1] - p.d/tlMaxGf*tlWLeft()).curve(d3.curveBasis)(d);
-const tlLeftLine = d => d3.line().y(p=>y(p.c)).x(p=>LEFT_BAND[1] - p.d/tlMaxGf*tlWLeft()).curve(d3.curveBasis)(d);
+const tlRightArea = d => d3.area().y(p=>y(p.c)).x0(RIGHT_BAND[0]).x1(p=>RIGHT_BAND[0] + p.d/tlMaxGf*tlWRight()).curve(d3.curveBasis)(d);
+const tlRightLine = d => d3.line().y(p=>y(p.c)).x(p=>RIGHT_BAND[0] + p.d/tlMaxGf*tlWRight()).curve(d3.curveBasis)(d);
 function tlSetup(){
   tlByYear = d3.group(DATA, d=>d.year);
   tlYears = Array.from(tlByYear.keys()).sort((a,b)=>a-b);
@@ -1130,14 +1137,14 @@ function drawTimeline(svg){
      .attr("d", tlTopArea(tlDensGa.get(d0)));
   svg.append("path").attr("class","tl-ridge-top-line").attr("fill","none").attr("stroke","#1f5fd0").attr("stroke-width",1.1)
      .attr("d", tlTopLine(tlDensGa.get(d0)));
-  svg.append("path").attr("class","tl-ridge-left").attr("fill","#7e98d2").attr("opacity",.45)
-     .attr("d", tlLeftArea(tlDensGf.get(d0)));
-  svg.append("path").attr("class","tl-ridge-left-line").attr("fill","none").attr("stroke","#1f5fd0").attr("stroke-width",1.1)
-     .attr("d", tlLeftLine(tlDensGf.get(d0)));
+  svg.append("path").attr("class","tl-ridge-right").attr("fill","#7e98d2").attr("opacity",.45)
+     .attr("d", tlRightArea(tlDensGf.get(d0)));
+  svg.append("path").attr("class","tl-ridge-right-line").attr("fill","none").attr("stroke","#1f5fd0").attr("stroke-width",1.1)
+     .attr("d", tlRightLine(tlDensGf.get(d0)));
   svg.append("text").attr("class","marg-note").attr("x",PX0).attr("y",TOP_BAND[0]+2)
      .text(L("tlConceded","🛡 conceded — this World Cup's field (watch it shift) →"));
-  svg.append("text").attr("class","marg-note").attr("x",LEFT_BAND[0]).attr("y",PY1+12)
-     .attr("text-anchor","start").text(L("tlScored","⚽ scored ↑"));
+  svg.append("text").attr("class","marg-note").attr("x",RIGHT_BAND[1]).attr("y",PY1+12)
+     .attr("text-anchor","end").text(L("tlScored","⚽ scored ↑"));
 
   svg.append("g").attr("class","tl-teams");
   svg.append("g").attr("class","tl-marker");
@@ -1160,7 +1167,7 @@ function tlRender(i){
      .on("mouseover",(ev,d)=>showTip(ev,d)).on("mousemove",placeTooltip)
      .on("mouseout",()=>tooltip.style("opacity",0));
   ent.merge(sel).transition().duration(450)
-     .attr("transform", d=>`translate(${x(d.ga_pg)},${y(d.gf_pg)})`).attr("opacity",.6);
+     .attr("transform", d=>`translate(${x(d.ga_pg)},${y(d.gf_pg)})`).attr("opacity",1);
   // moving average-team marker
   const a = tlAvg(year);
   let dot = svg.select(".tl-marker").selectAll("circle.am").data([a]);
@@ -1172,10 +1179,10 @@ function tlRender(i){
   const da = tlDensGa.get(year), df = tlDensGf.get(year);
   svg.select(".tl-ridge-top").transition().duration(450).attr("d", tlTopArea(da));
   svg.select(".tl-ridge-top-line").transition().duration(450).attr("d", tlTopLine(da));
-  svg.select(".tl-ridge-left").transition().duration(450).attr("d", tlLeftArea(df));
-  svg.select(".tl-ridge-left-line").transition().duration(450).attr("d", tlLeftLine(df));
+  svg.select(".tl-ridge-right").transition().duration(450).attr("d", tlRightArea(df));
+  svg.select(".tl-ridge-right-line").transition().duration(450).attr("d", tlRightLine(df));
   svg.select(".tl-year").text(year);
-  svg.select(".tl-sub").text(L("tlSub","● avg of {n} teams — scored {gf}, conceded {ga} per game · faint = each team")
+  svg.select(".tl-sub").text(L("tlSub","● avg of {n} teams — scored {gf}, conceded {ga} per game · each mark = a team")
      .replace("{n}",a.n).replace("{gf}",a.gf.toFixed(2)).replace("{ga}",a.ga.toFixed(2)));
   updateScrubber(year);
 }
@@ -1307,7 +1314,7 @@ function renderMarker(sel, d){
 }
 
 function tierCentroid(key){
-  const g = DATA.filter(d=>d.finish===key);
+  const g = eraData().filter(d=>d.finish===key);
   return { ga: d3.mean(g,d=>d.ga_pg), gf: d3.mean(g,d=>d.gf_pg) };
 }
 const TIER_FILL = { Champion:"url(#foilGold)", "Runner-up":"url(#foilSilver)", Third:"url(#foilBronze)", Field:"#c4cad3" };
@@ -1326,7 +1333,7 @@ function drawMarginals(svg){
       const u=(g-v)/bw; return Math.exp(-0.5*u*u)/(Math.sqrt(2*Math.PI)*bw);
     })}));
   }
-  const data = t => DATA.filter(d=>d.finish===t.key);
+  const data = t => eraData().filter(d=>d.finish===t.key);
   const RIDGE_FILL = { Champion:"url(#foilGoldR)", "Runner-up":"url(#foilSilverR)", Third:"url(#foilBronzeR)" };
   const layout = {};
   const emph = svg.append("g").attr("class","marg-emph").style("pointer-events","none");
@@ -1340,6 +1347,7 @@ function drawMarginals(svg){
       .attr("stroke","#d8232a").attr("stroke-width",2.4).attr("opacity",.95);
   }
   const clearLink = () => emph.selectAll("*").remove();
+  margLinkTo = linkTo; margClearLink = clearLink;   // let the climb centroids reuse it
 
   // ---- DEFENSE (top): overlapping ridges; gold→bronze so BRONZE is on top.
   // Each red mean line is drawn INSIDE its ridge group, so ridges stacked on top
@@ -1367,16 +1375,16 @@ function drawMarginals(svg){
     layout[t.key] = {...(layout[t.key]||{}), def:[x(mean), baseY]};
   });
 
-  // ---- ATTACK (on the LEFT): columns with the FLAT side toward the plot (right)
-  // and the density growing LEFT toward the edge. 1st outermost (reaches the edge);
+  // ---- ATTACK (on the RIGHT): columns with the FLAT side toward the plot (left)
+  // and the density growing RIGHT toward the edge. 1st outermost (reaches the edge);
   // bronze drawn last (on top). Same per-ridge red mean line. ----
-  const bw = LEFT_BAND[1]-LEFT_BAND[0], pitchW = bw/3.6, wR = pitchW*1.6;
+  const bw = RIGHT_BAND[1]-RIGHT_BAND[0], pitchW = bw/3.6, wR = pitchW*1.6;
   const atkK = TIERS.map(t => kde(data(t).map(d=>d.gf_pg), 0, 5.7, 0.5));
   const atkMax = d3.max(atkK.flat(), p=>p.d);
   [0,1,2].forEach(pi => {
     const t = TIERS[pi], dens = atkK[pi], vc = pi;
-    const flatX = LEFT_BAND[0] + pitchW*vc + wR;   // flat baseline on the RIGHT (toward plot)
-    const xv = p => flatX - p.d/atkMax*wR;          // density grows LEFT toward the edge
+    const flatX = RIGHT_BAND[1] - pitchW*vc - wR;  // flat baseline on the LEFT (toward plot)
+    const xv = p => flatX + p.d/atkMax*wR;          // density grows RIGHT toward the edge
     const mean = d3.mean(data(t), d=>d.gf_pg);
     const g = svg.append("g").style("cursor","pointer")
       .on("mouseover",()=>linkTo(t)).on("mouseout",clearLink);
@@ -1392,11 +1400,11 @@ function drawMarginals(svg){
 
   svg.append("text").attr("class","marg-note").attr("x",PX0).attr("y",TOP_BAND[0]-5)
      .text(L("margDef","DEFENSE — by podium place · hover a ridge · stingier ←"));
-  // attack label: split on " — " into two lines so it stays inside the left margin
+  // attack label: split on " — " into two lines so it stays inside the right margin
   const atk = L("margAtk","ATTACK — all overlap").split(" — ");
-  const atkT = svg.append("text").attr("class","marg-note").attr("x",LEFT_BAND[0]).attr("y",PY1+6).attr("text-anchor","start");
-  atkT.append("tspan").attr("x",LEFT_BAND[0]).text(atk[0] + (atk[1] ? " —" : ""));
-  if (atk[1]) atkT.append("tspan").attr("x",LEFT_BAND[0]).attr("dy","1.25em").text(atk[1]);
+  const atkT = svg.append("text").attr("class","marg-note").attr("x",RIGHT_BAND[1]).attr("y",PY1+6).attr("text-anchor","end");
+  atkT.append("tspan").attr("x",RIGHT_BAND[1]).text(atk[0] + (atk[1] ? " —" : ""));
+  if (atk[1]) atkT.append("tspan").attr("x",RIGHT_BAND[1]).attr("dy","1.25em").text(atk[1]);
 }
 
 // ---- interactions ----------------------------------------------------
@@ -1489,6 +1497,9 @@ document.body.addEventListener("click", () => { /* outside click keeps pin; clos
 function applyFilter(){
   d3.selectAll(".pt").classed("dim", d =>
     !state.tiers.has(d.finish) || (state.era!=="all" && d.era!==state.era));
+  // keep the in-filter markers drawn on top of the faint ghosts, so a hover
+  // always lands on a team that's actually in the current selection
+  d3.selectAll("g.pt:not(.dim)").raise();
 }
 function buildEraPills(){
   const eras = Array.from(new Set(DATA.map(d=>d.era)));
@@ -1507,7 +1518,8 @@ document.addEventListener("click", e => {
   d3.selectAll(".pill.era").classed("on",false);
   p.classList.add("on");
   state.era = p.dataset.era;
-  applyFilter(); buildTable();
+  if (state.view === "map") draw(); else applyFilter();  // redraw so ridges + climb recalc for the era
+  buildTable();
   vizTrack("era_filter",{era:state.era});
 });
 document.querySelectorAll("#marker-seg .seg-opt").forEach(btn => {
@@ -1857,7 +1869,7 @@ Object.assign(DICT.ar, {
 });
 // in-chart text: axis titles, quadrant labels, marginal notes, tooltips, timeline, rules
 Object.assign(DICT.es, {
-  axX:"Goles recibidos por partido    « más tacaño · más goleado »", axY:"Goles marcados por partido · más ataque ←",
+  axX:"Goles recibidos por partido    « más tacaño · más goleado »", axY:"Goles marcados por partido · más ataque →",
   quadUnt:"LOS INTOCABLES", quadCav:"LOS TEMERARIOS", quadCan:"CARNE DE CAÑÓN", quadBus:"ATRINCHERADOS",
   margDef:"DEFENSA — por puesto en el podio · pasa sobre una cresta · más tacaño ←", margAtk:"ATAQUE — todos se superponen",
   ord1:"1.º", ord2:"2.º", ord3:"3.º",
@@ -1866,12 +1878,12 @@ Object.assign(DICT.es, {
   ttScored:"marcó", ttConceded:"recibió", ttRecord:"{w}G {d}E {l}P en {m} partidos",
   stScored:"Marcados /p", stConceded:"Recibidos /p", stDiff:"Dif. de gol /p", stWDL:"G-E-P",
   tlConceded:"🛡 recibidos — el campo de este Mundial (míralo cambiar) →", tlScored:"⚽ marcados ↑",
-  tlSub:"● promedio de {n} equipos — marcaron {gf}, recibieron {ga} por partido · tenue = cada equipo",
+  tlSub:"● promedio de {n} equipos — marcaron {gf}, recibieron {ga} por partido · cada marca = un equipo",
   tlPlay:"▶ Reproducir", tlPause:"❚❚ Pausa", countNote:"{n} equipos-torneo mostrados", countTop:" (primeros 400)",
   rule1970:"Sustituciones (2) + tarjetas amarilla y roja", rule1982:"El torneo se amplía: 16 → 24 equipos (más clasificados, más desequilibrios)", rule1990:"Fuera de juego a favor del atacante (a la par = habilitado) + la falta táctica pasa a tarjeta roja — tras Italia '90, el Mundial menos goleador de la historia", rule1994:"Prohibición del pase atrás (1992) + 3 puntos por victoria — el fútbol reacciona contra el juego defensivo", rule1998:"El torneo se amplía: 24 → 32 equipos · y la entrada por detrás pasa a tarjeta roja", rule2014:"Llega la tecnología de línea de gol", rule2018:"Llega el VAR (más penales)", rule2022:"Hasta 5 sustituciones",
 });
 Object.assign(DICT.pt, {
-  axX:"Gols sofridos por jogo    « mais econômico · mais vazado »", axY:"Gols feitos por jogo · mais ataque ←",
+  axX:"Gols sofridos por jogo    « mais econômico · mais vazado »", axY:"Gols feitos por jogo · mais ataque →",
   quadUnt:"OS INTOCÁVEIS", quadCav:"OS DESTEMIDOS", quadCan:"BUCHA DE CANHÃO", quadBus:"NA RETRANCA",
   margDef:"DEFESA — por posição no pódio · passe o cursor numa crista · mais econômico ←", margAtk:"ATAQUE — todos se sobrepõem",
   ord1:"1º", ord2:"2º", ord3:"3º",
@@ -1880,12 +1892,12 @@ Object.assign(DICT.pt, {
   ttScored:"fez", ttConceded:"sofreu", ttRecord:"{w}V {d}E {l}D em {m} jogos",
   stScored:"Feitos /j", stConceded:"Sofridos /j", stDiff:"Saldo /j", stWDL:"V-E-D",
   tlConceded:"🛡 sofridos — o campo desta Copa (veja mudar) →", tlScored:"⚽ feitos ↑",
-  tlSub:"● média de {n} seleções — fizeram {gf}, sofreram {ga} por jogo · tênue = cada seleção",
+  tlSub:"● média de {n} seleções — fizeram {gf}, sofreram {ga} por jogo · cada marca = uma seleção",
   tlPlay:"▶ Reproduzir", tlPause:"❚❚ Pausar", countNote:"{n} seleções-torneio exibidas", countTop:" (top 400)",
   rule1970:"Substituições (2) + cartões amarelo e vermelho", rule1982:"O torneio cresce: 16 → 24 seleções (mais classificados, mais goleadas)", rule1990:"Impedimento a favor do atacante (na linha = legal) + a falta tática vira cartão vermelho — após a Itália '90, a Copa de menos gols da história", rule1994:"Proibição do recuo para o goleiro (1992) + 3 pontos por vitória — o futebol reage ao jogo defensivo", rule1998:"O torneio cresce: 24 → 32 seleções · e o carrinho por trás vira cartão vermelho", rule2014:"Chega a tecnologia da linha do gol", rule2018:"Chega o VAR (mais pênaltis)", rule2022:"Até 5 substituições",
 });
 Object.assign(DICT.fr, {
-  axX:"Buts encaissés par match    « plus avare · plus perméable »", axY:"Buts marqués par match · plus d'attaque ←",
+  axX:"Buts encaissés par match    « plus avare · plus perméable »", axY:"Buts marqués par match · plus d'attaque →",
   quadUnt:"LES INTOUCHABLES", quadCav:"LES CAVALIERS", quadCan:"CHAIR À CANON", quadBus:"LE BÉTON",
   margDef:"DÉFENSE — par place sur le podium · survolez une crête · plus avare ←", margAtk:"ATTAQUE — tout se superpose",
   ord1:"1er", ord2:"2e", ord3:"3e",
@@ -1894,12 +1906,12 @@ Object.assign(DICT.fr, {
   ttScored:"a marqué", ttConceded:"a encaissé", ttRecord:"{w}V {d}N {l}D sur {m} matchs",
   stScored:"Marqués /m", stConceded:"Encaissés /m", stDiff:"Diff. /m", stWDL:"V-N-D",
   tlConceded:"🛡 encaissés — le plateau de cette Coupe (regardez bouger) →", tlScored:"⚽ marqués ↑",
-  tlSub:"● moyenne de {n} équipes — {gf} marqués, {ga} encaissés par match · pâle = chaque équipe",
+  tlSub:"● moyenne de {n} équipes — {gf} marqués, {ga} encaissés par match · chaque marque = une équipe",
   tlPlay:"▶ Lecture", tlPause:"❚❚ Pause", countNote:"{n} équipes-tournois affichées", countTop:" (top 400)",
   rule1970:"Remplacements (2) + cartons jaune et rouge", rule1982:"Le tournoi s'agrandit : 16 → 24 équipes (plus de qualifiés, plus de déséquilibres)", rule1990:"Hors-jeu en faveur de l'attaquant (à hauteur = autorisé) + la faute professionnelle devient un carton rouge — après Italia '90, la Coupe la moins prolifique de l'histoire", rule1994:"Interdiction de la passe en retrait (1992) + 3 points par victoire — le foot réagit au jeu défensif", rule1998:"Le tournoi s'agrandit : 24 → 32 équipes · et le tacle par-derrière devient un carton rouge", rule2014:"Arrivée de la technologie sur la ligne de but", rule2018:"Arrivée de la VAR (plus de penalties)", rule2022:"Jusqu'à 5 remplacements",
 });
 Object.assign(DICT.de, {
-  axX:"Gegentore pro Spiel    « geiziger · durchlässiger »", axY:"Erzielte Tore pro Spiel · mehr Angriff ←",
+  axX:"Gegentore pro Spiel    « geiziger · durchlässiger »", axY:"Erzielte Tore pro Spiel · mehr Angriff →",
   quadUnt:"DIE UNANTASTBAREN", quadCav:"DIE DRAUFGÄNGER", quadCan:"KANONENFUTTER", quadBus:"MAUERN",
   margDef:"ABWEHR — nach Podestplatz · fahre über einen Kamm · geiziger ←", margAtk:"ANGRIFF — alles überlappt",
   ord1:"1.", ord2:"2.", ord3:"3.",
@@ -1908,12 +1920,12 @@ Object.assign(DICT.de, {
   ttScored:"erzielte", ttConceded:"kassierte", ttRecord:"{w}S {d}U {l}N in {m} Spielen",
   stScored:"Erzielt /Sp", stConceded:"Kassiert /Sp", stDiff:"Tordiff. /Sp", stWDL:"S-U-N",
   tlConceded:"🛡 kassiert — das Feld dieser WM (sieh zu, wie es sich verschiebt) →", tlScored:"⚽ erzielt ↑",
-  tlSub:"● Schnitt aus {n} Teams — {gf} erzielt, {ga} kassiert pro Spiel · blass = jedes Team",
+  tlSub:"● Schnitt aus {n} Teams — {gf} erzielt, {ga} kassiert pro Spiel · jede Marke = ein Team",
   tlPlay:"▶ Abspielen", tlPause:"❚❚ Pause", countNote:"{n} Team-Turniere angezeigt", countTop:" (Top 400)",
   rule1970:"Auswechslungen (2) + Gelbe & Rote Karten eingeführt", rule1982:"Das Turnier wächst: 16 → 24 Teams (mehr Qualifikanten, mehr Kantersiege)", rule1990:"Abseits zugunsten des Angreifers (auf gleicher Höhe = onside) + das taktische Foul wird Rote Karte — nach Italia '90, der torärmsten WM aller Zeiten", rule1994:"Rückpassverbot (1992) + 3 Punkte pro Sieg — der Fußball wehrt sich gegen die defensive Vorsicht", rule1998:"Das Turnier wächst: 24 → 32 Teams · und die Grätsche von hinten wird Rote Karte", rule2014:"Torlinientechnik kommt", rule2018:"VAR eingeführt (mehr Elfmeter)", rule2022:"Bis zu 5 Auswechslungen",
 });
 Object.assign(DICT.nl, {
-  axX:"Tegendoelpunten per wedstrijd    « zuiniger · meer tegen »", axY:"Gemaakte doelpunten per wedstrijd · meer aanval ←",
+  axX:"Tegendoelpunten per wedstrijd    « zuiniger · meer tegen »", axY:"Gemaakte doelpunten per wedstrijd · meer aanval →",
   quadUnt:"DE ONAANTASTBAREN", quadCav:"DE WAAGHALZEN", quadCan:"KANONNENVLEES", quadBus:"DE BUS",
   margDef:"VERDEDIGING — per podiumplaats · beweeg over een rug · zuiniger ←", margAtk:"AANVAL — alles overlapt",
   ord1:"1e", ord2:"2e", ord3:"3e",
@@ -1922,12 +1934,12 @@ Object.assign(DICT.nl, {
   ttScored:"maakte", ttConceded:"incasseerde", ttRecord:"{w}W {d}G {l}V in {m} wedstrijden",
   stScored:"Gemaakt /w", stConceded:"Tegen /w", stDiff:"Saldo /w", stWDL:"W-G-V",
   tlConceded:"🛡 tegen — het veld van dit WK (zie het verschuiven) →", tlScored:"⚽ gemaakt ↑",
-  tlSub:"● gemiddelde van {n} teams — {gf} gemaakt, {ga} tegen per wedstrijd · vaag = elk team",
+  tlSub:"● gemiddelde van {n} teams — {gf} gemaakt, {ga} tegen per wedstrijd · elke markering = een team",
   tlPlay:"▶ Afspelen", tlPause:"❚❚ Pauze", countNote:"{n} team-toernooien getoond", countTop:" (top 400)",
   rule1970:"Wissels (2) + gele & rode kaarten ingevoerd", rule1982:"Het toernooi groeit: 16 → 24 teams (meer deelnemers, meer mismatches)", rule1990:"Buitenspel in het voordeel van de aanvaller (gelijk = onside) + de tactische overtreding wordt rood — na Italia '90, het WK met de minste goals ooit", rule1994:"Terugspeelverbod (1992) + 3 punten per zege — het voetbal verzet zich tegen verdedigend spel", rule1998:"Het toernooi groeit: 24 → 32 teams · en de tackle van achteren wordt rood", rule2014:"Doellijntechnologie doet zijn intrede", rule2018:"VAR ingevoerd (meer penalty's)", rule2022:"Tot 5 wissels",
 });
 Object.assign(DICT.ar, {
-  axX:"الأهداف المستقبَلة في المباراة    « أكثر تقشفًا · أكثر استقبالًا »", axY:"الأهداف المسجَّلة في المباراة · هجوم أكثر ←",
+  axX:"الأهداف المستقبَلة في المباراة    « أكثر تقشفًا · أكثر استقبالًا »", axY:"الأهداف المسجَّلة في المباراة · هجوم أكثر →",
   quadUnt:"الذين لا يُقهَرون", quadCav:"المغامرون", quadCan:"وقود المدافع", quadBus:"حافلة الدفاع",
   margDef:"الدفاع — حسب مركز المنصة · مرّر فوق منحنى · أكثر تقشفًا ←", margAtk:"الهجوم — الكل يتداخل",
   ord1:"الأول", ord2:"الثاني", ord3:"الثالث",
@@ -1936,7 +1948,7 @@ Object.assign(DICT.ar, {
   ttScored:"سجّل", ttConceded:"استقبل", ttRecord:"{w} ف {d} ت {l} خ في {m} مباريات",
   stScored:"سُجِّلت /م", stConceded:"استُقبِلت /م", stDiff:"فارق الأهداف /م", stWDL:"ف-ت-خ",
   tlConceded:"🛡 المستقبَلة — منتخبات هذا الكأس (شاهدها تتغيّر) →", tlScored:"⚽ المسجَّلة ↑",
-  tlSub:"● متوسط {n} منتخبًا — سجّلت {gf}، استقبلت {ga} في المباراة · الباهت = كل منتخب",
+  tlSub:"● متوسط {n} منتخبًا — سجّلت {gf}، استقبلت {ga} في المباراة · كل علامة = منتخب",
   tlPlay:"▶ تشغيل", tlPause:"❚❚ إيقاف", countNote:"المعروض: {n}", countTop:" (أول 400)",
   rule1970:"التبديلات (2) + إدخال البطاقتين الصفراء والحمراء", rule1982:"توسّع البطولة: من 16 إلى 24 منتخبًا (مزيد من المتأهلين ومزيد من الفوارق)", rule1990:"تخفيف التسلل لصالح المهاجم (التساوي = صحيح) + الخطأ التكتيكي يصبح بطاقة حمراء — بعد إيطاليا '90، أقل كؤوس العالم تسجيلًا للأهداف", rule1994:"منع التمريرة الخلفية للحارس (1992) + 3 نقاط للفوز — كرة القدم تردّ على التحفّظ الدفاعي", rule1998:"توسّع البطولة: من 24 إلى 32 منتخبًا · والتدخل من الخلف يصبح بطاقة حمراء", rule2014:"وصول تقنية خط المرمى", rule2018:"إدخال تقنية الفيديو VAR (ركلات جزاء أكثر)", rule2022:"حتى 5 تبديلات",
 });
