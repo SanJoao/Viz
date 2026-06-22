@@ -52,3 +52,9 @@ Card "$here\cover.html" "$root\share.jpg"
 
 # 3. Entry 001 card → /worldcup2026/share.jpg
 Card "$here\entry-001.html" "$root\worldcup2026\share.jpg"
+
+# 4. Entry 002 card → /worldcup-defense/share.jpg (uses defense-raw.png, captured separately)
+Card "$here\entry-002.html" "$root\worldcup-defense\share.jpg"
+
+# 5. Entry 003 card → /density-topography/share.jpg (uses density-raw.png, captured separately)
+Card "$here\entry-003.html" "$root\density-topography\share.jpg"

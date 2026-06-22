@@ -10,8 +10,8 @@
 <meta property="og:site_name" content="viz">
 <meta property="og:title" content="To win the World Cup, defend.">
 <meta property="og:description" content="A great attack is optional — an elite defense is not. Every men's World Cup team, 1930–2022, mapped by attack vs defense.">
-<meta property="og:url" content="https://viz-luarai.web.app/worldcup-defense/">
-<meta property="og:image" content="https://viz-luarai.web.app/worldcup-defense/share.jpg">
+<meta property="og:url" content="https://viz.luarai.com/worldcup-defense/">
+<meta property="og:image" content="https://viz.luarai.com/worldcup-defense/share.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -73,6 +73,9 @@
   }
   .pill:hover { border-color: var(--accent); }
   .pill.off { opacity: .38; }
+  #depth-legend { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+  #depth-legend .dl { display: inline-flex; align-items: center; gap: 5px; }
+  #depth-legend .dl i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; box-shadow: 0 0 0 1px #fff, 0 1px 2px rgba(0,0,0,.2); }
   .pill .dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 6px; vertical-align: 0; box-shadow: 0 0 0 1.5px #fff, 0 1px 2px rgba(0,0,0,.25); }
   .pill .star { margin-right: 5px; font-size: 13px; line-height: 1; }
   .pill.era.on { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -323,6 +326,10 @@
     <span class="ctl-label" data-i18n="ctlEra">Era</span>
     <button class="pill era on" data-era="all" data-i18n="eraAll">All</button>
   </div>
+  <div class="ctl-group" id="depth-group">
+    <span class="ctl-label" data-i18n="ctlBreakdown">Detail</span>
+    <button class="pill depth off" id="depth-toggle" aria-pressed="false"><span class="dot" style="background:#6e8cc4"></span><span data-i18n="pillByRound">By round reached</span></button>
+  </div>
   </span>
   <div class="ctl-group">
     <span class="ctl-label" data-i18n="ctlMarkers">Markers</span>
@@ -333,6 +340,12 @@
   </div>
 </div>
 
+<div id="depth-legend" class="ui" hidden>
+  <span class="dl"><i style="background:#46689f"></i><span data-i18n="depFourth">4th place</span></span>
+  <span class="dl"><i style="background:#6e8cc4"></i><span data-i18n="depQF">Quarter-finals</span></span>
+  <span class="dl"><i style="background:#9fb1d6"></i><span data-i18n="depR16">Round of 16</span></span>
+  <span class="dl"><i style="background:#cdd3db"></i><span data-i18n="depGroup">Group stage</span></span>
+</div>
 <div class="hint ui" data-i18n="hintMap">Hover a dot for the quick read · click it to pin the full story · click a table row too</div>
 
 <div id="chart-wrap"><div id="chart"><div id="tl-rule-card" hidden></div></div></div>
@@ -907,6 +920,20 @@ const COLORS = {
   Field: {fill:"#c4cad3", edge:"#9aa0a9"},
 };
 const RANK = {Champion:0, "Runner-up":1, Third:2, Field:3};
+// Non-podium teams, optionally recolored by how far they got (the "by round
+// reached" toggle). Light to dark with depth so podium medal colors stay distinct.
+const DEPTH = {
+  p4:  { key:"depFourth", lbl:"4th place",      fill:"#46689f" },
+  qf:  { key:"depQF",     lbl:"Quarter-finals", fill:"#6e8cc4" },
+  r16: { key:"depR16",    lbl:"Round of 16",    fill:"#9fb1d6" },
+  grp: { key:"depGroup",  lbl:"Group stage",    fill:"#cdd3db" },
+};
+function depthBucket(d){
+  if (d.position === 4) return "p4";                                  // lost a semi (4th)
+  if (d.reached === "Quarter-finals") return "qf";
+  if (d.reached === "Round of 16" || d.reached === "2nd group stage") return "r16";
+  return "grp";                                                       // out in the group stage
+}
 const W = 1000, H = 820;
 const PADL = 52, PADR = 96, PADT = 126, PADB = 80;
 const PX0 = PADL, PX1 = W - PADR, PY0 = PADT, PY1 = H - PADB;  // plot box
@@ -931,7 +958,7 @@ let margLinkTo = null, margClearLink = null;
 // data limited to the selected era — drives the ridgelines, climb line & centroids,
 // so the podium summary reflects the era you're looking at (not all-time)
 function eraData(){ return state.era === "all" ? DATA : DATA.filter(d => d.era === state.era); }
-const state = { tiers: new Set(["Champion","Runner-up","Third","Field"]), era: "all", markers: "dots", view: "map" };
+const state = { tiers: new Set(["Champion","Runner-up","Third","Field"]), era: "all", markers: "dots", view: "map", depth: false };
 let sortKey = "year", sortDir = 1;
 
 // ISO codes for flag images (flagcdn.com). Defunct nations (USSR, Yugoslavia,
@@ -1041,31 +1068,39 @@ function draw() {
 }
 
 // "the climb to glory": the AVERAGE team at each finish, walked as a path.
+// With the depth toggle on, the field splits into its four depth tiers, so the
+// climb runs all the way from group stage up to champion.
 function drawClimb(svg){
-  const order = ["Field","Third","Runner-up","Champion"];
-  const labels = {Field:L("clAlsoRan","the average also-ran"), Third:L("clThird","the average 3rd place"),
-                  "Runner-up":L("clRunner","the average runner-up"), Champion:L("clChampion","the average champion")};
-  const cents = order.map(o => { const g = eraData().filter(d=>d.finish===o);
-    const ga=d3.mean(g,d=>d.ga_pg), gf=d3.mean(g,d=>d.gf_pg);
-    return {key:o, x:x(ga), y:y(gf), ga, gf, label:labels[o]}; });
+  const mean = g => ({ ga:d3.mean(g,d=>d.ga_pg), gf:d3.mean(g,d=>d.gf_pg) });
+  const pt = (key, g, label, fill, medal) => { const m=mean(g);
+    return { key, x:x(m.ga), y:y(m.gf), ga:m.ga, gf:m.gf, label, fill, medal }; };
+  const podMedal = {Champion:L("sh1","🏆 1st"),"Runner-up":L("sh2","🥈 2nd"),Third:L("sh3","🥉 3rd"),Field:L("clField","the field")};
+  const podLabel = {Field:L("clAlsoRan","the average also-ran"), Third:L("clThird","the average 3rd place"),
+                    "Runner-up":L("clRunner","the average runner-up"), Champion:L("clChampion","the average champion")};
+  const pod = o => pt(o, eraData().filter(d=>d.finish===o), podLabel[o], TIER_FILL[o], podMedal[o]);
+  let cents;
+  if (state.depth) {
+    const dep = k => pt(k, eraData().filter(d=>d.finish==="Field" && depthBucket(d)===k), L(DEPTH[k].key, DEPTH[k].lbl), DEPTH[k].fill, null);
+    cents = ["grp","r16","qf","p4"].map(dep).concat(["Third","Runner-up","Champion"].map(pod));
+  } else {
+    cents = ["Field","Third","Runner-up","Champion"].map(pod);
+  }
   const cg = svg.append("g").attr("class","climb");   // raised above the stickers
   cg.append("path").attr("d", d3.line().x(d=>d.x).y(d=>d.y)(cents))
      .attr("fill","none").attr("stroke","#d8232a").attr("stroke-width",1.6)
      .attr("stroke-dasharray","5 4").attr("opacity",.75);
-  // medal-coloured average markers (gold/silver/bronze foil + grey field) with a
-  // red outline so they're easy to spot among the stickers
+  // average markers (medal foil for podium, depth colour for the field tiers) with
+  // a red outline so they're easy to spot among the stickers
   cg.append("g").selectAll("circle").data(cents).join("circle")
      .attr("class","sticker-shadow")
      .attr("cx",d=>d.x).attr("cy",d=>d.y).attr("r",6.5)
-     .attr("fill",d=>TIER_FILL[d.key]).attr("stroke","#d8232a").attr("stroke-width",2)
+     .attr("fill",d=>d.fill).attr("stroke","#d8232a").attr("stroke-width",2)
      .style("cursor","help")
      .on("mouseover",(ev,d)=>{ if (TOUCH) return;
-       if (margLinkTo && d.key !== "Field") margLinkTo({ key:d.key });   // same connector as hovering the distribution
-       const medal={Champion:L("sh1","🏆 1st"),["Runner-up"]:L("sh2","🥈 2nd"),Third:L("sh3","🥉 3rd"),Field:L("clField","the field")}[d.key];
+       if (margLinkTo && ["Champion","Runner-up","Third"].includes(d.key)) margLinkTo({ key:d.key });
        tooltip.html(
-         `<div class="tt-team">${d.label} <span style="color:var(--muted)">(${medal})</span></div>
-          <div class="tt-row">⚽ ${L("clScores","scores")} <b>${d.gf.toFixed(2)}</b>/g &nbsp;·&nbsp; 🛡 ${L("clConcedes","concedes")} <b>${d.ga.toFixed(2)}</b>/g</div>
-          <div class="tt-row" style="font-style:italic">${L("clPath","the dashed line is the path from also-ran to champion — flat in attack, dropping in defense")}</div>`)
+         `<div class="tt-team">${d.label}${d.medal?` <span style="color:var(--muted)">(${d.medal})</span>`:""}</div>
+          <div class="tt-row">⚽ ${L("clScores","scores")} <b>${d.gf.toFixed(2)}</b>/g &nbsp;·&nbsp; 🛡 ${L("clConcedes","concedes")} <b>${d.ga.toFixed(2)}</b>/g</div>`)
          .style("opacity",1); placeTooltip(ev); })
      .on("mousemove",placeTooltip).on("mouseout",()=>{ tooltip.style("opacity",0); if (margClearLink) margClearLink(); });
 }
@@ -1303,8 +1338,9 @@ function renderMarker(sel, d){
        .attr("fill","url(#foilGold)").attr("stroke","#fff").attr("stroke-width",1)
        .attr("class","sticker-shadow");
   } else if (d.finish==="Field") {
+    const fill = state.depth ? DEPTH[depthBucket(d)].fill : c.fill;
     sel.append("rect").attr("x",-3.5).attr("y",-3.5).attr("width",7).attr("height",7).attr("rx",1.5)
-       .attr("fill",c.fill).attr("stroke","#fff").attr("stroke-width",.6).attr("opacity",.62);
+       .attr("fill",fill).attr("stroke","#fff").attr("stroke-width",.6).attr("opacity",state.depth?.9:.62);
   } else {
     const s = DIM[d.finish];
     sel.append("rect").attr("x",-s.w/2).attr("y",-s.h/2).attr("width",s.w).attr("height",s.h).attr("rx",3)
@@ -1544,6 +1580,7 @@ document.querySelectorAll("#view-seg .seg-opt").forEach(btn => {
     document.getElementById("timeline-ui").hidden = !tl;
     if (!tl) document.getElementById("tl-rule-card").hidden = true;
     document.getElementById("map-controls").style.display = tl ? "none" : "contents";
+    document.getElementById("depth-legend").hidden = tl || !state.depth;
     const tt = (k, fb) => (window.vizI18n && vizI18n.t(k)) || fb;
     document.querySelector(".hint").textContent = tl
       ? tt("hintTimeline", "Press play to watch the average team drift across 90 years · ⚑ marks rule-change years")
@@ -1555,6 +1592,17 @@ document.querySelectorAll("#view-seg .seg-opt").forEach(btn => {
   });
 });
 document.getElementById("tl-play").addEventListener("click", tlPlay);
+
+// "By round reached": recolor the non-podium field by how deep each team went.
+const depthBtn = document.getElementById("depth-toggle");
+depthBtn.addEventListener("click", () => {
+  state.depth = !state.depth;
+  depthBtn.classList.toggle("off", !state.depth);
+  depthBtn.setAttribute("aria-pressed", state.depth);
+  document.getElementById("depth-legend").hidden = !state.depth;
+  if (state.view === "map") draw();   // full redraw so the climb splits/merges too
+  vizTrack("depth_toggle", { on: state.depth });
+});
 
 // ---- table -----------------------------------------------------------
 function buildTable(){
@@ -1614,6 +1662,8 @@ const DICT = {
     ctlView: "View", segMap: "▦ Map", segTimeline: "↻ Timeline",
     ctlShow: "Show", pillChampions: "Champions", pillRunners: "Runners-up", pillThird: "Third", pillField: "Everyone else",
     ctlEra: "Era", eraAll: "All", ctlMarkers: "Markers", segDots: "◆ Dots", segFlags: "⚑ Flags",
+    ctlBreakdown: "Detail", pillByRound: "By round reached",
+    depFourth: "4th place", depQF: "Quarter-finals", depR16: "Round of 16", depGroup: "Group stage",
     hintMap: "Hover a dot for the quick read · click it to pin the full story · click a table row too",
     hintTimeline: "Press play to watch the average team drift across 90 years · ⚑ marks rule-change years",
     tableTitle: "Every team, every World Cup — browse & search all 489",
@@ -1645,6 +1695,8 @@ const DICT = {
     ctlView: "Vista", segMap: "▦ Mapa", segTimeline: "↻ Línea de tiempo",
     ctlShow: "Mostrar", pillChampions: "Campeones", pillRunners: "Subcampeones", pillThird: "Terceros", pillField: "Los demás",
     ctlEra: "Época", eraAll: "Todas", ctlMarkers: "Marcadores", segDots: "◆ Puntos", segFlags: "⚑ Banderas",
+    ctlBreakdown: "Detalle", pillByRound: "Por ronda alcanzada",
+    depFourth: "4.º puesto", depQF: "Cuartos de final", depR16: "Octavos de final", depGroup: "Fase de grupos",
     hintMap: "Pasa el cursor por un punto para el resumen · haz clic para fijar la historia completa · también puedes hacer clic en una fila de la tabla",
     hintTimeline: "Pulsa play para ver al equipo promedio desplazarse a lo largo de 90 años · ⚑ marca los cambios de reglas",
     tableTitle: "Cada equipo, cada Mundial — explora y busca los 489",
@@ -1676,6 +1728,8 @@ const DICT = {
     ctlView: "Visão", segMap: "▦ Mapa", segTimeline: "↻ Linha do tempo",
     ctlShow: "Mostrar", pillChampions: "Campeões", pillRunners: "Vices", pillThird: "Terceiros", pillField: "Os demais",
     ctlEra: "Era", eraAll: "Todas", ctlMarkers: "Marcadores", segDots: "◆ Pontos", segFlags: "⚑ Bandeiras",
+    ctlBreakdown: "Detalhe", pillByRound: "Por fase alcançada",
+    depFourth: "4.º lugar", depQF: "Quartas de final", depR16: "Oitavas de final", depGroup: "Fase de grupos",
     hintMap: "Passe o cursor por um ponto para o resumo · clique para fixar a história completa · também dá para clicar numa linha da tabela",
     hintTimeline: "Aperte play para ver a seleção média se deslocar ao longo de 90 anos · ⚑ marca as mudanças de regra",
     tableTitle: "Cada seleção, cada Copa — explore e busque todas as 489",
@@ -1707,6 +1761,8 @@ const DICT = {
     ctlView: "Vue", segMap: "▦ Carte", segTimeline: "↻ Frise",
     ctlShow: "Afficher", pillChampions: "Champions", pillRunners: "Finalistes", pillThird: "Troisièmes", pillField: "Les autres",
     ctlEra: "Époque", eraAll: "Toutes", ctlMarkers: "Repères", segDots: "◆ Points", segFlags: "⚑ Drapeaux",
+    ctlBreakdown: "Détail", pillByRound: "Par tour atteint",
+    depFourth: "4e place", depQF: "Quarts de finale", depR16: "Huitièmes de finale", depGroup: "Phase de groupes",
     hintMap: "Survolez un point pour le résumé · cliquez pour épingler l'histoire complète · cliquez aussi une ligne du tableau",
     hintTimeline: "Appuyez sur lecture pour voir l'équipe moyenne dériver sur 90 ans · ⚑ marque les changements de règles",
     tableTitle: "Chaque équipe, chaque Coupe — parcourez et cherchez les 489",
@@ -1738,6 +1794,8 @@ const DICT = {
     ctlView: "Ansicht", segMap: "▦ Karte", segTimeline: "↻ Zeitleiste",
     ctlShow: "Zeigen", pillChampions: "Champions", pillRunners: "Finalisten", pillThird: "Dritte", pillField: "Alle anderen",
     ctlEra: "Ära", eraAll: "Alle", ctlMarkers: "Marker", segDots: "◆ Punkte", segFlags: "⚑ Flaggen",
+    ctlBreakdown: "Detail", pillByRound: "Nach erreichter Runde",
+    depFourth: "4. Platz", depQF: "Viertelfinale", depR16: "Achtelfinale", depGroup: "Gruppenphase",
     hintMap: "Fahre über einen Punkt für die Kurzinfo · klicke, um die ganze Geschichte anzuheften · klicke auch eine Tabellenzeile",
     hintTimeline: "Drücke Play, um die Durchschnittsmannschaft über 90 Jahre driften zu sehen · ⚑ markiert Regeländerungen",
     tableTitle: "Jede Mannschaft, jede WM — alle 489 durchsuchen",
@@ -1769,6 +1827,8 @@ const DICT = {
     ctlView: "Weergave", segMap: "▦ Kaart", segTimeline: "↻ Tijdlijn",
     ctlShow: "Toon", pillChampions: "Kampioenen", pillRunners: "Finalisten", pillThird: "Derden", pillField: "De rest",
     ctlEra: "Tijdperk", eraAll: "Alle", ctlMarkers: "Markers", segDots: "◆ Stippen", segFlags: "⚑ Vlaggen",
+    ctlBreakdown: "Detail", pillByRound: "Per bereikte ronde",
+    depFourth: "4e plaats", depQF: "Kwartfinale", depR16: "Achtste finale", depGroup: "Groepsfase",
     hintMap: "Beweeg over een stip voor de korte versie · klik om het volledige verhaal vast te zetten · klik ook een tabelrij",
     hintTimeline: "Druk op play om het gemiddelde team over 90 jaar te zien bewegen · ⚑ markeert regelwijzigingen",
     tableTitle: "Elk team, elk WK — blader en zoek alle 489",
@@ -1800,6 +1860,8 @@ const DICT = {
     ctlView: "العرض", segMap: "▦ خريطة", segTimeline: "↻ خط زمني",
     ctlShow: "إظهار", pillChampions: "الأبطال", pillRunners: "الوصفاء", pillThird: "الثالث", pillField: "البقية",
     ctlEra: "الحقبة", eraAll: "الكل", ctlMarkers: "العلامات", segDots: "◆ نقاط", segFlags: "⚑ أعلام",
+    ctlBreakdown: "تفصيل", pillByRound: "حسب الدور المبلوغ",
+    depFourth: "المركز الرابع", depQF: "ربع النهائي", depR16: "دور الـ16", depGroup: "دور المجموعات",
     hintMap: "مرّر فوق نقطة للملخص · انقر لتثبيت القصة كاملة · يمكنك أيضًا النقر على صف في الجدول",
     hintTimeline: "اضغط تشغيل لمشاهدة المنتخب المتوسط ينتقل عبر 90 عامًا · ⚑ تشير إلى تغييرات القوانين",
     tableTitle: "كل منتخب، كل كأس — تصفّح وابحث في الـ489",

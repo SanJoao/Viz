@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<!-- viz · share card template — entry 001, World Cup 2026 (1200×630).
-     A polaroid of the chord chart on notebook paper, caption handwritten.
-     Expects chart-raw.png next to this file (screenshot of the live page,
-     taken by make.ps1 first). Rendered to /worldcup2026/share.png. -->
+<!-- viz · share card template — entry 002, World Cup defense (1200×630).
+     A polaroid of the attack-vs-defense chart on notebook paper.
+     Expects defense-raw.png next to this file (2x screenshot of the live page,
+     taken by make.ps1 first). Rendered to /worldcup-defense/share.jpg. -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -16,17 +16,15 @@
     background-size: 23px 23px;
     font-family: "Inter", sans-serif; color: #2c2a25;
   }
-  /* ── polaroid (left) ── */
   .polaroid {
     position: absolute; left: 64px; top: 48px;
     transform: rotate(-2.4deg);
     background: #fffdf7; padding: 16px 16px 14px;
     box-shadow: 0 14px 34px rgba(60,50,30,.30);
   }
-  .photo { width: 440px; height: 420px; overflow: hidden; position: relative; background: #0d1117; }
-  /* chart-raw.png is a 740px-wide phone screenshot of the live page
-     (flag-only compact mode). Tune --x/--y to center the donut. */
-  .photo img { position: absolute; width: 426px; left: 7px; top: -176px; }
+  .photo { width: 440px; height: 420px; overflow: hidden; position: relative; background: #ffffff; }
+  /* defense-raw.png is a 2x phone screenshot (1440×2360). Frame the scatter panel. */
+  .photo img { position: absolute; width: 624px; left: -96px; top: -432px; }
   .pcap {
     font-family: "Caveat", cursive; font-weight: 600; font-size: 40px;
     color: #d93025; text-align: center; padding-top: 10px; transform: rotate(-.5deg);
@@ -37,22 +35,21 @@
     background: linear-gradient(rgba(150,190,255,.5), rgba(150,190,255,.42));
     box-shadow: 0 1px 4px rgba(60,50,30,.12);
   }
-  /* ── text column (right) ── */
-  .col { position: absolute; left: 620px; top: 118px; width: 520px; }
+  .col { position: absolute; left: 620px; top: 116px; width: 520px; }
   .stamp {
     font-family: "JetBrains Mono", monospace; font-size: 20px; color: #2c2a25;
     background: linear-gradient(transparent 18%, #ffef9e 18%, #ffef9e 88%, transparent 88%);
     display: inline-block; padding: 2px 8px;
   }
   h1 {
-    font-family: "Caveat", cursive; font-weight: 700; font-size: 72px; line-height: 1;
+    font-family: "Caveat", cursive; font-weight: 700; font-size: 66px; line-height: 1;
     margin: 26px 0 0; transform: rotate(-1.2deg);
   }
-  .sub { font-size: 24px; line-height: 1.5; color: #55514a; margin: 26px 0 0; }
+  .sub { font-size: 23px; line-height: 1.5; color: #55514a; margin: 24px 0 0; }
   .sub b { color: #2b50c8; }
   .site {
     font-family: "JetBrains Mono", monospace; font-size: 19px; color: #8a857c;
-    margin: 34px 0 0; display: flex; align-items: center; gap: 10px;
+    margin: 32px 0 0; display: flex; align-items: center; gap: 10px;
   }
   .site img { width: 26px; height: 26px; }
 </style>
@@ -60,13 +57,13 @@
 <body>
   <div class="polaroid">
     <div class="tape"></div>
-    <div class="photo"><img src="chart-raw.png" alt=""></div>
-    <div class="pcap">everyone's from France!?</div>
+    <div class="photo"><img src="defense-raw.png" alt=""></div>
+    <div class="pcap">score less, win more?</div>
   </div>
   <div class="col">
-    <span class="stamp">entry 001 · jun 12 2026 · rabbit hole ⚽</span>
-    <h1>Born there, playing here</h1>
-    <p class="sub"><b>A quarter of all World Cup 2026 players</b> were born outside the country they represent — all of them, traced player by player.</p>
+    <span class="stamp">entry 002 · jun 19 2026 · rabbit hole ⚽</span>
+    <h1>Defenses win World Cups</h1>
+    <p class="sub"><b>Every World Cup team, 1930–2022</b>, mapped by attack vs defense. The trophy comes down almost entirely to defense.</p>
     <div class="site"><img src="../../logo.svg" alt="">viz.luarai.com</div>
   </div>
 </body>
