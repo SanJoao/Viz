@@ -396,7 +396,7 @@
   <button class="lb-sim" type="button" hidden data-i18n="lbSim">▶ simulate a goal</button>
 </section>
 
-<script src="data.js"></script>
+<script src="/worldcup-heights/data.js"></script>
 <script>
 const WC = window.WC, P = WC.players, T = WC.teams;
 const POS = ['GK','DF','MF','FW'];
@@ -481,7 +481,7 @@ function showTip(html,e){ tip.innerHTML=html; tip.style.opacity=1; moveTip(e); }
 function moveTip(e){ const pad=16,w=tip.offsetWidth,h=tip.offsetHeight; let x=e.clientX+pad,y=e.clientY+pad;
   if(x+w>innerWidth)x=e.clientX-w-pad; if(y+h>innerHeight)y=e.clientY-h-pad; tip.style.left=x+'px'; tip.style.top=y+'px'; }
 function hideTip(){ tip.style.opacity=0; }
-const flagSrc = code => `flags/${code}.png`;
+const flagSrc = code => `/worldcup-heights/flags/${code}.png`;
 const flagImg = {};
 [...new Set(P.map(p=>p.code))].forEach(c=>{ const im=new Image(); im.onload=()=>requestWallDraw(); im.src=flagSrc(c); flagImg[c]=im; });
 
