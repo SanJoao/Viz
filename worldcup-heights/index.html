@@ -321,6 +321,8 @@
     <h2 data-i18n="p2title">Why keepers tower</h2>
     <p class="lead" data-i18n="p2lead">Every player as a single mark, sorted onto four shelves by role. The keepers' cloud sits a clear
       head above the rest — six centimetres over the midfielders. The tick is each role's average.</p>
+    <div class="controls" style="margin:8px 0 12px"><div class="cg"><label>Group by</label>
+      <div class="toggle" id="posGroupTog"><button data-g="position" class="on">Position</button><button data-g="continent">Continent</button><button data-g="team">Team</button></div></div></div>
     <div class="scroller" style="border-radius:3px;border-left:1px solid var(--line)"><svg id="posSvg"></svg></div>
   </section>
 
@@ -413,7 +415,7 @@ let POSNAME = posNames();
 const COL = {GK:'#2f6f6a',DF:'#a8552c',MF:'#8d6a1e',FW:'#8a322c'};
 const NEUTRAL = '#7a6648';
 const KEYWORDS = ['all','team-avg','group-avg'];
-const state = { show:'all', sort:'height', axis:'crop', len:'cm', allLayout:'strip', thickness:68, captainsOnly:false, customHeight:null, pos:{GK:1,DF:1,MF:1,FW:1}, search:'' };
+const state = { show:'all', sort:'height', axis:'crop', len:'cm', allLayout:'strip', thickness:68, captainsOnly:false, customHeight:null, pos:{GK:1,DF:1,MF:1,FW:1}, search:'', posGroup:'position' };
 const teamByName = Object.fromEntries(T.map(t=>[t.team,t]));
 const isSquad = ()=> !KEYWORDS.includes(state.show);
 const L = ()=> (window.vizI18n && vizI18n.lang) || 'en';
@@ -730,34 +732,46 @@ function scrollToMatch(){ if(!state.search||!lastLayout) return; const term=stat
 /* =====================================================================
    PLATE II — POSITION
    ===================================================================== */
+// geographic continent for each squad (Australia sits in Oceania, not the AFC)
+const CONTINENT={BIH:'Europe',NOR:'Europe',GER:'Europe',BEL:'Europe',ENG:'Europe',SWE:'Europe',CZE:'Europe',NED:'Europe',CRO:'Europe',SUI:'Europe',AUT:'Europe',SCO:'Europe',FRA:'Europe',TUR:'Europe',POR:'Europe',ESP:'Europe',
+  BRA:'South America',URU:'South America',PAR:'South America',ECU:'South America',COL:'South America',ARG:'South America',
+  SEN:'Africa',TUN:'Africa',CIV:'Africa',MAR:'Africa',GHA:'Africa',ALG:'Africa',CPV:'Africa',COD:'Africa',EGY:'Africa',RSA:'Africa',
+  IRN:'Asia',IRQ:'Asia',KOR:'Asia',UZB:'Asia',QAT:'Asia',JOR:'Asia',JPN:'Asia',KSA:'Asia',
+  USA:'North America',CAN:'North America',HAI:'North America',CUW:'North America',PAN:'North America',MEX:'North America',
+  NZL:'Oceania',AUS:'Oceania'};
+const CONT_COLOR={'Europe':'#3b6ea5','South America':'#3f9d63','Africa':'#d4a017','Asia':'#b5497a','North America':'#7a5ba6','Oceania':'#1f8a8a'};
 function drawPosition(){
-  const svg=d3.select('#posSvg'); const w=920,h=560,M={t:24,r:28,b:60,l:76};
-  svg.attr('viewBox',`0 0 ${w} ${h}`).attr('width','100%').style('max-width',w+'px').selectAll('*').remove();
+  const svg=d3.select('#posSvg'), mode=state.posGroup, scroll=mode==='team';
+  let groups;
+  if(mode==='team') groups=[...T].sort((a,b)=>b.avg_height-a.avg_height).map(t=>({label:t.code, color:CONT_COLOR[CONTINENT[t.code]]||'#86714f', avg:t.avg_height, dd:P.filter(p=>p.team===t.team&&p.height!=null)}));
+  else if(mode==='continent'){ const by={}; P.forEach(p=>{ if(p.height==null)return; const k=CONTINENT[p.code]||'Other'; (by[k]||(by[k]=[])).push(p); });
+    groups=Object.keys(by).map(k=>({label:k, color:CONT_COLOR[k]||'#86714f', avg:d3.mean(by[k],p=>p.height), dd:by[k]})).sort((a,b)=>b.avg-a.avg); }
+  else groups=POS.map(pos=>({label:POSNAME[pos], color:COL[pos], avg:WC.meta.posAvg[pos], dd:P.filter(p=>p.pos===pos&&p.height!=null)}));
+  const n=groups.length, h=560, M={t:24,r:28,b:scroll?82:60,l:76};
+  const colW=scroll?38:(920-M.l-M.r)/n, w=scroll?M.l+M.r+n*colW:920, maxHW=colW*0.42;
+  svg.attr('viewBox',`0 0 ${w} ${h}`).attr('width',scroll?w:'100%').style('max-width',scroll?'none':'920px').selectAll('*').remove();
   const y=d3.scaleLinear().domain([150,212]).range([h-M.b,M.t]);   // height on the Y axis (taller = higher)
   for(let cm=150;cm<=210;cm+=10){ const yy=y(cm);
     svg.append('line').attr('class','grid').attr('x1',M.l).attr('x2',w-M.r).attr('y1',yy).attr('y2',yy);
     svg.append('text').attr('class','axis').attr('x',M.l-10).attr('y',yy+4).attr('text-anchor','end').text(state.len==='cm'?cm+' cm':cmToFtIn(cm)); }
-  const colW=(w-M.l-M.r)/4, maxHW=colW*0.42;
-  // Gaussian KDE over the height range — gives the violin width (frequency at each cm)
   const X0=150,X1=212,STEP=1,BW=2.8;
   const dens=hs=>{ const o=[]; for(let v=X0;v<=X1;v+=STEP){ let s=0; for(const hh of hs){ const u=(v-hh)/BW; s+=Math.exp(-0.5*u*u); } o.push([v,s]); } return o; };
-  POS.forEach((pos,c)=>{ const cx0=M.l+c*colW, mid=cx0+colW/2;
-    const dd=P.filter(p=>p.pos===pos&&p.height!=null);
+  groups.forEach((g,c)=>{ const cx0=M.l+c*colW, mid=cx0+colW/2, dd=g.dd, vCol=g.color||'#86714f', aCol=g.color||'#3a2c1c';
     const ds=dens(dd.map(p=>p.height)), rMax=d3.max(ds,s=>s[1])||1;
-    const hwAt=cm=>{ const t=Math.max(0,Math.min(ds.length-2,(cm-X0)/STEP)),i=Math.floor(t),f=t-i; return ((ds[i][1]*(1-f)+ds[i+1][1]*f)/rMax)*maxHW; };
-    // faint violin behind (each side = density), so horizontal now means frequency
     const area=d3.area().y(d=>y(d[0])).x0(d=>mid-(d[1]/rMax)*maxHW).x1(d=>mid+(d[1]/rMax)*maxHW).curve(d3.curveCatmullRom.alpha(.5));
-    svg.append('path').datum(ds).attr('d',area).attr('fill',COL[pos]).attr('fill-opacity',.12).attr('stroke',COL[pos]).attr('stroke-opacity',.22).attr('stroke-width',1);
-    // the players themselves, jittered within that density width (sina) — still individually hoverable
-    dd.forEach((p,i)=>{ const jit=((Math.sin(i*12.9898+c*7.13)*43758.5453)%1+1)%1, cx=mid+(jit*2-1)*hwAt(p.height)*0.86;
-      svg.append('circle').attr('cx',cx).attr('cy',y(p.height)).attr('r',2).attr('fill',COL[pos]).attr('fill-opacity',.6).style('cursor','pointer')
+    svg.append('path').datum(ds).attr('d',area).attr('fill',vCol).attr('fill-opacity',.11).attr('stroke',vCol).attr('stroke-opacity',.22).attr('stroke-width',1);
+    const hwAt=cm=>{ const t=Math.max(0,Math.min(ds.length-2,(cm-X0)/STEP)),i=Math.floor(t),f=t-i; return ((ds[i][1]*(1-f)+ds[i+1][1]*f)/rMax)*maxHW; };
+    dd.forEach((p,i)=>{ const jit=((Math.sin(i*12.9898+c*7.13)*43758.5453)%1+1)%1, cx=mid+(jit*2-1)*hwAt(p.height)*0.86, cy=y(p.height);
+      svg.append('circle').attr('cx',cx).attr('cy',cy).attr('r',scroll?1.7:2).attr('fill',COL[p.pos]).attr('fill-opacity',scroll?.66:.6).style('cursor','pointer')
         .on('mousemove',e=>showTip(wallCard(Object.assign({kind:'player'},p)),e)).on('mouseleave',hideTip); });
-    const avg=WC.meta.posAvg[pos];
-    svg.append('line').attr('x1',cx0+12).attr('x2',cx0+colW-12).attr('y1',y(avg)).attr('y2',y(avg)).attr('stroke',COL[pos]).attr('stroke-width',2);
-    svg.append('text').attr('x',mid).attr('y',y(avg)-7).attr('text-anchor','middle').attr('font-family','"Caveat",cursive').attr('font-size',17)
-       .attr('stroke',getCss('--paper')).attr('stroke-width',3.5).attr('paint-order','stroke').attr('fill',COL[pos]).text(fmtLen(avg));
-    svg.append('text').attr('x',mid).attr('y',h-M.b+24).attr('text-anchor','middle').attr('font-family','"EB Garamond",serif').attr('font-size',16).attr('fill',COL[pos]).attr('font-weight',600).text(POSNAME[pos]);
-    svg.append('text').attr('x',mid).attr('y',h-M.b+42).attr('text-anchor','middle').attr('class','axis').text(`${dd.length} ${tr('lblPlayers','players')}`); });
+    const avg=g.avg;
+    svg.append('line').attr('x1',cx0+(scroll?2:12)).attr('x2',cx0+colW-(scroll?2:12)).attr('y1',y(avg)).attr('y2',y(avg)).attr('stroke',aCol).attr('stroke-opacity',scroll?.45:1).attr('stroke-width',scroll?1:2);
+    if(!scroll){
+      svg.append('text').attr('x',mid).attr('y',y(avg)-7).attr('text-anchor','middle').attr('font-family','"Caveat",cursive').attr('font-size',17).attr('stroke',getCss('--paper')).attr('stroke-width',3.5).attr('paint-order','stroke').attr('fill',aCol).text(fmtLen(avg));
+      svg.append('text').attr('x',mid).attr('y',h-M.b+24).attr('text-anchor','middle').attr('font-family','"EB Garamond",serif').attr('font-size',15).attr('fill',aCol).attr('font-weight',600).text(g.label);
+      svg.append('text').attr('x',mid).attr('y',h-M.b+42).attr('text-anchor','middle').attr('class','axis').text(`${dd.length} ${tr('lblPlayers','players')}`);
+    } else svg.append('text').attr('x',mid).attr('y',h-M.b+14).attr('text-anchor','end').attr('transform',`rotate(-90 ${mid} ${h-M.b+14})`).attr('class','axis').attr('font-size',9).text(g.label);
+  });
 }
 
 /* =====================================================================
@@ -998,6 +1012,9 @@ function buildControls(){
   const capChip=document.getElementById('capChip'); capChip.onclick=()=>{ state.captainsOnly=!state.captainsOnly; capChip.classList.toggle('off',!state.captainsOnly); relayoutWall(false); };
   const sb=document.getElementById('searchBox'); sb.oninput=()=>{ state.search=sb.value; relayoutWall(false); scrollToMatch(); };
 
+  document.querySelectorAll('#posGroupTog button').forEach(b=>b.onclick=()=>{ state.posGroup=b.dataset.g;
+    document.querySelectorAll('#posGroupTog button').forEach(x=>x.classList.toggle('on',x===b));
+    const sc=document.getElementById('posSvg').parentNode; if(sc) sc.scrollLeft=0; drawPosition(); });
   document.querySelectorAll('#unitTog button').forEach(b=>b.onclick=()=>{ state.len=b.dataset.u;
     document.querySelectorAll('#unitTog button').forEach(x=>x.classList.toggle('on',x===b));
     const ch=document.getElementById('customH'); ch.placeholder=heightPlaceholder(); state.customHeight=parseHeightInput(ch.value);
