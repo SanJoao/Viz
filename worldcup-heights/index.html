@@ -632,16 +632,22 @@ function drawWall(frac){
   drawStars(bctx, drawn.map(sh));
   { const fbAvg=WC.meta.tournamentAvg;
     const isSq = isSquad() && teamByName[state.show];
-    const ta = isSq ? teamByName[state.show].avg_height : null;
+    const taRaw = isSq ? teamByName[state.show].avg_height : null;
+    // when the squad average rounds to the same value as the WC average, merge them
+    // into one line + one label (two near-identical lines looked like a glitch)
+    const coincide = taRaw!=null && fmtLen(taRaw)===fmtLen(fbAvg);
+    const ta = (isSq && !coincide) ? taRaw : null;
     // drawn ON TOP of the figures so the lines stay visible behind tall players (e.g. the all-players wall)
     bctx.lineWidth=1.4; bctx.setLineDash([7,5]);
     bctx.strokeStyle=getCss('--moon'); bctx.beginPath(); bctx.moveTo(WALL.mL,y(fbAvg)); bctx.lineTo(vw-2,y(fbAvg)); bctx.stroke();
-    if(isSq){ bctx.strokeStyle=TEAM_AVG_COL; bctx.beginPath(); bctx.moveTo(WALL.mL,y(ta)); bctx.lineTo(vw-2,y(ta)); bctx.stroke(); }
+    if(ta!=null){ bctx.strokeStyle=TEAM_AVG_COL; bctx.beginPath(); bctx.moveTo(WALL.mL,y(ta)); bctx.lineTo(vw-2,y(ta)); bctx.stroke(); }
     bctx.setLineDash([]); bctx.font='16px "Caveat",cursive'; bctx.textAlign='right';
     // each label on the outer side of its line, so they never collide when the averages are close
     const fbY=y(fbAvg);
-    bctx.fillStyle=getCss('--moon'); bctx.fillText(`${tr('lblAvgPlayer','average World Cup player')} ${fmtLen(fbAvg)}`, vw-8, (!isSq||fbAvg>=ta)?fbY-6:fbY+17);
-    if(isSq){ const taY=y(ta); bctx.fillStyle=TEAM_AVG_COL; bctx.fillText(`${teamName(state.show)} ${fmtLen(ta)}`, vw-8, ta>fbAvg?taY-6:taY+17); }
+    const fbLabel = coincide ? `${teamName(state.show)} = ${tr('lblAvgPlayer','average World Cup player')} ${fmtLen(fbAvg)}`
+                             : `${tr('lblAvgPlayer','average World Cup player')} ${fmtLen(fbAvg)}`;
+    bctx.fillStyle=getCss('--moon'); bctx.fillText(fbLabel, vw-8, (ta==null||fbAvg>=ta)?fbY-6:fbY+17);
+    if(ta!=null){ const taY=y(ta); bctx.fillStyle=TEAM_AVG_COL; bctx.fillText(`${teamName(state.show)} ${fmtLen(ta)}`, vw-8, ta>fbAvg?taY-6:taY+17); }
     bctx.textAlign='left';
   }
   bctx.fillStyle=getCss('--soft'); bctx.font='11px "EB Garamond",serif'; bctx.textAlign='center';
@@ -843,7 +849,8 @@ function updateAside(){
   d3.select('#zoomLinks').style('display', rows?'none':null);
   if(!rows){
     const fbAvg=WC.meta.tournamentAvg;
-    const teamAvg=(isSquad()&&teamByName[state.show])?teamByName[state.show].avg_height:null;
+    let teamAvg=(isSquad()&&teamByName[state.show])?teamByName[state.show].avg_height:null;
+    if(teamAvg!=null && fmtLen(teamAvg)===fmtLen(fbAvg)) teamAvg=null;   // coincides with WC avg → single line
     drawScaleStrip(fbAvg, teamAvg); drawZoomLinks(fbAvg, teamAvg);
   }
   if(!lastLayout){ updateGapNote(null,null); return; }
