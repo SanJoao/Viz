@@ -770,7 +770,10 @@ function drawPosition(){
       svg.append('text').attr('x',mid).attr('y',y(avg)-7).attr('text-anchor','middle').attr('font-family','"Caveat",cursive').attr('font-size',17).attr('stroke',getCss('--paper')).attr('stroke-width',3.5).attr('paint-order','stroke').attr('fill',aCol).text(fmtLen(avg));
       svg.append('text').attr('x',mid).attr('y',h-M.b+24).attr('text-anchor','middle').attr('font-family','"EB Garamond",serif').attr('font-size',15).attr('fill',aCol).attr('font-weight',600).text(g.label);
       svg.append('text').attr('x',mid).attr('y',h-M.b+42).attr('text-anchor','middle').attr('class','axis').text(`${dd.length} ${tr('lblPlayers','players')}`);
-    } else svg.append('text').attr('x',mid).attr('y',h-M.b+14).attr('text-anchor','end').attr('transform',`rotate(-90 ${mid} ${h-M.b+14})`).attr('class','axis').attr('font-size',9).text(g.label);
+    } else { const fw=20, fh=13, fy=h-M.b+9;   // team view: little flag + code under each strip
+      svg.append('image').attr('href',flagSrc(g.label)).attr('x',mid-fw/2).attr('y',fy).attr('width',fw).attr('height',fh).attr('preserveAspectRatio','xMidYMid meet');
+      svg.append('rect').attr('x',mid-fw/2).attr('y',fy).attr('width',fw).attr('height',fh).attr('fill','none').attr('stroke',getCss('--line')).attr('stroke-width',.6);
+      svg.append('text').attr('x',mid).attr('y',fy+fh+11).attr('text-anchor','middle').attr('class','axis').attr('font-size',8).text(g.label); }
   });
 }
 
