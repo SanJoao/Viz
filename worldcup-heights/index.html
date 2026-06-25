@@ -731,21 +731,24 @@ function scrollToMatch(){ if(!state.search||!lastLayout) return; const term=stat
    PLATE II — POSITION
    ===================================================================== */
 function drawPosition(){
-  const svg=d3.select('#posSvg'); const w=920,rowH=92,M={t:20,r:30,b:34,l:96},h=M.t+rowH*4+M.b;
+  const svg=d3.select('#posSvg'); const w=920,h=560,M={t:24,r:28,b:60,l:76};
   svg.attr('viewBox',`0 0 ${w} ${h}`).attr('width','100%').style('max-width',w+'px').selectAll('*').remove();
-  const x=d3.scaleLinear().domain([150,210]).range([M.l,w-M.r]);
-  for(let cm=150;cm<=210;cm+=10){ svg.append('line').attr('class','grid').attr('x1',x(cm)).attr('x2',x(cm)).attr('y1',M.t).attr('y2',M.t+rowH*4);
-    svg.append('text').attr('class','axis').attr('x',x(cm)).attr('y',M.t+rowH*4+18).attr('text-anchor','middle').text(state.len==='cm'?cm+' cm':cmToFtIn(cm)); }
-  POS.forEach((pos,r)=>{ const cy0=M.t+r*rowH,band=rowH-26,mid=cy0+rowH/2;
-    svg.append('text').attr('x',M.l-14).attr('y',mid-4).attr('text-anchor','end').attr('font-family','"EB Garamond",serif').attr('font-size',18).attr('fill',COL[pos]).attr('font-weight',600).text(POSNAME[pos]);
+  const y=d3.scaleLinear().domain([150,212]).range([h-M.b,M.t]);   // height on the Y axis (taller = higher)
+  for(let cm=150;cm<=210;cm+=10){ const yy=y(cm);
+    svg.append('line').attr('class','grid').attr('x1',M.l).attr('x2',w-M.r).attr('y1',yy).attr('y2',yy);
+    svg.append('text').attr('class','axis').attr('x',M.l-10).attr('y',yy+4).attr('text-anchor','end').text(state.len==='cm'?cm+' cm':cmToFtIn(cm)); }
+  const colW=(w-M.l-M.r)/4;
+  POS.forEach((pos,c)=>{ const cx0=M.l+c*colW, mid=cx0+colW/2, band=colW-36;
     const dd=P.filter(p=>p.pos===pos&&p.height!=null);
-    svg.append('text').attr('x',M.l-14).attr('y',mid+16).attr('text-anchor','end').attr('class','axis').text(`${dd.length} ${tr('lblPlayers','players')}`);
-    dd.forEach((p,i)=>{ const jit=((Math.sin(i*12.9898+r)*43758.5453)%1+1)%1, cy=mid-band/2+jit*band;
-      svg.append('circle').attr('cx',x(p.height)).attr('cy',cy).attr('r',2.6).attr('fill',COL[pos]).attr('fill-opacity',.42).style('cursor','pointer')
+    dd.forEach((p,i)=>{ const jit=((Math.sin(i*12.9898+c)*43758.5453)%1+1)%1, cx=mid-band/2+jit*band;
+      svg.append('circle').attr('cx',cx).attr('cy',y(p.height)).attr('r',2.6).attr('fill',COL[pos]).attr('fill-opacity',.42).style('cursor','pointer')
         .on('mousemove',e=>showTip(wallCard(Object.assign({kind:'player'},p)),e)).on('mouseleave',hideTip); });
     const avg=WC.meta.posAvg[pos];
-    svg.append('line').attr('x1',x(avg)).attr('x2',x(avg)).attr('y1',cy0+6).attr('y2',cy0+rowH-8).attr('stroke',COL[pos]).attr('stroke-width',2);
-    svg.append('text').attr('x',x(avg)).attr('y',cy0+4).attr('text-anchor','middle').attr('font-family','"Caveat",cursive').attr('font-size',17).attr('fill',COL[pos]).text(fmtLen(avg)); });
+    svg.append('line').attr('x1',cx0+12).attr('x2',cx0+colW-12).attr('y1',y(avg)).attr('y2',y(avg)).attr('stroke',COL[pos]).attr('stroke-width',2);
+    svg.append('text').attr('x',mid).attr('y',y(avg)-7).attr('text-anchor','middle').attr('font-family','"Caveat",cursive').attr('font-size',17)
+       .attr('stroke',getCss('--paper')).attr('stroke-width',3.5).attr('paint-order','stroke').attr('fill',COL[pos]).text(fmtLen(avg));
+    svg.append('text').attr('x',mid).attr('y',h-M.b+24).attr('text-anchor','middle').attr('font-family','"EB Garamond",serif').attr('font-size',16).attr('fill',COL[pos]).attr('font-weight',600).text(POSNAME[pos]);
+    svg.append('text').attr('x',mid).attr('y',h-M.b+42).attr('text-anchor','middle').attr('class','axis').text(`${dd.length} ${tr('lblPlayers','players')}`); });
 }
 
 /* =====================================================================
