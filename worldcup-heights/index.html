@@ -97,10 +97,14 @@
   input[type=range]{accent-color:var(--moon); width:130px}
   #allControls{display:none}
 
-  .wall-row{display:flex; align-items:flex-start}
+  .wall-row{display:flex; align-items:flex-start; position:relative}
+  #zoomLinks{position:absolute; left:0; top:0; pointer-events:none; z-index:3}
   .scroller{overflow-x:auto; overflow-y:hidden; border:1px solid var(--line); border-left:0; border-radius:0 3px 3px 0; background:
       var(--panel); box-shadow:inset 0 0 30px rgba(120,96,58,.07); flex:1; min-width:0}
   #wallRuler{background:var(--panel); border:1px solid var(--line); border-radius:3px 0 0 3px; flex:none}
+  #scaleStrip{background:var(--panel); border:1px solid var(--line); border-radius:3px; flex:none; margin-right:14px}
+  .gap-note{ text-align:center; color:var(--df); font-size:14px; font-style:italic; margin:3px 0 0 }
+  @media (max-width:600px){ #scaleStrip{display:none} }
   .wall-stack{position:relative}
   .wall-view{position:sticky; left:0; top:0}
   #wallHi{position:absolute; left:0; top:0; pointer-events:none}
@@ -292,6 +296,7 @@
     </div>
 
     <div class="wall-row">
+      <svg id="scaleStrip"></svg>
       <svg id="wallRuler"></svg>
       <div class="scroller" id="wallScroll">
         <div class="wall-stack" id="wallStack">
@@ -301,8 +306,10 @@
           </div>
         </div>
       </div>
+      <svg id="zoomLinks"></svg>
     </div>
     <p class="hint" id="wallHint"></p>
+    <p class="gap-note" id="gapNote"></p>
     <div class="legend" id="legend"></div>
   </section>
 
@@ -360,17 +367,17 @@
         <h3 data-i18n="footMeasuredH">How it was measured</h3>
         <p data-i18n-html="footMeasured">Roster from the official <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">2026 World Cup squads</a>
         (Wikipedia). Heights joined from <a href="https://www.wikidata.org">Wikidata</a> by stable ID, with Wikipedia
-        infoboxes and Transfermarkt filling the gaps. Built once into a static file — no live calls.</p>
+        infoboxes and Transfermarkt filling the gaps — then the outliers cross-checked by hand. Built once into a static file — no live calls.</p>
       </div>
       <div>
         <h3 data-i18n="footCaveatsH">The honest caveats</h3>
-        <p data-i18n-html="footCaveats"><b>Height:</b> all 1,248 players covered (1,179 from Wikidata, 62 from Wikipedia infoboxes).<br>
+        <p data-i18n-html="footCaveats"><b>Height:</b> all 1,248 players covered — 1,143 from Wikidata, the rest from Wikipedia infoboxes and Transfermarkt. 44 implausible or conflicting values were checked by hand and corrected against Transfermarkt, FotMob and Wikipedia.<br>
         Heights are self-/club-reported and rounded to the centimetre. Weight sat out this study — too sparse to trust.</p>
       </div>
       <div>
         <h3 data-i18n="footNotebookH">Notebook</h3>
         <p data-i18n-html="footNotebook">A <span class="hand-doodle" title="Luarai — luar, moonlight ☾">Luarai</span> field study. Ink &amp; parchment,
-        in the spirit of an anatomical plate. Numbers reflect Wikidata as of <b>23 June 2026</b>.</p>
+        in the spirit of an anatomical plate. Numbers reflect Wikidata as of <b>23 June 2026</b>, hand-corrected through <b>24 June</b>.</p>
       </div>
     </div>
   </div>
@@ -491,7 +498,7 @@ const flagImg = {};
 const WALL={top:24,h:446,mL:8,mR:16};
 const baseY=WALL.top+WALL.h, canvasH=baseY+34;
 const base=document.getElementById('wallBase'), hi=document.getElementById('wallHi');
-const scroller=document.getElementById('wallScroll'), ruler=d3.select('#wallRuler');
+const scroller=document.getElementById('wallScroll'), ruler=d3.select('#wallRuler'), scaleStrip=d3.select('#scaleStrip');
 let bctx,hctx, lastLayout=null, anim=null, drawReq=null;
 const DPR=()=>Math.min(devicePixelRatio||1,2);
 
@@ -532,7 +539,7 @@ function layout(){
     const perRow=Math.max(1,Math.floor((containerW-WALL.mL-WALL.mR)/step));
     const nRows=Math.ceil(n/perRow), totalH=topPad+nRows*rowH+16;
     const targets=items.map((it,i)=>{ const row=Math.floor(i/perRow),col=i%perRow,rb=topPad+row*rowH+fig,rt=topPad+row*rowH;
-      const y=d3.scaleLinear().domain(D).range([rb,rt]); return {key:it.key,item:it,x:WALL.mL+col*step+step/2,topY:y(it.value),W:fW,base:rb,rowTop:rt}; });
+      const y=d3.scaleLinear().domain(D).range([rb,rt]); return {key:it.key,item:it,x:WALL.mL+col*step+step/2,topY:y(it.value),W:fW,base:y(0),clipBot:rb,rowTop:rt}; });
     return {mode,targets,step,n,totalW:containerW,totalH,perRow,rowH,fig,topPad};
   }
   let step;
@@ -541,7 +548,7 @@ function layout(){
   const totalW=Math.max(WALL.mL+WALL.mR+n*step, containerW);   // full virtual width (CSS spacer only — canvas stays viewport-sized)
   const W=Math.max(2,Math.min(34,step*0.6));
   const y=d3.scaleLinear().domain(D).range([baseY,WALL.top]);
-  const targets=items.map((it,i)=>({key:it.key,item:it,x:WALL.mL+i*step+step/2,topY:y(it.value),W,base:baseY}));
+  const targets=items.map((it,i)=>({key:it.key,item:it,x:WALL.mL+i*step+step/2,topY:y(it.value),W,base:y(0),clipBot:baseY}));
   return {mode,targets,step,W,y,totalW,totalH:canvasH,n};
 }
 
@@ -555,8 +562,12 @@ function figurePath(ctx,cx,topY,baseB,W){
   ctx.lineTo(cx,crotch); ctx.lineTo(cx-gap,baseB); ctx.lineTo(cx-hw+inset,baseB); ctx.lineTo(cx-hw+inset,hipY); ctx.closePath();
 }
 function drawFigure(ctx,t,showFlag,dim){
-  const {x,topY,W,base:b,item}=t, hr=W*0.55, headCy=topY+hr, shoulderY=topY+2*hr;
+  const {x,topY,W,base:b,item,clipBot}=t, hr=W*0.55, headCy=topY+hr, shoulderY=topY+2*hr;
   const color=item.kind==='player'?COL[item.pos]:NEUTRAL;
+  ctx.save();
+  // figures are drawn at true proportions (feet at 0 cm); clip at the baseline so
+  // the legs crop off the bottom in "dramatic" view instead of being squished.
+  if(clipBot!=null){ ctx.beginPath(); ctx.rect(-1e5,-1e5,2e5,clipBot+1e5); ctx.clip(); }
   ctx.globalAlpha=dim?0.14:0.92;
   figurePath(ctx,x,topY,b,W); ctx.fillStyle=color; ctx.fill();
   ctx.beginPath(); ctx.arc(x,headCy,hr,0,7); ctx.fillStyle=color; ctx.fill();
@@ -565,14 +576,15 @@ function drawFigure(ctx,t,showFlag,dim){
   if(item.kind==='group' && item.teams){
     const fw=W*1.3, fh=Math.min(W*1.15,(b-shoulderY)*0.58), x0=x-fw/2, cw=fw/2, ch=fh/2;
     ctx.save(); ctx.globalAlpha=dim?0.14:1;
-    item.teams.slice(0,4).forEach((code,i)=>{ const im=flagImg[code]; if(im&&im.complete) ctx.drawImage(im,x0+(i%2)*cw,fy+Math.floor(i/2)*ch,cw,ch); });
+    item.teams.slice(0,4).forEach((code,i)=>{ const im=flagImg[code]; if(im&&im.complete&&im.naturalWidth) ctx.drawImage(im,x0+(i%2)*cw,fy+Math.floor(i/2)*ch,cw,ch); });
     ctx.lineWidth=.5; ctx.strokeStyle='rgba(58,44,28,.4)'; ctx.strokeRect(x0,fy,fw,fh); ctx.restore();
-  } else if(showFlag && item.code && flagImg[item.code] && flagImg[item.code].complete){
+  } else if(showFlag && item.code && flagImg[item.code] && flagImg[item.code].complete && flagImg[item.code].naturalWidth){
     const fw=W*1.15, fh=Math.min(W*0.95,(b-shoulderY)*0.5);
     ctx.save(); ctx.globalAlpha=dim?0.14:1; ctx.drawImage(flagImg[item.code], x-fw/2, fy, fw, fh);
     ctx.lineWidth=.5; ctx.strokeStyle='rgba(58,44,28,.35)'; ctx.strokeRect(x-fw/2, fy, fw, fh); ctx.restore();
   }
   ctx.globalAlpha=1;
+  ctx.restore();
 }
 function drawStars(ctx,targets){
   const sterm=state.search.trim().toLowerCase();
@@ -615,16 +627,23 @@ function drawWall(frac){
   bctx.strokeStyle='rgba(58,44,28,.12)'; bctx.lineWidth=1;
   ticks.forEach(cm=>{ const yy=y(cm); bctx.beginPath(); bctx.moveTo(WALL.mL,yy); bctx.lineTo(vw-2,yy); bctx.stroke(); });
   bctx.strokeStyle='rgba(58,44,28,.85)'; bctx.lineWidth=1; bctx.beginPath(); bctx.moveTo(WALL.mL,baseY); bctx.lineTo(vw-2,baseY); bctx.stroke();
-  if(isSquad() && teamByName[state.show]){
-    const ta=teamByName[state.show].avg_height, tavg=WC.meta.tournamentAvg;
-    bctx.strokeStyle='rgba(168,85,44,.7)'; bctx.lineWidth=1; bctx.setLineDash([2,4]); bctx.beginPath(); bctx.moveTo(WALL.mL,y(tavg)); bctx.lineTo(vw-2,y(tavg)); bctx.stroke();
-    bctx.strokeStyle=getCss('--moon'); bctx.lineWidth=1.4; bctx.setLineDash([7,5]); bctx.beginPath(); bctx.moveTo(WALL.mL,y(ta)); bctx.lineTo(vw-2,y(ta)); bctx.stroke();
-    bctx.setLineDash([]); bctx.fillStyle=getCss('--moon'); bctx.font='16px "Caveat",cursive'; bctx.textAlign='right';
-    bctx.fillText(`${teamName(state.show)} ${tr('lblAvg','avg')} ${fmtLen(ta)}`, vw-8, y(ta)-6); bctx.textAlign='left';
-  }
   const drawn = (anim?targets.map(t=>lerpT(anim.from[t.key],t,frac)):targets).filter(vis);
   drawn.forEach(cur=>drawFigure(bctx,sh(cur),showFlag,dimOf(cur)));
   drawStars(bctx, drawn.map(sh));
+  { const fbAvg=WC.meta.tournamentAvg;
+    const isSq = isSquad() && teamByName[state.show];
+    const ta = isSq ? teamByName[state.show].avg_height : null;
+    // drawn ON TOP of the figures so the lines stay visible behind tall players (e.g. the all-players wall)
+    bctx.lineWidth=1.4; bctx.setLineDash([7,5]);
+    bctx.strokeStyle=getCss('--moon'); bctx.beginPath(); bctx.moveTo(WALL.mL,y(fbAvg)); bctx.lineTo(vw-2,y(fbAvg)); bctx.stroke();
+    if(isSq){ bctx.strokeStyle=TEAM_AVG_COL; bctx.beginPath(); bctx.moveTo(WALL.mL,y(ta)); bctx.lineTo(vw-2,y(ta)); bctx.stroke(); }
+    bctx.setLineDash([]); bctx.font='16px "Caveat",cursive'; bctx.textAlign='right';
+    // each label on the outer side of its line, so they never collide when the averages are close
+    const fbY=y(fbAvg);
+    bctx.fillStyle=getCss('--moon'); bctx.fillText(`${tr('lblAvgPlayer','average World Cup player')} ${fmtLen(fbAvg)}`, vw-8, (!isSq||fbAvg>=ta)?fbY-6:fbY+17);
+    if(isSq){ const taY=y(ta); bctx.fillStyle=TEAM_AVG_COL; bctx.fillText(`${teamName(state.show)} ${fmtLen(ta)}`, vw-8, ta>fbAvg?taY-6:taY+17); }
+    bctx.textAlign='left';
+  }
   bctx.fillStyle=getCss('--soft'); bctx.font='11px "EB Garamond",serif'; bctx.textAlign='center';
   if(isSquad() && L.step>=13) drawn.forEach(t=>bctx.fillText(t.item.no,t.x-ox,baseY+15));
   else if(state.show==='team-avg' && L.step>=18) drawn.forEach(t=>bctx.fillText(t.item.code,t.x-ox,baseY+15));
@@ -632,7 +651,7 @@ function drawWall(frac){
   bctx.textAlign='left';
   drawRuler(y);
 }
-function lerpT(from,to,f){ if(!from) return to; return {key:to.key,item:to.item,W:to.W,base:to.base,x:from.x+(to.x-from.x)*f,topY:from.topY+(to.topY-from.topY)*f}; }
+function lerpT(from,to,f){ if(!from) return to; return {key:to.key,item:to.item,W:to.W,base:to.base,clipBot:to.clipBot,x:from.x+(to.x-from.x)*f,topY:from.topY+(to.topY-from.topY)*f}; }
 
 function drawRuler(y){
   const ticks=state.axis==='zero'?[0,50,100,150,180,210]:[150,160,170,180,190,200,210];
@@ -652,9 +671,9 @@ function relayoutWall(morph){
       const t0=performance.now(),dur=600;
       (function tick(now){ const f=Math.min(1,(now-t0)/dur); anim.frac=1-Math.pow(1-f,3); drawWall(anim.frac);
         if(f<1) requestAnimationFrame(tick); else { anim=null; drawWall(1);} })(t0);
-      updateHint(next); return; }
+      updateHint(next); updateAside(); return; }
   }
-  lastLayout=next; anim=null; drawWall(1); updateHint(next);
+  lastLayout=next; anim=null; drawWall(1); updateHint(next); updateAside();
 }
 function updateHint(L){
   const el=document.getElementById('wallHint');
@@ -663,7 +682,7 @@ function updateHint(L){
   else if(state.show==='all') el.textContent = (L.mode==='rows'
       ? tr('hintAllRows','All {n} players wrapped onto shelves — scroll down. Each row reads tallest→smallest, left to right.').replace('{n}',L.n)
       : tr('hintAllStrip','All {n} players, sorted. Drag the thickness slider, or switch to rows. Each wears a national shirt.').replace('{n}',L.n));
-  else el.textContent=tr('hintSquad','{team}: {n} players. Dashed line = squad average; faint line = tournament average.').replace('{team}',teamName(state.show)).replace('{n}',L.n);
+  else el.textContent=tr('hintSquad','{team}: {n} players. Dashed lines: the squad average and the average WC player.').replace('{team}',teamName(state.show)).replace('{n}',L.n);
 }
 
 /* hover / click */
@@ -753,14 +772,84 @@ function fillPlayerSelect(sel,def){ const byTeam=d3.groups(P.filter(p=>p.height!
 function fillTeamSelect(sel,def){ sel.innerHTML=''; [...T].sort((a,b)=>teamName(a.team).localeCompare(teamName(b.team))).forEach(t=>{ const o=document.createElement('option'); o.value=t.team; o.textContent=`${teamName(t.team)} · ${Math.round(t.avg_height)}cm ${tr('lblAvg','avg')}`; if(t.team===def)o.selected=true; sel.appendChild(o); }); }
 function pickPlayer(sel){ const [tm,nm]=sel.value.split('|'); return P.find(p=>p.team===tm&&p.name===nm); }
 
-function svgFigure(svg,cx,topY,baseB,W,color,op){
-  const hr=W*0.55,headCy=topY+hr,shoulderY=topY+2*hr,total=Math.max(baseB-shoulderY,4),hipY=shoulderY+total*0.46,
+function figureD(cx,topY,baseB,W){
+  const hr=W*0.55,shoulderY=topY+2*hr,total=Math.max(baseB-shoulderY,4),hipY=shoulderY+total*0.46,
     hw=W/2,inset=W*0.16,gap=W*0.13,crotch=hipY+(baseB-hipY)*0.18;
-  const d=[`M${cx-hw},${shoulderY+W*0.12}`,`Q${cx-hw},${shoulderY} ${cx-hw+W*0.18},${shoulderY}`,`L${cx+hw-W*0.18},${shoulderY}`,
+  return [`M${cx-hw},${shoulderY+W*0.12}`,`Q${cx-hw},${shoulderY} ${cx-hw+W*0.18},${shoulderY}`,`L${cx+hw-W*0.18},${shoulderY}`,
     `Q${cx+hw},${shoulderY} ${cx+hw},${shoulderY+W*0.12}`,`L${cx+hw-inset},${hipY}`,`L${cx+hw-inset},${baseB}`,`L${cx+gap},${baseB}`,
     `L${cx},${crotch}`,`L${cx-gap},${baseB}`,`L${cx-hw+inset},${baseB}`,`L${cx-hw+inset},${hipY}`,'Z'].join(' ');
-  svg.append('path').attr('d',d).attr('fill',color).attr('fill-opacity',op).attr('stroke','#3a2c1c').attr('stroke-width',.6).attr('stroke-opacity',op*0.6);
+}
+function svgFigure(svg,cx,topY,baseB,W,color,op){
+  const hr=W*0.55,headCy=topY+hr;
+  svg.append('path').attr('d',figureD(cx,topY,baseB,W)).attr('clip-path','url(#cmpFigClip)').attr('fill',color).attr('fill-opacity',op).attr('stroke','#3a2c1c').attr('stroke-width',.6).attr('stroke-opacity',op*0.6);
   svg.append('circle').attr('cx',cx).attr('cy',headCy).attr('r',hr).attr('fill',color).attr('fill-opacity',op).attr('stroke','#3a2c1c').attr('stroke-width',.6).attr('stroke-opacity',op*0.6);
+}
+
+/* ---- aside: true-scale reference strip (#1), relatable gap caption (#3) ---- */
+function relatable(cm){
+  const t=[[5,'refGolf','a golf ball'],[9,'refCard','a credit card'],[16,'refPhone','a smartphone'],
+           [22,'refA4','a sheet of A4 paper'],[30,'refRuler','a one-foot ruler'],[40,'refPin','a bowling pin'],
+           [1e9,'refGuitar','a guitar']];
+  for(const [lim,key,name] of t) if(cm<=lim) return tr(key, name);
+}
+function updateGapNote(minH,maxH){
+  const el=document.getElementById('gapNote'); if(!el) return;
+  if(minH==null||maxH==null||maxH<=minH){ el.textContent=''; return; }
+  const gap=maxH-minH, gapStr=state.len==='cm'?Math.round(gap)+' cm':Math.round(gap/2.54)+'″';
+  const lead = isSquad() ? tr('gapSquad','Tallest to shortest in this squad:')
+    : state.show==='team-avg' ? tr('gapTeamAvg','Squad averages span:')
+    : tr('gapAll','Shortest to tallest shown:');
+  el.textContent = `${lead} ${gapStr}, ${tr('gapAbout','about')} ${relatable(gap)}.`;
+}
+const STRIP_W=108, STRIP_GAP=14, RULER_W=54;   // wall-row left offsets (keep in sync with CSS/ruler)
+const TEAM_AVG_COL='#c0392b';                  // squad average — distinct from the dark-blue WC-average reference
+function drawScaleStrip(fbAvg, teamAvg){
+  const W=STRIP_W, sy=d3.scaleLinear().domain([0,212]).range([baseY,WALL.top]), gx0=8, gx1=W-26;
+  scaleStrip.attr('width',W).attr('height',canvasH).selectAll('*').remove();
+  scaleStrip.append('text').attr('x',W/2).attr('y',13).attr('text-anchor','middle').attr('font-family','"Caveat",cursive').attr('font-size',12).attr('fill',getCss('--soft')).text(tr('stripTitle','actual scale'));
+  // faint scale gridlines + labels
+  [0,50,100,200].forEach(cm=>{ scaleStrip.append('line').attr('x1',gx0).attr('x2',gx1).attr('y1',sy(cm)).attr('y2',sy(cm)).attr('stroke','rgba(58,44,28,.13)').attr('stroke-dasharray','2 3'); });
+  [0,50,100,150,200,210].forEach(cm=>{ scaleStrip.append('text').attr('x',W-3).attr('y',sy(cm)+3).attr('text-anchor','end').attr('class','axis').attr('font-size',9).text(state.len==='cm'?cm:(cm===0?'0':cmToFtIn(cm))); });
+  // average WC player, full body to scale (fixed reference)
+  const cx=W*0.42, fw=16, topY=sy(fbAvg);
+  scaleStrip.append('path').attr('d',figureD(cx,topY,baseY,fw)).attr('fill','rgba(58,44,28,.17)').attr('stroke','rgba(58,44,28,.32)').attr('stroke-width',.5);
+  scaleStrip.append('circle').attr('cx',cx).attr('cy',topY+fw*0.55).attr('r',fw*0.55).attr('fill','rgba(58,44,28,.17)').attr('stroke','rgba(58,44,28,.32)').attr('stroke-width',.5);
+  scaleStrip.append('text').attr('x',cx).attr('y',topY-fw*0.75).attr('text-anchor','middle').attr('class','axis').attr('font-size',8).attr('fill',getCss('--soft')).text(tr('stripAvg','avg WC player'));
+  // zoom-window boundaries (orange) at 150 & 210
+  [150,210].forEach(cm=>{ scaleStrip.append('line').attr('x1',gx0).attr('x2',gx1).attr('y1',sy(cm)).attr('y2',sy(cm)).attr('stroke','rgba(168,85,44,.65)').attr('stroke-width',1.4).attr('stroke-dasharray','4 2'); });
+  // WC-average reference (dark blue / moon) — matches the chart, through the figure's head
+  scaleStrip.append('line').attr('x1',gx0).attr('x2',gx1).attr('y1',sy(fbAvg)).attr('y2',sy(fbAvg)).attr('stroke',getCss('--moon')).attr('stroke-width',1).attr('stroke-dasharray','5 4').attr('opacity',.65);
+  // squad average (distinct colour), connects to the chart
+  if(teamAvg!=null){ scaleStrip.append('line').attr('x1',gx0).attr('x2',gx1).attr('y1',sy(teamAvg)).attr('y2',sy(teamAvg)).attr('stroke',TEAM_AVG_COL).attr('stroke-width',1).attr('stroke-dasharray','5 4').attr('opacity',.85); }
+}
+function drawZoomLinks(fbAvg, teamAvg){
+  const zl=d3.select('#zoomLinks'), xS=STRIP_W, xW=STRIP_W+STRIP_GAP+RULER_W;
+  const sy=d3.scaleLinear().domain([0,212]).range([baseY,WALL.top]);
+  const wy=d3.scaleLinear().domain(dom()).range([baseY,WALL.top]);
+  zl.attr('width',xW+1).attr('height',canvasH).selectAll('*').remove();
+  // 150 & 210 — funnel in dramatic, flat in true-zero
+  [150,210].forEach(cm=>{ zl.append('line').attr('x1',xS).attr('y1',sy(cm)).attr('x2',xW).attr('y2',wy(cm))
+    .attr('stroke','rgba(168,85,44,.72)').attr('stroke-width',1.6).attr('stroke-dasharray','4 3'); });
+  // WC average (moon) — always
+  zl.append('line').attr('x1',xS).attr('y1',sy(fbAvg)).attr('x2',xW).attr('y2',wy(fbAvg)).attr('stroke',getCss('--moon')).attr('stroke-width',1).attr('stroke-dasharray','5 4').attr('opacity',.7);
+  // squad average — distinct colour
+  if(teamAvg!=null){ zl.append('line').attr('x1',xS).attr('y1',sy(teamAvg)).attr('x2',xW).attr('y2',wy(teamAvg)).attr('stroke',TEAM_AVG_COL).attr('stroke-width',1).attr('stroke-dasharray','5 4').attr('opacity',.85); }
+}
+function updateAside(){
+  // the strip + connectors only make sense for the single-axis wall; the wrapped
+  // "rows" view has a separate scale per row, so hide them there.
+  const rows = !!(lastLayout && lastLayout.mode==='rows');
+  scaleStrip.style('display', rows?'none':null);
+  d3.select('#zoomLinks').style('display', rows?'none':null);
+  if(!rows){
+    const fbAvg=WC.meta.tournamentAvg;
+    const teamAvg=(isSquad()&&teamByName[state.show])?teamByName[state.show].avg_height:null;
+    drawScaleStrip(fbAvg, teamAvg); drawZoomLinks(fbAvg, teamAvg);
+  }
+  if(!lastLayout){ updateGapNote(null,null); return; }
+  const vals=lastLayout.targets.map(t=>t.item.value).filter(v=>v!=null);
+  const minH=vals.length?Math.min.apply(null,vals):null, maxH=vals.length?Math.max.apply(null,vals):null;
+  updateGapNote(minH,maxH);
 }
 function cmpDomainMax(){ const A=document.getElementById('cmpA'),B=document.getElementById('cmpB');
   if(cmpMode==='players') return Math.max(pickPlayer(A).height,pickPlayer(B).height);
@@ -773,14 +862,30 @@ function drawCompare(){
   const D0=state.axis==='zero'?0:150;
   let Dmax=cmpDomainMax()+8; if(state.customHeight) Dmax=Math.max(Dmax,state.customHeight+8);
   const y=d3.scaleLinear().domain([D0,Dmax]).range([bz,M.t]);
+  const foot=y(0);   // true 0 cm (off-frame in dramatic view); figures clip at the baseline
   const rticks=state.axis==='zero'?[0,50,100,150,180,210]:[150,160,170,180,190,200,210];
 
-  const svg=d3.select('#cmpSvg'); svg.attr('viewBox',`0 0 ${w} ${h}`).attr('width','100%').style('max-width',w+'px').selectAll('*').remove();
+  const svg=d3.select('#cmpSvg'); svg.attr('viewBox',`-110 0 ${w+110} ${h}`).attr('width','100%').style('max-width',(w+110)+'px').selectAll('*').remove();
+  svg.append('defs').append('clipPath').attr('id','cmpFigClip').append('rect').attr('x',0).attr('y',-300).attr('width',w).attr('height',bz+300);
   // ruler drawn inside the chart so it always aligns
   rticks.filter(c=>c>=D0&&c<=Dmax).forEach(cm=>{ const yy=y(cm);
     svg.append('line').attr('x1',46).attr('x2',54).attr('y1',yy).attr('y2',yy).attr('stroke','rgba(58,44,28,.4)');
     svg.append('text').attr('x',42).attr('y',yy+4).attr('text-anchor','end').attr('class','axis').text(state.len==='cm'?cm:(cm===0?'0':cmToFtIn(cm))); });
   svg.append('text').attr('x',28).attr('y',M.t-10).attr('text-anchor','middle').attr('font-family','"Caveat",cursive').attr('font-size',15).attr('fill',getCss('--soft')).text(state.len==='cm'?'cm':'ft');
+  // ---- actual-scale reference strip (mirrors Plate I), in the negative-x margin ----
+  { const sx0=-100, sx1=-30, fbAvg=WC.meta.tournamentAvg, ssy=d3.scaleLinear().domain([0,212]).range([bz,M.t]);
+    svg.append('text').attr('x',(sx0+sx1)/2).attr('y',M.t-10).attr('text-anchor','middle').attr('font-family','"Caveat",cursive').attr('font-size',12).attr('fill',getCss('--soft')).text(tr('stripTitle','actual scale'));
+    [0,50,100,200].forEach(cm=>{ svg.append('line').attr('x1',sx0).attr('x2',sx1).attr('y1',ssy(cm)).attr('y2',ssy(cm)).attr('stroke','rgba(58,44,28,.13)').attr('stroke-dasharray','2 3'); });
+    [0,50,100,150,200,210].forEach(cm=>{ svg.append('text').attr('x',sx1-1).attr('y',ssy(cm)+3).attr('text-anchor','end').attr('class','axis').attr('font-size',9).text(state.len==='cm'?cm:(cm===0?'0':cmToFtIn(cm))); });
+    const fcx=sx0+18, ffw=14, ftopY=ssy(fbAvg);
+    svg.append('path').attr('d',figureD(fcx,ftopY,bz,ffw)).attr('fill','rgba(58,44,28,.17)').attr('stroke','rgba(58,44,28,.32)').attr('stroke-width',.5);
+    svg.append('circle').attr('cx',fcx).attr('cy',ftopY+ffw*0.55).attr('r',ffw*0.55).attr('fill','rgba(58,44,28,.17)').attr('stroke','rgba(58,44,28,.32)').attr('stroke-width',.5);
+    svg.append('text').attr('x',fcx).attr('y',ftopY-ffw*0.7).attr('text-anchor','middle').attr('class','axis').attr('font-size',8).attr('fill',getCss('--soft')).text(tr('stripAvg','avg WC player'));
+    svg.append('line').attr('x1',sx0).attr('x2',sx1).attr('y1',ssy(fbAvg)).attr('y2',ssy(fbAvg)).attr('stroke',getCss('--moon')).attr('stroke-width',1).attr('stroke-dasharray','5 4').attr('opacity',.6);
+    // the compare view's visible window [D0,Dmax] + connectors funnelling it onto the full axis
+    [D0,Dmax].forEach(cm=>{ svg.append('line').attr('x1',sx0).attr('x2',sx1).attr('y1',ssy(cm)).attr('y2',ssy(cm)).attr('stroke','rgba(168,85,44,.65)').attr('stroke-width',1.4).attr('stroke-dasharray','4 2');
+      svg.append('line').attr('x1',sx1).attr('y1',ssy(cm)).attr('x2',54).attr('y2',y(cm)).attr('stroke','rgba(168,85,44,.72)').attr('stroke-width',1.6).attr('stroke-dasharray','4 3'); });
+  }
   const cx=w/2,cy=(bz+M.t)/2,R=Math.min((bz-M.t)/2,w/2-44);
   svg.append('circle').attr('cx',cx).attr('cy',cy).attr('r',R).attr('fill','none').attr('stroke','#3a2c1c').attr('stroke-opacity',.18);
   svg.append('rect').attr('x',cx-R*0.86).attr('y',cy-R*0.86).attr('width',R*1.72).attr('height',R*1.72).attr('fill','none').attr('stroke','#3a2c1c').attr('stroke-opacity',.14);
@@ -790,7 +895,7 @@ function drawCompare(){
 
   if(cmpMode==='players'){
     const a=pickPlayer(A),b=pickPlayer(B);
-    [[a,xA],[b,xB]].forEach(([p,px])=>{ svgFigure(svg,px,y(p.height),bz,56,COL[p.pos],.9);
+    [[a,xA],[b,xB]].forEach(([p,px])=>{ svgFigure(svg,px,y(p.height),foot,56,COL[p.pos],.9);
       svg.append('line').attr('class','grid').attr('x1',px-72).attr('x2',px+72).attr('y1',y(p.height)).attr('y2',y(p.height)).attr('stroke-dasharray','3 3');
       svg.append('text').attr('x',px).attr('y',bz+24).attr('text-anchor','middle').attr('font-family','"EB Garamond",serif').attr('font-size',17).attr('fill',COL[p.pos]).text(p.name);
       svg.append('text').attr('x',px).attr('y',bz+43).attr('text-anchor','middle').attr('class','axis').attr('font-size',13).text(fmtLen(p.height)); });
@@ -798,9 +903,9 @@ function drawCompare(){
   } else if(cmpSquad==='avg'){
     const a=teamByName[A.value],b=teamByName[B.value];
     [[a,xA],[b,xB]].forEach(([t,px])=>{ const off=78;
-      svgFigure(svg,px-off,y(t.min_height),bz,42,COL.DF,.18);   // shortest, left
-      svgFigure(svg,px+off,y(t.max_height),bz,42,COL.DF,.18);   // tallest, right
-      svgFigure(svg,px,y(t.avg_height),bz,56,COL.DF,.92);       // average, centre
+      svgFigure(svg,px-off,y(t.min_height),foot,42,COL.DF,.18);   // shortest, left
+      svgFigure(svg,px+off,y(t.max_height),foot,42,COL.DF,.18);   // tallest, right
+      svgFigure(svg,px,y(t.avg_height),foot,56,COL.DF,.92);       // average, centre
       svg.append('text').attr('x',px-off).attr('y',y(t.min_height)-8).attr('text-anchor','middle').attr('class','axis').attr('font-size',12).text(fmtLen(t.min_height));
       svg.append('text').attr('x',px+off).attr('y',y(t.max_height)-8).attr('text-anchor','middle').attr('class','axis').attr('font-size',12).text(fmtLen(t.max_height));
       svg.append('line').attr('class','grid').attr('x1',px-104).attr('x2',px+104).attr('y1',y(t.avg_height)).attr('y2',y(t.avg_height)).attr('stroke-dasharray','3 3');
@@ -811,7 +916,7 @@ function drawCompare(){
     [[a,54,w*0.5-16],[b,w*0.5+16,w-44]].forEach(([t,x0,x1])=>{
       const sq=P.filter(p=>p.team===t.team&&p.height!=null).sort((u,v)=>v.height-u.height);
       const step=Math.min(20,(x1-x0)/sq.length), W=Math.max(3,step*0.6);
-      sq.forEach((p,i)=>{ const px=x0+i*step+step/2; svgFigure(svg,px,y(p.height),bz,W,COL[p.pos],.85);
+      sq.forEach((p,i)=>{ const px=x0+i*step+step/2; svgFigure(svg,px,y(p.height),foot,W,COL[p.pos],.85);
         svg.append('rect').attr('x',px-step/2).attr('y',M.t).attr('width',step).attr('height',bz-M.t).attr('fill','transparent').style('cursor','pointer')
           .on('mousemove',e=>showTip(wallCard(Object.assign({kind:'player'},p)),e)).on('mouseleave',hideTip); });
       svg.append('line').attr('x1',x0).attr('x2',x1).attr('y1',y(t.avg_height)).attr('y2',y(t.avg_height)).attr('stroke',getCss('--moon')).attr('stroke-width',1).attr('stroke-dasharray','6 4');
@@ -822,7 +927,7 @@ function drawCompare(){
   // "you" — a figure + reference line spanning the whole frame
   if(state.customHeight){ const yy=y(state.customHeight);
     svg.append('line').attr('x1',54).attr('x2',w-44).attr('y1',yy).attr('y2',yy).attr('stroke',getCss('--moon')).attr('stroke-width',1.4).attr('stroke-dasharray','2 3');
-    if(cmpMode==='players'){ const px=w*0.13; svgFigure(svg,px,yy,bz,56,getCss('--moon'),.5);
+    if(cmpMode==='players'){ const px=w*0.13; svgFigure(svg,px,yy,foot,56,getCss('--moon'),.5);
       svg.append('text').attr('x',px).attr('y',bz+24).attr('text-anchor','middle').attr('font-family','"EB Garamond",serif').attr('font-size',17).attr('fill',getCss('--moon')).text(tr('lblYou','you'));
       svg.append('text').attr('x',px).attr('y',bz+43).attr('text-anchor','middle').attr('class','axis').attr('font-size',13).text(fmtLen(state.customHeight)); }
     svg.append('text').attr('x',w-48).attr('y',yy-7).attr('text-anchor','end').attr('font-family','"Caveat",cursive').attr('font-size',19).attr('fill',getCss('--moon')).text(`${tr('lblYou','you')} · ${fmtLen(state.customHeight)}`); }
@@ -882,12 +987,12 @@ function buildControls(){
   document.querySelectorAll('#cmpModeTog button').forEach(b=>b.onclick=()=>{ cmpMode=b.dataset.m;
     document.querySelectorAll('#cmpModeTog button').forEach(x=>x.classList.toggle('on',x===b));
     document.getElementById('cmpSquadTog').style.display = cmpMode==='teams'?'inline-flex':'none';
-    if(cmpMode==='players'){ fillPlayerSelect(document.getElementById('cmpA'),'Florian Wiegele'); fillPlayerSelect(document.getElementById('cmpB'),'Ramy Rabia'); }
+    if(cmpMode==='players'){ fillPlayerSelect(document.getElementById('cmpA'),'Florian Wiegele'); fillPlayerSelect(document.getElementById('cmpB'),'César Yanis'); }
     else { fillTeamSelect(document.getElementById('cmpA'),'Germany'); fillTeamSelect(document.getElementById('cmpB'),'South Africa'); }
     drawCompare(); });
   document.querySelectorAll('#cmpSquadTog button').forEach(b=>b.onclick=()=>{ cmpSquad=b.dataset.s;
     document.querySelectorAll('#cmpSquadTog button').forEach(x=>x.classList.toggle('on',x===b)); drawCompare(); });
-  fillPlayerSelect(document.getElementById('cmpA'),'Florian Wiegele'); fillPlayerSelect(document.getElementById('cmpB'),'Ramy Rabia');
+  fillPlayerSelect(document.getElementById('cmpA'),'Florian Wiegele'); fillPlayerSelect(document.getElementById('cmpB'),'César Yanis');
   document.getElementById('cmpA').onchange=drawCompare; document.getElementById('cmpB').onchange=drawCompare;
   const ch=document.getElementById('customH'); ch.placeholder=heightPlaceholder();
   ch.oninput=()=>{ state.customHeight=parseHeightInput(ch.value); drawCompare(); };
@@ -924,9 +1029,9 @@ const DICT = {
     p4eyebrow:"plate IV · the proportion", p4title:"Two figures, one circle",
     p4lead:"Stand any two inside Da Vinci's frame. The bracket measures the gap between their heads. The ruler follows your unit and the dramatic / true-zero setting above.",
     cmpPlayers:"Players", cmpTeams:"Teams", cmpAverages:"Averages", cmpFull:"Full squads", cmpYourHeight:"…or your height", cmpYourPh:"height in cm", cmpYourPhFt:"height e.g. 5'10", cmpLeft:"On the left", cmpRight:"On the right",
-    footMeasuredH:"How it was measured", footMeasured:`Roster from the official <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">2026 World Cup squads</a> (Wikipedia). Heights joined from <a href="https://www.wikidata.org">Wikidata</a> by stable ID, with Wikipedia infoboxes and Transfermarkt filling the gaps. Built once into a static file — no live calls.`,
-    footCaveatsH:"The honest caveats", footCaveats:`<b>Height:</b> all 1,248 players covered (1,179 from Wikidata, 62 from Wikipedia infoboxes).<br>Heights are self-/club-reported and rounded to the centimetre. Weight sat out this study — too sparse to trust.`,
-    footNotebookH:"Notebook", footNotebook:`A <span class="hand-doodle" title="Luarai — luar, moonlight ☾">Luarai</span> field study. Ink &amp; parchment, in the spirit of an anatomical plate. Numbers reflect Wikidata as of <b>23 June 2026</b>.`,
+    footMeasuredH:"How it was measured", footMeasured:`Roster from the official <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">2026 World Cup squads</a> (Wikipedia). Heights joined from <a href="https://www.wikidata.org">Wikidata</a> by stable ID, with Wikipedia infoboxes and Transfermarkt filling the gaps — then the outliers cross-checked by hand. Built once into a static file — no live calls.`,
+    footCaveatsH:"The honest caveats", footCaveats:`<b>Height:</b> all 1,248 players covered — 1,143 from Wikidata, the rest from Wikipedia infoboxes and Transfermarkt. 44 implausible or conflicting values were checked by hand and corrected against Transfermarkt, FotMob and Wikipedia.<br>Heights are self-/club-reported and rounded to the centimetre. Weight sat out this study — too sparse to trust.`,
+    footNotebookH:"Notebook", footNotebook:`A <span class="hand-doodle" title="Luarai — luar, moonlight ☾">Luarai</span> field study. Ink &amp; parchment, in the spirit of an anatomical plate. Numbers reflect Wikidata as of <b>23 June 2026</b>, hand-corrected through <b>24 June</b>.`,
     lbTitle:"⚽ Supporters League", lbSub:"Think your flag can top the table? Back the notebook and climb.", lbCta:"⚽ get on the scoresheet",
     lbHow:`add your flag emoji + a social link in the Ko-fi message, e.g. <img src="https://flagcdn.com/w20/co.png" alt="" style="height:10px;vertical-align:-1px;border-radius:2px"> https://x.com/you`,
     lbLoading:"Loading the table…", lbColSupporter:"Supporter", lbColTotal:"Total", lbColGoals:"Goals", lbNote:"These are example supporters — be the first real name on the board ⚽", lbSim:"▶ simulate a goal",
@@ -939,7 +1044,10 @@ const DICT = {
     hintGroupAvg:"12 groups, each averaged. (Groups are random draws — more curiosity than meaning.)",
     hintAllRows:"All {n} players wrapped onto shelves — scroll down. Each row reads tallest→smallest, left to right.",
     hintAllStrip:"All {n} players, sorted. Drag the thickness slider, or switch to rows. Each wears a national shirt.",
-    hintSquad:"{team}: {n} players. Dashed line = squad average; faint line = tournament average.",
+    hintSquad:"{team}: {n} players. Dashed lines: the squad average and the average WC player.",
+    stripTitle:"actual scale", stripAvg:"avg WC player", lblAvgPlayer:"average World Cup player",
+    gapSquad:"Tallest to shortest in this squad:", gapTeamAvg:"Squad averages span:", gapAll:"Shortest to tallest shown:", gapAbout:"about",
+    refGolf:"a golf ball", refCard:"a credit card", refPhone:"a smartphone", refA4:"a sheet of A4 paper", refRuler:"a one-foot ruler", refPin:"a bowling pin", refGuitar:"a guitar",
     cardClub:"Club", cardCaps:"Caps", cardSpan:"Span", cardKeepers:"Keepers",
     lbGolden:"👟 Golden Boot", lbAnon:"Anonymous", lbSomeone:"Someone", lbLink:"link ↗", lbExample:"example",
     lbTickGoal:"⚽ GOAL! {who} just scored {amt} — up to #{n}!", lbTickJoin:"⚽ {who} joined the league at #{n} with {amt}!", lbTickHold:"⚽ {who} scored {amt} — holding #{n}",
@@ -963,9 +1071,9 @@ const DICT = {
     p4eyebrow:"lámina IV · la proporción", p4title:"Dos figuras, un círculo",
     p4lead:"Coloca a dos cualesquiera dentro del marco de Da Vinci. El corchete mide la diferencia entre sus cabezas. La regla sigue tu unidad y el ajuste dramática / cero real de arriba.",
     cmpPlayers:"Jugadores", cmpTeams:"Selecciones", cmpAverages:"Promedios", cmpFull:"Plantillas completas", cmpYourHeight:"…o tu altura", cmpYourPh:"altura en cm", cmpYourPhFt:"altura ej. 5'10", cmpLeft:"A la izquierda", cmpRight:"A la derecha",
-    footMeasuredH:"Cómo se midió", footMeasured:`Lista oficial de las <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">plantillas del Mundial 2026</a> (Wikipedia). Alturas unidas desde <a href="https://www.wikidata.org">Wikidata</a> por ID estable, con infoboxes de Wikipedia y Transfermarkt cubriendo los huecos. Compilado una vez en un archivo estático — sin llamadas en vivo.`,
-    footCaveatsH:"Las advertencias honestas", footCaveats:`<b>Altura:</b> los 1.248 jugadores cubiertos (1.179 de Wikidata, 62 de infoboxes de Wikipedia).<br>Las alturas son auto-/club-reportadas y redondeadas al centímetro. El peso quedó fuera de este estudio — demasiado escaso para fiarse.`,
-    footNotebookH:"Libreta", footNotebook:`Un estudio de campo de <span class="hand-doodle" title="Luarai — luar, luz de luna ☾">Luarai</span>. Tinta y pergamino, al estilo de una lámina anatómica. Los números reflejan Wikidata al <b>23 de junio de 2026</b>.`,
+    footMeasuredH:"Cómo se midió", footMeasured:`Lista oficial de las <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">plantillas del Mundial 2026</a> (Wikipedia). Alturas unidas desde <a href="https://www.wikidata.org">Wikidata</a> por ID estable, con infoboxes de Wikipedia y Transfermarkt cubriendo los huecos — y luego los valores atípicos verificados a mano. Compilado una vez en un archivo estático — sin llamadas en vivo.`,
+    footCaveatsH:"Las advertencias honestas", footCaveats:`<b>Altura:</b> los 1.248 jugadores cubiertos — 1.143 de Wikidata, el resto de infoboxes de Wikipedia y Transfermarkt. 44 valores inverosímiles o contradictorios se revisaron a mano y se corrigieron con Transfermarkt, FotMob y Wikipedia.<br>Las alturas son auto-/club-reportadas y redondeadas al centímetro. El peso quedó fuera de este estudio — demasiado escaso para fiarse.`,
+    footNotebookH:"Libreta", footNotebook:`Un estudio de campo de <span class="hand-doodle" title="Luarai — luar, luz de luna ☾">Luarai</span>. Tinta y pergamino, al estilo de una lámina anatómica. Los números reflejan Wikidata al <b>23 de junio de 2026</b>, corregidos a mano hasta el <b>24 de junio</b>.`,
     lbTitle:"⚽ Liga de Apoyo", lbSub:"¿Crees que tu bandera puede liderar la tabla? Apoya la libreta y escala.", lbCta:"⚽ entra en la planilla",
     lbHow:`añade tu bandera emoji + un enlace social en el mensaje de Ko-fi, p. ej. <img src="https://flagcdn.com/w20/co.png" alt="" style="height:10px;vertical-align:-1px;border-radius:2px"> https://x.com/tu`,
     lbLoading:"Cargando la tabla…", lbColSupporter:"Seguidor", lbColTotal:"Total", lbColGoals:"Goles", lbNote:"Estos son seguidores de ejemplo — sé el primer nombre real en la tabla ⚽", lbSim:"▶ simular un gol",
@@ -978,7 +1086,10 @@ const DICT = {
     hintGroupAvg:"12 grupos, cada uno promediado. (Los grupos son sorteos al azar — más curiosidad que significado.)",
     hintAllRows:"Los {n} jugadores repartidos en estantes — desplázate hacia abajo. Cada fila va de mayor a menor, de izquierda a derecha.",
     hintAllStrip:"Los {n} jugadores, ordenados. Mueve el control de grosor, o cambia a filas. Cada uno viste su camiseta nacional.",
-    hintSquad:"{team}: {n} jugadores. Línea discontinua = media de la selección; línea tenue = media del torneo.",
+    hintSquad:"{team}: {n} jugadores. Líneas discontinuas: la media de la selección y el jugador medio del Mundial.",
+    stripTitle:"escala real", stripAvg:"jugador medio", lblAvgPlayer:"jugador medio del Mundial",
+    gapSquad:"Del más alto al más bajo de esta selección:", gapTeamAvg:"Las medias de las selecciones abarcan:", gapAll:"Del más bajo al más alto mostrado:", gapAbout:"como",
+    refGolf:"una pelota de golf", refCard:"una tarjeta de crédito", refPhone:"un smartphone", refA4:"una hoja A4", refRuler:"una regla de 30 cm", refPin:"un bolo", refGuitar:"una guitarra",
     cardClub:"Club", cardCaps:"Partidos", cardSpan:"Rango", cardKeepers:"Porteros",
     lbGolden:"👟 Bota de Oro", lbAnon:"Anónimo", lbSomeone:"Alguien", lbLink:"enlace ↗", lbExample:"ejemplo",
     lbTickGoal:"⚽ ¡GOL! {who} acaba de marcar {amt} — ¡sube al #{n}!", lbTickJoin:"⚽ ¡{who} se unió a la liga en el #{n} con {amt}!", lbTickHold:"⚽ {who} marcó {amt} — mantiene el #{n}",
@@ -1002,9 +1113,9 @@ const DICT = {
     p4eyebrow:"prancha IV · a proporção", p4title:"Duas figuras, um círculo",
     p4lead:"Coloque dois quaisquer dentro do círculo de Da Vinci. O colchete mede a diferença entre as cabeças. A régua segue sua unidade e o ajuste dramática / zero real acima.",
     cmpPlayers:"Jogadores", cmpTeams:"Seleções", cmpAverages:"Médias", cmpFull:"Elencos completos", cmpYourHeight:"…ou a sua altura", cmpYourPh:"altura em cm", cmpYourPhFt:"altura ex. 5'10", cmpLeft:"À esquerda", cmpRight:"À direita",
-    footMeasuredH:"Como foi medido", footMeasured:`Lista oficial dos <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">elencos da Copa 2026</a> (Wikipédia). Alturas unidas do <a href="https://www.wikidata.org">Wikidata</a> por ID estável, com infoboxes da Wikipédia e Transfermarkt preenchendo as lacunas. Compilado uma vez em um arquivo estático — sem chamadas ao vivo.`,
-    footCaveatsH:"As ressalvas honestas", footCaveats:`<b>Altura:</b> todos os 1.248 jogadores cobertos (1.179 do Wikidata, 62 de infoboxes da Wikipédia).<br>As alturas são auto-/clube-reportadas e arredondadas ao centímetro. O peso ficou de fora deste estudo — escasso demais para confiar.`,
-    footNotebookH:"Caderno", footNotebook:`Um estudo de campo da <span class="hand-doodle" title="Luarai — luar, luz da lua ☾">Luarai</span>. Tinta e pergaminho, no espírito de uma prancha anatômica. Os números refletem o Wikidata em <b>23 de junho de 2026</b>.`,
+    footMeasuredH:"Como foi medido", footMeasured:`Lista oficial dos <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">elencos da Copa 2026</a> (Wikipédia). Alturas unidas do <a href="https://www.wikidata.org">Wikidata</a> por ID estável, com infoboxes da Wikipédia e Transfermarkt preenchendo as lacunas — e depois os valores discrepantes conferidos à mão. Compilado uma vez em um arquivo estático — sem chamadas ao vivo.`,
+    footCaveatsH:"As ressalvas honestas", footCaveats:`<b>Altura:</b> todos os 1.248 jogadores cobertos — 1.143 do Wikidata, o restante de infoboxes da Wikipédia e Transfermarkt. 44 valores implausíveis ou contraditórios foram conferidos à mão e corrigidos com Transfermarkt, FotMob e Wikipédia.<br>As alturas são auto-/clube-reportadas e arredondadas ao centímetro. O peso ficou de fora deste estudo — escasso demais para confiar.`,
+    footNotebookH:"Caderno", footNotebook:`Um estudo de campo da <span class="hand-doodle" title="Luarai — luar, luz da lua ☾">Luarai</span>. Tinta e pergaminho, no espírito de uma prancha anatômica. Os números refletem o Wikidata em <b>23 de junho de 2026</b>, corrigidos à mão até <b>24 de junho</b>.`,
     lbTitle:"⚽ Liga de Apoio", lbSub:"Acha que sua bandeira lidera a tabela? Apoie o caderno e suba.", lbCta:"⚽ entre na súmula",
     lbHow:`adicione sua bandeira emoji + um link social na mensagem do Ko-fi, ex. <img src="https://flagcdn.com/w20/co.png" alt="" style="height:10px;vertical-align:-1px;border-radius:2px"> https://x.com/voce`,
     lbLoading:"Carregando a tabela…", lbColSupporter:"Apoiador", lbColTotal:"Total", lbColGoals:"Gols", lbNote:"Estes são apoiadores de exemplo — seja o primeiro nome real na tabela ⚽", lbSim:"▶ simular um gol",
@@ -1017,7 +1128,10 @@ const DICT = {
     hintGroupAvg:"12 grupos, cada um com sua média. (Os grupos são sorteios aleatórios — mais curiosidade que significado.)",
     hintAllRows:"Os {n} jogadores distribuídos em prateleiras — role para baixo. Cada linha vai do mais alto ao mais baixo, da esquerda para a direita.",
     hintAllStrip:"Os {n} jogadores, ordenados. Arraste o controle de espessura, ou mude para linhas. Cada um veste sua camisa nacional.",
-    hintSquad:"{team}: {n} jogadores. Linha tracejada = média da seleção; linha tênue = média do torneio.",
+    hintSquad:"{team}: {n} jogadores. Linhas tracejadas: a média do elenco e o jogador médio da Copa.",
+    stripTitle:"escala real", stripAvg:"jogador médio", lblAvgPlayer:"jogador médio da Copa",
+    gapSquad:"Do mais alto ao mais baixo deste elenco:", gapTeamAvg:"As médias dos elencos variam:", gapAll:"Do mais baixo ao mais alto mostrado:", gapAbout:"como",
+    refGolf:"uma bola de golfe", refCard:"um cartão de crédito", refPhone:"um smartphone", refA4:"uma folha A4", refRuler:"uma régua de 30 cm", refPin:"um pino de boliche", refGuitar:"um violão",
     cardClub:"Clube", cardCaps:"Jogos", cardSpan:"Faixa", cardKeepers:"Goleiros",
     lbGolden:"👟 Chuteira de Ouro", lbAnon:"Anônimo", lbSomeone:"Alguém", lbLink:"link ↗", lbExample:"exemplo",
     lbTickGoal:"⚽ GOL! {who} acabou de marcar {amt} — subiu para #{n}!", lbTickJoin:"⚽ {who} entrou na liga em #{n} com {amt}!", lbTickHold:"⚽ {who} marcou {amt} — mantém #{n}",
@@ -1041,9 +1155,9 @@ const DICT = {
     p4eyebrow:"planche IV · la proportion", p4title:"Deux figures, un cercle",
     p4lead:"Placez deux joueurs dans le cadre de Vinci. L'accolade mesure l'écart entre leurs têtes. La règle suit votre unité et le réglage dramatique / zéro réel ci-dessus.",
     cmpPlayers:"Joueurs", cmpTeams:"Équipes", cmpAverages:"Moyennes", cmpFull:"Effectifs complets", cmpYourHeight:"…ou votre taille", cmpYourPh:"taille en cm", cmpYourPhFt:"taille ex. 5'10", cmpLeft:"À gauche", cmpRight:"À droite",
-    footMeasuredH:"Comment c'est mesuré", footMeasured:`Effectifs officiels des <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">sélections de la Coupe du monde 2026</a> (Wikipédia). Tailles reliées depuis <a href="https://www.wikidata.org">Wikidata</a> par ID stable, avec les infoboxes de Wikipédia et Transfermarkt pour combler les trous. Compilé une fois dans un fichier statique — aucun appel en direct.`,
-    footCaveatsH:"Les réserves honnêtes", footCaveats:`<b>Taille :</b> les 1 248 joueurs couverts (1 179 via Wikidata, 62 via les infoboxes de Wikipédia).<br>Les tailles sont auto-/club-déclarées et arrondies au centimètre. Le poids est resté hors de cette étude — trop lacunaire pour s'y fier.`,
-    footNotebookH:"Carnet", footNotebook:`Une étude de terrain <span class="hand-doodle" title="Luarai — luar, clair de lune ☾">Luarai</span>. Encre et parchemin, dans l'esprit d'une planche anatomique. Les chiffres reflètent Wikidata au <b>23 juin 2026</b>.`,
+    footMeasuredH:"Comment c'est mesuré", footMeasured:`Effectifs officiels des <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">sélections de la Coupe du monde 2026</a> (Wikipédia). Tailles reliées depuis <a href="https://www.wikidata.org">Wikidata</a> par ID stable, avec les infoboxes de Wikipédia et Transfermarkt pour combler les trous — puis les valeurs aberrantes vérifiées à la main. Compilé une fois dans un fichier statique — aucun appel en direct.`,
+    footCaveatsH:"Les réserves honnêtes", footCaveats:`<b>Taille :</b> les 1 248 joueurs couverts — 1 143 via Wikidata, le reste via les infoboxes de Wikipédia et Transfermarkt. 44 valeurs invraisemblables ou contradictoires ont été vérifiées à la main et corrigées avec Transfermarkt, FotMob et Wikipédia.<br>Les tailles sont auto-/club-déclarées et arrondies au centimètre. Le poids est resté hors de cette étude — trop lacunaire pour s'y fier.`,
+    footNotebookH:"Carnet", footNotebook:`Une étude de terrain <span class="hand-doodle" title="Luarai — luar, clair de lune ☾">Luarai</span>. Encre et parchemin, dans l'esprit d'une planche anatomique. Les chiffres reflètent Wikidata au <b>23 juin 2026</b>, corrigés à la main jusqu'au <b>24 juin</b>.`,
     lbTitle:"⚽ Ligue des soutiens", lbSub:"Vous pensez que votre drapeau peut dominer le classement ? Soutenez le carnet et grimpez.", lbCta:"⚽ entrez sur la feuille de match",
     lbHow:`ajoutez votre drapeau emoji + un lien social dans le message Ko-fi, ex. <img src="https://flagcdn.com/w20/co.png" alt="" style="height:10px;vertical-align:-1px;border-radius:2px"> https://x.com/vous`,
     lbLoading:"Chargement du classement…", lbColSupporter:"Soutien", lbColTotal:"Total", lbColGoals:"Buts", lbNote:"Ce sont des soutiens d'exemple — soyez le premier vrai nom au tableau ⚽", lbSim:"▶ simuler un but",
@@ -1056,7 +1170,10 @@ const DICT = {
     hintGroupAvg:"12 groupes, chacun moyenné. (Les groupes sont des tirages au sort — plus curieux que significatifs.)",
     hintAllRows:"Les {n} joueurs répartis sur des étagères — faites défiler. Chaque ligne va du plus grand au plus petit, de gauche à droite.",
     hintAllStrip:"Les {n} joueurs, triés. Glissez le curseur d'épaisseur, ou passez aux lignes. Chacun porte son maillot national.",
-    hintSquad:"{team} : {n} joueurs. Ligne pointillée = moyenne de l'équipe ; ligne pâle = moyenne du tournoi.",
+    hintSquad:"{team} : {n} joueurs. Lignes pointillées : la moyenne de l'équipe et le joueur moyen de la Coupe du monde.",
+    stripTitle:"échelle réelle", stripAvg:"joueur moyen", lblAvgPlayer:"joueur moyen de la Coupe du monde",
+    gapSquad:"Du plus grand au plus petit de cette équipe :", gapTeamAvg:"Les moyennes des équipes s'étendent sur :", gapAll:"Du plus petit au plus grand affiché :", gapAbout:"soit",
+    refGolf:"une balle de golf", refCard:"une carte bancaire", refPhone:"un smartphone", refA4:"une feuille A4", refRuler:"une règle de 30 cm", refPin:"une quille de bowling", refGuitar:"une guitare",
     cardClub:"Club", cardCaps:"Sélections", cardSpan:"Écart", cardKeepers:"Gardiens",
     lbGolden:"👟 Soulier d'or", lbAnon:"Anonyme", lbSomeone:"Quelqu'un", lbLink:"lien ↗", lbExample:"exemple",
     lbTickGoal:"⚽ BUT ! {who} vient de marquer {amt} — monte au #{n} !", lbTickJoin:"⚽ {who} rejoint la ligue au #{n} avec {amt} !", lbTickHold:"⚽ {who} a marqué {amt} — garde le #{n}",
@@ -1080,9 +1197,9 @@ const DICT = {
     p4eyebrow:"Tafel IV · die Proportion", p4title:"Zwei Figuren, ein Kreis",
     p4lead:"Stelle zwei beliebige in da Vincis Rahmen. Die Klammer misst den Abstand zwischen ihren Köpfen. Das Lineal folgt deiner Einheit und der Einstellung dramatisch / echtes Null oben.",
     cmpPlayers:"Spieler", cmpTeams:"Mannschaften", cmpAverages:"Mittelwerte", cmpFull:"Ganze Kader", cmpYourHeight:"…oder deine Größe", cmpYourPh:"Größe in cm", cmpYourPhFt:"Größe z. B. 5'10", cmpLeft:"Links", cmpRight:"Rechts",
-    footMeasuredH:"Wie gemessen wurde", footMeasured:`Kader aus den offiziellen <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">WM-2026-Kadern</a> (Wikipedia). Größen über stabile IDs aus <a href="https://www.wikidata.org">Wikidata</a> verknüpft, mit Wikipedia-Infoboxen und Transfermarkt für die Lücken. Einmal in eine statische Datei gebaut — keine Live-Abfragen.`,
-    footCaveatsH:"Die ehrlichen Vorbehalte", footCaveats:`<b>Größe:</b> alle 1.248 Spieler erfasst (1.179 aus Wikidata, 62 aus Wikipedia-Infoboxen).<br>Größen sind selbst-/vereinsgemeldet und auf den Zentimeter gerundet. Das Gewicht blieb außen vor — zu lückenhaft, um ihm zu trauen.`,
-    footNotebookH:"Notizbuch", footNotebook:`Eine <span class="hand-doodle" title="Luarai — luar, Mondlicht ☾">Luarai</span>-Feldstudie. Tinte und Pergament, im Geist einer anatomischen Tafel. Zahlen entsprechen Wikidata vom <b>23. Juni 2026</b>.`,
+    footMeasuredH:"Wie gemessen wurde", footMeasured:`Kader aus den offiziellen <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">WM-2026-Kadern</a> (Wikipedia). Größen über stabile IDs aus <a href="https://www.wikidata.org">Wikidata</a> verknüpft, mit Wikipedia-Infoboxen und Transfermarkt für die Lücken — und anschließend die Ausreißer von Hand geprüft. Einmal in eine statische Datei gebaut — keine Live-Abfragen.`,
+    footCaveatsH:"Die ehrlichen Vorbehalte", footCaveats:`<b>Größe:</b> alle 1.248 Spieler erfasst — 1.143 aus Wikidata, der Rest aus Wikipedia-Infoboxen und Transfermarkt. 44 unplausible oder widersprüchliche Werte wurden von Hand geprüft und mit Transfermarkt, FotMob und Wikipedia korrigiert.<br>Größen sind selbst-/vereinsgemeldet und auf den Zentimeter gerundet. Das Gewicht blieb außen vor — zu lückenhaft, um ihm zu trauen.`,
+    footNotebookH:"Notizbuch", footNotebook:`Eine <span class="hand-doodle" title="Luarai — luar, Mondlicht ☾">Luarai</span>-Feldstudie. Tinte und Pergament, im Geist einer anatomischen Tafel. Zahlen entsprechen Wikidata vom <b>23. Juni 2026</b>, von Hand korrigiert bis zum <b>24. Juni</b>.`,
     lbTitle:"⚽ Unterstützer-Liga", lbSub:"Glaubst du, deine Flagge führt die Tabelle an? Unterstütze das Notizbuch und steig auf.", lbCta:"⚽ auf den Spielbericht",
     lbHow:`füge dein Flaggen-Emoji + einen Social-Link in die Ko-fi-Nachricht ein, z. B. <img src="https://flagcdn.com/w20/co.png" alt="" style="height:10px;vertical-align:-1px;border-radius:2px"> https://x.com/du`,
     lbLoading:"Tabelle wird geladen…", lbColSupporter:"Unterstützer", lbColTotal:"Gesamt", lbColGoals:"Tore", lbNote:"Das sind Beispiel-Unterstützer — sei der erste echte Name auf der Tafel ⚽", lbSim:"▶ ein Tor simulieren",
@@ -1095,7 +1212,10 @@ const DICT = {
     hintGroupAvg:"12 Gruppen, je gemittelt. (Gruppen sind Zufallslose — mehr Kuriosität als Bedeutung.)",
     hintAllRows:"Alle {n} Spieler auf Regale verteilt — nach unten scrollen. Jede Reihe geht vom Größten zum Kleinsten, von links nach rechts.",
     hintAllStrip:"Alle {n} Spieler, sortiert. Zieh den Dicke-Regler, oder wechsle zu Reihen. Jeder trägt sein Nationaltrikot.",
-    hintSquad:"{team}: {n} Spieler. Gestrichelte Linie = Kader-Mittel; blasse Linie = Turnier-Mittel.",
+    hintSquad:"{team}: {n} Spieler. Gestrichelte Linien: der Kaderdurchschnitt und der durchschnittliche WM-Spieler.",
+    stripTitle:"echter Maßstab", stripAvg:"Ø-Spieler", lblAvgPlayer:"durchschnittlicher WM-Spieler",
+    gapSquad:"Vom größten zum kleinsten in diesem Kader:", gapTeamAvg:"Die Kader-Mittel reichen über:", gapAll:"Vom kleinsten zum größten gezeigt:", gapAbout:"etwa",
+    refGolf:"ein Golfball", refCard:"eine Kreditkarte", refPhone:"ein Smartphone", refA4:"ein DIN-A4-Blatt", refRuler:"ein 30-cm-Lineal", refPin:"ein Bowlingpin", refGuitar:"eine Gitarre",
     cardClub:"Verein", cardCaps:"Länderspiele", cardSpan:"Spanne", cardKeepers:"Torhüter",
     lbGolden:"👟 Goldener Schuh", lbAnon:"Anonym", lbSomeone:"Jemand", lbLink:"Link ↗", lbExample:"Beispiel",
     lbTickGoal:"⚽ TOR! {who} hat gerade {amt} erzielt — rauf auf #{n}!", lbTickJoin:"⚽ {who} ist der Liga auf #{n} mit {amt} beigetreten!", lbTickHold:"⚽ {who} erzielte {amt} — hält #{n}",
@@ -1119,9 +1239,9 @@ const DICT = {
     p4eyebrow:"plaat IV · de verhouding", p4title:"Twee figuren, één cirkel",
     p4lead:"Zet er twee in het kader van Da Vinci. De beugel meet het gat tussen hun hoofden. De liniaal volgt je eenheid en de instelling dramatisch / echt nul hierboven.",
     cmpPlayers:"Spelers", cmpTeams:"Ploegen", cmpAverages:"Gemiddelden", cmpFull:"Volledige selecties", cmpYourHeight:"…of jouw lengte", cmpYourPh:"lengte in cm", cmpYourPhFt:"lengte bv. 5'10", cmpLeft:"Links", cmpRight:"Rechts",
-    footMeasuredH:"Hoe het gemeten is", footMeasured:`Selecties uit de officiële <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">WK-2026-selecties</a> (Wikipedia). Lengtes gekoppeld vanuit <a href="https://www.wikidata.org">Wikidata</a> via stabiele ID, met Wikipedia-infoboxen en Transfermarkt om de gaten te vullen. Eenmalig in een statisch bestand gebouwd — geen live-aanroepen.`,
-    footCaveatsH:"De eerlijke kanttekeningen", footCaveats:`<b>Lengte:</b> alle 1.248 spelers gedekt (1.179 uit Wikidata, 62 uit Wikipedia-infoboxen).<br>Lengtes zijn zelf-/clubgerapporteerd en afgerond op de centimeter. Gewicht bleef buiten deze studie — te schaars om op te vertrouwen.`,
-    footNotebookH:"Notitieboek", footNotebook:`Een <span class="hand-doodle" title="Luarai — luar, maanlicht ☾">Luarai</span>-veldstudie. Inkt en perkament, in de geest van een anatomische plaat. Cijfers weerspiegelen Wikidata op <b>23 juni 2026</b>.`,
+    footMeasuredH:"Hoe het gemeten is", footMeasured:`Selecties uit de officiële <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">WK-2026-selecties</a> (Wikipedia). Lengtes gekoppeld vanuit <a href="https://www.wikidata.org">Wikidata</a> via stabiele ID, met Wikipedia-infoboxen en Transfermarkt om de gaten te vullen — daarna de uitschieters met de hand gecontroleerd. Eenmalig in een statisch bestand gebouwd — geen live-aanroepen.`,
+    footCaveatsH:"De eerlijke kanttekeningen", footCaveats:`<b>Lengte:</b> alle 1.248 spelers gedekt — 1.143 uit Wikidata, de rest uit Wikipedia-infoboxen en Transfermarkt. 44 onwaarschijnlijke of tegenstrijdige waarden zijn met de hand gecontroleerd en gecorrigeerd met Transfermarkt, FotMob en Wikipedia.<br>Lengtes zijn zelf-/clubgerapporteerd en afgerond op de centimeter. Gewicht bleef buiten deze studie — te schaars om op te vertrouwen.`,
+    footNotebookH:"Notitieboek", footNotebook:`Een <span class="hand-doodle" title="Luarai — luar, maanlicht ☾">Luarai</span>-veldstudie. Inkt en perkament, in de geest van een anatomische plaat. Cijfers weerspiegelen Wikidata op <b>23 juni 2026</b>, met de hand gecorrigeerd t/m <b>24 juni</b>.`,
     lbTitle:"⚽ Supporterscompetitie", lbSub:"Denk je dat jouw vlag bovenaan kan staan? Steun het notitieboek en klim.", lbCta:"⚽ kom op het scoreformulier",
     lbHow:`voeg je vlag-emoji + een sociale link toe in het Ko-fi-bericht, bv. <img src="https://flagcdn.com/w20/co.png" alt="" style="height:10px;vertical-align:-1px;border-radius:2px"> https://x.com/jij`,
     lbLoading:"Tabel laden…", lbColSupporter:"Supporter", lbColTotal:"Totaal", lbColGoals:"Goals", lbNote:"Dit zijn voorbeeldsupporters — wees de eerste echte naam op het bord ⚽", lbSim:"▶ simuleer een goal",
@@ -1134,7 +1254,10 @@ const DICT = {
     hintGroupAvg:"12 groepen, elk gemiddeld. (Groepen zijn lotingen — meer nieuwsgierigheid dan betekenis.)",
     hintAllRows:"Alle {n} spelers verdeeld over planken — scroll omlaag. Elke rij gaat van groot naar klein, van links naar rechts.",
     hintAllStrip:"Alle {n} spelers, gesorteerd. Sleep de dikteschuif, of schakel naar rijen. Elk draagt zijn nationale shirt.",
-    hintSquad:"{team}: {n} spelers. Stippellijn = ploeggemiddelde; vage lijn = toernooigemiddelde.",
+    hintSquad:"{team}: {n} spelers. Stippellijnen: het selectiegemiddelde en de gemiddelde WK-speler.",
+    stripTitle:"echte schaal", stripAvg:"gem. speler", lblAvgPlayer:"gemiddelde WK-speler",
+    gapSquad:"Van langste tot kortste in deze selectie:", gapTeamAvg:"De gemiddelden per selectie beslaan:", gapAll:"Van kortste tot langste getoond:", gapAbout:"ongeveer",
+    refGolf:"een golfbal", refCard:"een creditcard", refPhone:"een smartphone", refA4:"een vel A4", refRuler:"een liniaal van 30 cm", refPin:"een bowlingpin", refGuitar:"een gitaar",
     cardClub:"Club", cardCaps:"Interlands", cardSpan:"Spreiding", cardKeepers:"Keepers",
     lbGolden:"👟 Gouden Schoen", lbAnon:"Anoniem", lbSomeone:"Iemand", lbLink:"link ↗", lbExample:"voorbeeld",
     lbTickGoal:"⚽ GOAL! {who} scoorde net {amt} — naar #{n}!", lbTickJoin:"⚽ {who} kwam de competitie binnen op #{n} met {amt}!", lbTickHold:"⚽ {who} scoorde {amt} — houdt #{n}",
@@ -1158,9 +1281,9 @@ const DICT = {
     p4eyebrow:"اللوحة IV · النسبة", p4title:"شكلان، دائرة واحدة",
     p4lead:"ضع أي اثنين داخل إطار دافنشي. القوس يقيس الفارق بين رأسيهما. تتبع المسطرة وحدتك وإعداد درامية / الصفر الحقيقي في الأعلى.",
     cmpPlayers:"لاعبون", cmpTeams:"منتخبات", cmpAverages:"متوسطات", cmpFull:"تشكيلات كاملة", cmpYourHeight:"…أو طولك", cmpYourPh:"الطول بالسنتيمتر", cmpYourPhFt:"الطول مثل 5'10", cmpLeft:"إلى اليسار", cmpRight:"إلى اليمين",
-    footMeasuredH:"كيف تمّ القياس", footMeasured:`التشكيلات من <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">تشكيلات كأس العالم 2026</a> الرسمية (ويكيبيديا). الأطوال مرتبطة من <a href="https://www.wikidata.org">ويكي بيانات</a> عبر معرّف ثابت، مع صناديق معلومات ويكيبيديا وموقع ترانسفيرماركت لسدّ الفجوات. بُني مرة واحدة في ملف ثابت — دون استدعاءات حيّة.`,
-    footCaveatsH:"التحفظات الصادقة", footCaveats:`<b>الطول:</b> كل اللاعبين الـ1,248 مغطّون (1,179 من ويكي بيانات، 62 من صناديق ويكيبيديا).<br>الأطوال مُصرَّح بها ذاتيًا/من الأندية ومقرّبة إلى السنتيمتر. الوزن بقي خارج هذه الدراسة — أندر من أن يُوثَق به.`,
-    footNotebookH:"الدفتر", footNotebook:`دراسة ميدانية من <span class="hand-doodle" title="Luarai — luar، ضوء القمر ☾">Luarai</span>. حبر ورَق، على غرار لوحة تشريحية. الأرقام تعكس ويكي بيانات حتى <b>23 يونيو 2026</b>.`,
+    footMeasuredH:"كيف تمّ القياس", footMeasured:`التشكيلات من <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads">تشكيلات كأس العالم 2026</a> الرسمية (ويكيبيديا). الأطوال مرتبطة من <a href="https://www.wikidata.org">ويكي بيانات</a> عبر معرّف ثابت، مع صناديق معلومات ويكيبيديا وموقع ترانسفيرماركت لسدّ الفجوات — ثم جرى التحقّق يدويًا من القيم الشاذّة. بُني مرة واحدة في ملف ثابت — دون استدعاءات حيّة.`,
+    footCaveatsH:"التحفظات الصادقة", footCaveats:`<b>الطول:</b> كل اللاعبين الـ1,248 مغطّون — 1,143 من ويكي بيانات، والبقية من صناديق ويكيبيديا وترانسفيرماركت. وقد جرى التحقّق يدويًا من 44 قيمة غير معقولة أو متضاربة وتصحيحها بالاعتماد على ترانسفيرماركت وفوت موب وويكيبيديا.<br>الأطوال مُصرَّح بها ذاتيًا/من الأندية ومقرّبة إلى السنتيمتر. الوزن بقي خارج هذه الدراسة — أندر من أن يُوثَق به.`,
+    footNotebookH:"الدفتر", footNotebook:`دراسة ميدانية من <span class="hand-doodle" title="Luarai — luar، ضوء القمر ☾">Luarai</span>. حبر ورَق، على غرار لوحة تشريحية. الأرقام تعكس ويكي بيانات حتى <b>23 يونيو 2026</b>، مع تصحيحات يدوية حتى <b>24 يونيو</b>.`,
     lbTitle:"⚽ دوري الداعمين", lbSub:"أتظن أن علمك يتصدّر الجدول؟ ادعم الدفتر واصعد.", lbCta:"⚽ سجّل اسمك في الكشف",
     lbHow:`أضف علمك (إيموجي) + رابطًا اجتماعيًا في رسالة Ko-fi، مثل <img src="https://flagcdn.com/w20/co.png" alt="" style="height:10px;vertical-align:-1px;border-radius:2px"> https://x.com/you`,
     lbLoading:"جارٍ تحميل الجدول…", lbColSupporter:"داعم", lbColTotal:"المجموع", lbColGoals:"أهداف", lbNote:"هؤلاء داعمون توضيحيون — كن أول اسم حقيقي على اللوحة ⚽", lbSim:"▶ محاكاة هدف",
@@ -1173,7 +1296,10 @@ const DICT = {
     hintGroupAvg:"12 مجموعة، كل منها بمتوسطها. (المجموعات قرعة عشوائية — فضول أكثر منها دلالة.)",
     hintAllRows:"كل اللاعبين الـ{n} موزّعون على رفوف — مرّر للأسفل. كل صف من الأطول إلى الأقصر، من اليسار إلى اليمين.",
     hintAllStrip:"كل اللاعبين الـ{n}، مرتّبين. حرّك شريط السماكة، أو بدّل إلى صفوف. كل واحد يرتدي قميصه الوطني.",
-    hintSquad:"{team}: {n} لاعبًا. الخط المتقطّع = متوسط المنتخب؛ الخط الباهت = متوسط البطولة.",
+    hintSquad:"{team}: {n} لاعبًا. الخطوط المتقطعة: متوسط المنتخب ومتوسط لاعب كأس العالم.",
+    stripTitle:"المقياس الحقيقي", stripAvg:"اللاعب المتوسط", lblAvgPlayer:"متوسط لاعب كأس العالم",
+    gapSquad:"من الأطول إلى الأقصر في هذا المنتخب:", gapTeamAvg:"متوسطات المنتخبات تمتد عبر:", gapAll:"من الأقصر إلى الأطول المعروض:", gapAbout:"حوالي",
+    refGolf:"كرة غولف", refCard:"بطاقة ائتمان", refPhone:"هاتف ذكي", refA4:"ورقة A4", refRuler:"مسطرة 30 سم", refPin:"دبوس بولينغ", refGuitar:"جيتار",
     cardClub:"النادي", cardCaps:"المباريات", cardSpan:"المدى", cardKeepers:"الحرّاس",
     lbGolden:"👟 الحذاء الذهبي", lbAnon:"مجهول", lbSomeone:"أحدهم", lbLink:"رابط ↗", lbExample:"مثال",
     lbTickGoal:"⚽ هدف! {who} سجّل للتو {amt} — صعد إلى #{n}!", lbTickJoin:"⚽ {who} انضم إلى الدوري في #{n} بـ {amt}!", lbTickHold:"⚽ {who} سجّل {amt} — يحافظ على #{n}",
