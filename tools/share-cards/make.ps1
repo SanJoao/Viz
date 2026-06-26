@@ -61,3 +61,6 @@ Card "$here\entry-003.html" "$root\density-topography\share.jpg"
 
 # 6. Entry 004 card → /worldcup-heights/share.jpg (uses heights-raw.png, captured separately)
 Card "$here\entry-004.html" "$root\worldcup-heights\share.jpg"
+
+# 7. Entry 005 card → /streak-in-bloom/share.jpg (self-contained: renders its own rose SVG)
+Card "$here\entry-005.html" "$root\streak-in-bloom\share.jpg"

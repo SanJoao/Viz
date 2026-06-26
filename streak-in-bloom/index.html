@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="pageTitle">A Streak, in Bloom — viz</title>
+<meta name="description" data-i18n-attr="content:metaDescription" content="Most apps mark your streak on a calendar. One marks it as a flower — a month of practice drawn as a rose, where every part of a petal means something. A look at the most beautiful streak I've found.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="viz">
+<meta property="og:title" content="A Streak, in Bloom">
+<meta property="og:description" content="A month of language practice, drawn as a rose instead of a calendar. One petal a day — its height, its colour, even the dots on its tip all mean something.">
+<meta property="og:url" content="https://viz.luarai.com/streak-in-bloom/">
+<meta property="og:image" content="https://viz.luarai.com/streak-in-bloom/share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="../logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="../analytics.js"></script>
+<script src="../i18n.js"></script>
+<style>
+  :root{
+    --bone:#F6F3EC; --bone2:#EFEADE; --navy:#1D2E4C; --ink:#23262b; --muted:#7c7468;
+    --line:rgba(35,38,43,.12);
+    --ember:#E65100; --o-floor:#FFB74D; --b-floor:#B3E5FC; --b-deep:#0277BD;
+    --gold:#E8B84B; --halo:#AB47BC;
+    --accent:#E65100;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{scroll-behavior:smooth; overflow-x:hidden}
+  body{
+    background:var(--bone); color:var(--ink);
+    font-family:'Manrope',sans-serif; font-weight:500; line-height:1.7;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  .serif{font-family:'Fraunces',Georgia,serif}
+  a{color:var(--navy)}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 26px}
+  .prose{max-width:600px; margin-left:auto; margin-right:auto}
+
+  /* ── entry badge ── */
+  .viz-home{
+    --vh-accent:#E65100;
+    position:fixed; top:16px; left:16px; z-index:100;
+    display:inline-flex; align-items:center; gap:8px; padding:7px 14px 7px 10px;
+    background:rgba(246,243,236,.82); border:1px solid var(--line); border-radius:999px;
+    color:var(--ink); font-size:13px; text-decoration:none; backdrop-filter:blur(8px); transition:border-color .15s;
+  }
+  .viz-home:hover{border-color:var(--vh-accent)}
+  .viz-home img{height:16px; width:16px; transition:transform .5s ease}
+  .viz-home:hover img{transform:rotate(360deg)}
+  .viz-home .vh-arrow{color:var(--vh-accent)}
+  @media (max-width:640px){ .viz-home .vh-label{display:none} }
+
+  /* language switcher (top-right, mirrors the back pill) — same layout the
+     other entries use, themed to this entry's palette */
+  .viz-lang{ position:fixed; top:16px; right:16px; z-index:100; display:inline-flex; gap:2px;
+    background:rgba(246,243,236,.9); border:1px solid var(--line); border-radius:999px; padding:3px;
+    backdrop-filter:blur(8px); box-shadow:0 2px 8px rgba(35,38,43,.1); font-family:'Manrope',sans-serif; }
+  .viz-lang-opt{ font:inherit; font-size:12px; font-weight:600; color:var(--muted); background:none; border:0;
+    border-radius:999px; padding:4px 9px; cursor:pointer; transition:color .15s, background .15s; }
+  .viz-lang-opt:hover{ color:var(--ink); }
+  .viz-lang-opt.is-on{ color:var(--bone); background:var(--ember); }
+  [dir=rtl] .viz-lang{ right:auto; left:16px; }
+  @media (max-width:640px){ .viz-lang{ top:12px; right:12px; } .viz-lang-opt{ padding:4px 7px; font-size:11px; } }
+
+  /* ── hero ── */
+  .hero{min-height:92vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:90px 26px 40px; position:relative}
+  .hero .rose-hero{width:min(440px,82vw); aspect-ratio:1; position:relative}
+  .hero .rose-hero svg{width:100%; height:100%; overflow:visible; animation:heroBloom 1.4s cubic-bezier(.2,.7,.25,1) both}
+  @keyframes heroBloom{from{opacity:0; transform:scale(.9) rotate(-6deg)} to{opacity:1; transform:scale(1) rotate(0)}}
+  @media (prefers-reduced-motion:reduce){ .hero .rose-hero svg{animation:none} }
+  .eyebrow{font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:6px}
+  h1{font-family:'Fraunces',serif; font-weight:500; font-size:clamp(40px,7vw,72px); line-height:1.02; color:var(--navy); letter-spacing:-.5px; margin:26px 0 0}
+  h1 em{font-style:italic; color:var(--ember)}
+  .hero .lede{max-width:540px; margin:18px auto 0; font-size:19px; color:var(--muted)}
+  .scroll-cue{margin-top:40px; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); opacity:.7; animation:bob 2.4s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)}}
+
+  /* ── generic section rhythm ── */
+  section{padding:86px 0}
+  .center{text-align:center}
+  h2{font-family:'Fraunces',serif; font-weight:500; font-size:clamp(28px,4.6vw,42px); line-height:1.12; color:var(--navy); letter-spacing:-.4px}
+  .say{max-width:560px; margin:16px auto 0; font-size:18px; color:var(--muted)}
+
+  /* ── the reveal: rose + airy captions ── */
+  .reveal{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:60px; align-items:center; max-width:960px; margin:0 auto}
+  .reveal .rose-box{position:relative; aspect-ratio:1}
+  .reveal .rose-box svg{width:100%; height:100%; overflow:visible}
+  .facts{display:flex; flex-direction:column; gap:26px}
+  .fact{display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:start}
+  .fact .ic{width:30px; height:30px; flex:none; margin-top:3px}
+  .fact b{display:block; font-family:'Fraunces',serif; font-weight:600; font-size:19px; color:var(--ink); letter-spacing:-.2px}
+  .fact span{font-size:15.5px; color:var(--muted); line-height:1.55}
+  .fact em{font-style:normal; color:var(--ember); font-weight:600}
+  @media (max-width:760px){ .reveal{grid-template-columns:1fr; gap:36px} .reveal .rose-box{max-width:360px; margin:0 auto; width:100%} }
+
+  /* ── interactive: grow it ── */
+  .grow-wrap{max-width:760px; margin:0 auto}
+  .grow-rose{width:min(360px,80vw); aspect-ratio:1; margin:8px auto 0; position:relative}
+  .grow-rose svg{width:100%; height:100%; overflow:visible}
+  .editor{
+    position:relative; display:flex; gap:5px; align-items:flex-end; height:128px;
+    margin:34px auto 0; max-width:620px; touch-action:none; user-select:none;
+  }
+  .editor .axis{position:absolute; left:0; right:0; bottom:0; border-bottom:1px solid var(--line)}
+  .day{position:relative; flex:1; height:100%; display:flex; align-items:flex-end; cursor:ns-resize}
+  .day .bar{width:100%; border-radius:4px 4px 0 0; min-height:2px; transition:height .08s linear, background .12s}
+  .day.canfreeze{cursor:pointer}
+  .day .frz{position:absolute; top:3px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--b-deep)}
+  .goal{position:absolute; left:0; right:0; border-top:1.5px dashed var(--ember); pointer-events:none}
+  .goal .lbl{position:absolute; right:0; top:-15px; font-size:9.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--ember); font-weight:600}
+  .weeklabels{display:flex; gap:5px; max-width:620px; margin:7px auto 0}
+  .weeklabels span{flex:7; text-align:center; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--muted)}
+
+  .controls{display:flex; flex-wrap:wrap; gap:30px 40px; align-items:center; justify-content:center; max-width:620px; margin:30px auto 0}
+  .ctl{display:flex; flex-direction:column; gap:9px; min-width:180px}
+  .ctl .lab{font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); display:flex; justify-content:space-between}
+  .ctl .lab .v{color:var(--ink); letter-spacing:0; text-transform:none; font-weight:600}
+  /* refined slider */
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:3px; border-radius:3px; background:var(--line); outline:none; cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--ember); border:2px solid var(--bone); box-shadow:0 1px 5px rgba(230,81,0,.4); cursor:pointer; transition:transform .12s}
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.12)}
+  input[type=range]::-moz-range-thumb{width:18px; height:18px; border:2px solid var(--bone); border-radius:50%; background:var(--ember); cursor:pointer}
+  /* freeze tokens */
+  .freezes{display:flex; align-items:center; gap:8px}
+  .freezes .tok{font-size:20px; line-height:1; filter:saturate(1); transition:opacity .15s, transform .15s; cursor:default}
+  .freezes .tok.spent{opacity:.22}
+  /* clean toggle */
+  .switch{display:inline-flex; align-items:center; gap:10px; cursor:pointer; user-select:none; font-size:14px; color:var(--muted); font-weight:600}
+  .switch .tr{width:40px; height:22px; border-radius:999px; background:var(--line); position:relative; transition:background .2s}
+  .switch .kn{position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25); transition:transform .2s}
+  .switch[aria-pressed=true] .tr{background:var(--halo)}
+  .switch[aria-pressed=true] .kn{transform:translateX(18px)}
+  .switch[aria-pressed=true]{color:var(--ink)}
+  /* refined preset chips */
+  .presets{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:30px auto 0}
+  .chip{
+    font-family:'Manrope',sans-serif; font-size:13.5px; font-weight:600; cursor:pointer;
+    background:transparent; border:1px solid var(--line); color:var(--navy);
+    border-radius:999px; padding:8px 16px; transition:all .15s;
+  }
+  .chip:hover{border-color:var(--ember); color:var(--ember); background:rgba(230,81,0,.05)}
+  .hint{text-align:center; font-size:13px; color:var(--muted); margin-top:18px}
+
+  /* ── why / soul ── */
+  .soul p{font-size:19px; color:var(--ink); line-height:1.75; margin-top:18px}
+  .soul p:first-child{margin-top:0}
+  .soul em{font-style:italic; color:var(--ember)}
+  .aside{font-size:15px; color:var(--muted); border-left:2px solid var(--line); padding-left:16px; margin-top:26px; font-style:italic}
+
+  /* ── voices (reddit) ── */
+  .voices{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:22px; max-width:900px; margin:36px auto 0}
+  .voice{background:rgba(255,255,255,.5); border:1px solid var(--line); border-radius:16px; padding:22px}
+  .voice .q{font-family:'Fraunces',serif; font-weight:500; font-size:18px; color:var(--ink); line-height:1.4}
+  .voice .who{margin-top:12px; font-size:12.5px; color:var(--muted); letter-spacing:.3px}
+  .voice .who b{color:var(--navy); font-weight:700}
+  .voice.warm{background:rgba(230,81,0,.05)}
+
+  /* ── close ── */
+  .close{text-align:center; max-width:540px; margin:0 auto; padding-bottom:10px}
+  .close p{font-size:17px; color:var(--muted)}
+  .close .lead{font-family:'Fraunces',serif; font-style:italic; font-size:22px; color:var(--ink); line-height:1.5; margin-bottom:18px}
+  .close a.app{color:var(--ember); font-weight:700; text-decoration:none; border-bottom:1.5px solid rgba(230,81,0,.35); padding-bottom:1px}
+  .close a.app:hover{border-bottom-color:var(--ember)}
+  .sig{margin-top:30px; font-size:15px; color:var(--muted)}
+  .sig a{color:var(--muted); text-decoration:none; border-bottom:1px dashed var(--line)}
+
+  .coffee-cta{text-align:center; margin:46px auto 14px; font-size:14px; color:var(--muted)}
+  .coffee-cta a{color:var(--ember); text-decoration:none; margin-left:4px; border-bottom:1px dashed currentColor}
+  footer{text-align:center; padding:6px 16px 54px; color:var(--muted); font-size:12px}
+  footer a{color:var(--navy); text-decoration:none}
+  footer .disc{display:block; margin-top:6px; opacity:.75}
+
+  hr.rule{border:0; height:1px; background:var(--line); max-width:80px; margin:0 auto}
+
+  /* petal hover (tap-for-detail, like the app) */
+  svg .petal{cursor:pointer; transition:filter .1s}
+  svg .petal:hover{filter:brightness(1.06) saturate(1.08)}
+  #petal-tip{
+    position:fixed; z-index:200; pointer-events:none; opacity:0; transition:opacity .12s;
+    background:var(--navy); color:#fff; font-family:'Manrope',sans-serif; font-size:13px; font-weight:600;
+    line-height:1.45; padding:9px 12px; border-radius:11px; box-shadow:0 8px 24px rgba(29,46,76,.22); max-width:210px;
+  }
+  #petal-tip b{color:#FFC107; font-weight:700}
+
+  /* right-to-left (Arabic): keep the editor + rose left-to-right, move the
+     back-badge to the right so it doesn't collide with the language tabs */
+  [dir=rtl] .editor, [dir=rtl] .weeklabels{ direction:ltr }
+  [dir=rtl] .viz-home{ left:auto; right:16px }
+  [dir=rtl] .fact{ text-align:right }
+</style>
+</head>
+<body>
+
+<a class="viz-home" href="../index.html" title="Back to the notebook">
+  <span class="vh-arrow">&larr;</span><img src="../logo.svg" alt=""><span class="vh-label">viz.</span>
+</a>
+
+<!-- ── hero ── -->
+<div class="hero">
+  <div class="eyebrow" data-i18n="eyebrow">entry 005 · a field note</div>
+  <div class="rose-hero"><svg id="rose-hero" viewBox="0 0 360 360"></svg></div>
+  <h1 data-i18n-html="heroTitle">A streak, <em>in bloom</em></h1>
+  <p class="lede" data-i18n="lede">Most apps mark your streak on a calendar of little flames. One grows it as a flower.</p>
+  <div class="scroll-cue" data-i18n="scrollCue">scroll ↓</div>
+</div>
+
+<!-- ── the reveal ── -->
+<section id="reveal">
+  <div class="wrap">
+    <div class="center" style="margin-bottom:48px">
+      <h2 class="serif" data-i18n="revealH2">One petal is one day</h2>
+      <p class="say" data-i18n="revealSay">A whole month, clockwise from noon. Hover a petal to read its day.</p>
+    </div>
+    <div class="reveal">
+      <div class="rose-box"><svg id="rose-reveal" viewBox="0 0 360 360"></svg></div>
+      <div class="facts" id="facts"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── grow it ── -->
+<section id="grow" style="background:linear-gradient(var(--bone),var(--bone2))">
+  <div class="wrap grow-wrap center">
+    <h2 class="serif" data-i18n="growH2">Grow a month</h2>
+    <p class="say" data-i18n="growSay">Drag a day to set its practice. Tap a short one to spend a freeze. Hover any petal.</p>
+    <div class="grow-rose"><svg id="rose-grow" viewBox="0 0 360 360"></svg></div>
+    <div class="editor" id="editor"><div class="axis"></div></div>
+    <div class="weeklabels"><span data-i18n="week1">week 1</span><span data-i18n="week2">week 2</span><span data-i18n="week3">week 3</span><span data-i18n="week4">week 4</span></div>
+    <div class="controls">
+      <div class="ctl">
+        <div class="lab"><span data-i18n="ctlGoal">daily goal</span> <span class="v" id="goal-v">15 min</span></div>
+        <input type="range" id="goal" min="5" max="40" step="5" value="15">
+      </div>
+      <div class="ctl" style="min-width:auto">
+        <div class="lab" data-i18n="ctlFreezes">freezes</div>
+        <div class="freezes" id="freezes"></div>
+      </div>
+      <button class="switch" id="multi" aria-pressed="false">
+        <span class="tr"><span class="kn"></span></span><span data-i18n="multiLabel">more than one language</span>
+      </button>
+    </div>
+    <div class="presets" id="presets"></div>
+    <p class="hint" id="hint"></p>
+  </div>
+</section>
+
+<!-- ── why a flower ── -->
+<section>
+  <div class="wrap prose soul">
+    <div class="center" style="margin-bottom:30px"><hr class="rule"></div>
+    <p data-i18n-html="soul1">A calendar streak knows only two things: <em>you showed up, or you didn't.</em> So people game it — one sleepy review at 11:55pm to keep the chain.</p>
+    <p data-i18n-html="soul2">The flower won't let you. Height is the time you put in; colour is what you actually learned — so a real day burns tall and deep, and a lazy one stays short and pale. <em>“An app that doesn't punish free learning,”</em> someone called it.</p>
+    <p class="aside" data-i18n="soulAside">(That “1.1m” in the middle? Months, not millions — about 33 days.)</p>
+  </div>
+</section>
+
+<!-- ── voices ── -->
+<section style="background:linear-gradient(var(--bone2),var(--bone)); padding-bottom:46px">
+  <div class="wrap">
+    <div class="center"><h2 class="serif" data-i18n="voicesH2">What people made of it</h2>
+      <p class="say" data-i18n="voicesSay">I showed it to a few thousand learners. They split — and both sides were right.</p></div>
+    <div class="voices">
+      <div class="voice warm"><div class="q" data-i18n="q1">“That's beautiful, I love it.”</div><div class="who" data-i18n="who1">— a learner, on first sight</div></div>
+      <div class="voice"><div class="q" data-i18n="q2">“Prettier — but more confusing than the calendar.”</div><div class="who" data-i18n="who2">— the honest other half</div></div>
+      <div class="voice"><div class="q" data-i18n="q3">“It reminded me of what remains after I sharpen a pencil.”</div><div class="who" data-i18n="who3">— and once you see it, you can't unsee it</div></div>
+    </div>
+    <p class="say center" style="margin-top:30px; max-width:560px" data-i18n="voicesPoint">That's the point: it trades the calendar's instant clarity for something you'd actually want to look at.</p>
+  </div>
+</section>
+
+<!-- ── close ── -->
+<section style="padding:18px 0 0">
+  <div class="close">
+    <p class="lead" data-i18n="closeLead">A streak worth growing — not a chain you're scared to break.</p>
+    <p data-i18n-html="closeBody">The flower lives in <a class="app" href="https://severo.luarai.com" target="_blank" rel="noopener" onclick="window.vizTrack&&vizTrack('severo_click',{where:'close'})">Severo</a>, a language app I'm building. If you'd like a rose of your own, it's there.</p>
+  </div>
+</section>
+
+<p class="coffee-cta"><span data-i18n="coffeeNote">Enjoyed this one?</span> <a href="https://ko-fi.com/architechofthefuture" target="_blank" rel="noopener">☕ <span data-i18n="coffeeLink">buy me a coffee</span></a></p>
+<footer>
+  <span class="disc" data-i18n="footerDisc">The rose and its rules are real, read from Severo's source. The months above are illustrative — no one's actual data is shown.</span>
+</footer>
+
+<script>
+// ───────────────────────────────────────────────────────────────────────
+//  THE ROSE — faithful port of streak_rose_painter.dart, incl. the rounded
+//  wedge corners. Each day is a petal: height = minutes (notch at goal),
+//  colour = new words met (apricot → ember), blue = a freeze, purple tip
+//  dots = extra languages, a gold arc crowns a perfect Mon–Sun week, and a
+//  diamond sheen marks a flawless month.
+// ───────────────────────────────────────────────────────────────────────
+const NS="http://www.w3.org/2000/svg";
+const COL={oF:[255,183,77], oE:[230,81,0], bF:[179,229,252], bD:[2,119,189], gold:"#E8B84B", halo:"#AB47BC", diamond:"#B9F2FF"};
+const clamp01=x=>Math.max(0,Math.min(1,x));
+function lerp(a,b,t){return `rgb(${Math.round(a[0]+(b[0]-a[0])*t)},${Math.round(a[1]+(b[1]-a[1])*t)},${Math.round(a[2]+(b[2]-a[2])*t)})`;}
+function orange(f){return lerp(COL.oF,COL.oE,Math.log(1+4*clamp01(f))/Math.log(5));}
+function blue(f){return lerp(COL.bF,COL.bD,Math.log(1+4*clamp01(f))/Math.log(5));}
+function el(t,a){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+const P=(cx,cy,r,a)=>[cx+Math.cos(a)*r, cy+Math.sin(a)*r];
+
+function radiusRatio(d){
+  if(d.kind==="future") return 0;
+  if(d.kind==="missed") return 0.10;
+  const g=Math.max(d.goal,1);
+  if(d.minutes<=0) return 0.10;
+  if(d.minutes<g) return 0.10+0.50*(d.minutes/g);
+  return 0.60+0.40*clamp01((d.minutes-g)/Math.max(d.cap-g,1));
+}
+function colorFor(d){
+  if(d.kind==="frozen") return blue(d.newWords);            // saved by a freeze → blue (can have height)
+  // below goal with no freeze → it didn't count. Render gray, like a miss.
+  if(d.kind==="missed"||d.kind==="tried") return "rgba(35,38,43,.17)";
+  return orange(d.newWords);                                // completed / today
+}
+// rounded wedge — ported from _roundedWedgePath (quadratic-rounded corners)
+function roundedWedge(cx,cy,inner,outer,a1,a2){
+  const r1=[Math.cos(a1),Math.sin(a1)], r2=[Math.cos(a2),Math.sin(a2)];
+  const c1=[cx+r1[0]*inner,cy+r1[1]*inner], c2=[cx+r1[0]*outer,cy+r1[1]*outer];
+  const c3=[cx+r2[0]*outer,cy+r2[1]*outer], c4=[cx+r2[0]*inner,cy+r2[1]*inner];
+  const rr=Math.min((outer-inner)*0.5, (a2-a1)*outer*0.5);
+  if(rr<=0.5){
+    const [x1,y1]=c1,[x2,y2]=c2,[x3,y3]=c3,[x4,y4]=c4, lg=(a2-a1)>Math.PI?1:0;
+    return `M${x1} ${y1} L${x2} ${y2} A${outer} ${outer} 0 ${lg} 1 ${x3} ${y3} L${x4} ${y4} A${inner} ${inner} 0 ${lg} 0 ${x1} ${y1} Z`;
+  }
+  const angIn=rr/Math.max(inner,1), angOut=rr/Math.max(outer,1);
+  const nC2Arc=P(cx,cy,outer,a1+angOut), nC4Arc=P(cx,cy,inner,a2-angIn);
+  const nC1=[c1[0]+r1[0]*rr,c1[1]+r1[1]*rr], nC2=[c2[0]-r1[0]*rr,c2[1]-r1[1]*rr];
+  const nC3=[c3[0]-r2[0]*rr,c3[1]-r2[1]*rr], nC4=[c4[0]+r2[0]*rr,c4[1]+r2[1]*rr];
+  const oEnd=P(cx,cy,outer,a2-angOut), iEnd=P(cx,cy,inner,a1+angIn);
+  const lgO=((a2-angOut)-(a1+angOut))>Math.PI?1:0;
+  const lgI=((a2-angIn)-(a1+angIn))>Math.PI?1:0;
+  return `M${nC1[0]} ${nC1[1]} L${nC2[0]} ${nC2[1]} Q${c2[0]} ${c2[1]} ${nC2Arc[0]} ${nC2Arc[1]}`
+       + ` A${outer} ${outer} 0 ${lgO} 1 ${oEnd[0]} ${oEnd[1]}`
+       + ` Q${c3[0]} ${c3[1]} ${nC3[0]} ${nC3[1]} L${nC4[0]} ${nC4[1]}`
+       + ` Q${c4[0]} ${c4[1]} ${nC4Arc[0]} ${nC4Arc[1]}`
+       + ` A${inner} ${inner} 0 ${lgI} 0 ${iEnd[0]} ${iEnd[1]}`
+       + ` Q${c1[0]} ${c1[1]} ${nC1[0]} ${nC1[1]} Z`;
+}
+
+function compactStreak(d){
+  if(d<30) return d+"d";
+  if(d<365) return (d/30).toFixed(1)+"m";
+  return (d/365).toFixed(1)+"y";
+}
+
+// ── petal hover tooltips (like tapping a petal in the app) ──
+let _tip;
+function tipHTML(ds){
+  const lines=[`<b>${tr("tipDay").replace("{n}",+ds.i+1)}</b>`];
+  if(ds.kind==="missed") lines.push(tr("tipMissed"));
+  else if(ds.kind==="frozen") lines.push(tr("tipFrozen"));
+  else{ lines.push(tr("tipMin").replace("{n}",ds.min));
+    const nw=+ds.nw; lines.push(nw<0.22?tr("tipReview"):nw<0.6?tr("tipSome"):tr("tipLots")); }
+  const lang=+ds.lang; if(lang>=2) lines.push((lang-1===1?tr("tipLang1"):tr("tipLangN")).replace("{n}",lang-1));
+  return lines.join("<br>");
+}
+function showTip(html,x,y){
+  if(!_tip){ _tip=document.createElement("div"); _tip.id="petal-tip"; document.body.appendChild(_tip); }
+  _tip.innerHTML=html; _tip.style.opacity="1";
+  _tip.style.left=Math.min(x+14, window.innerWidth-_tip.offsetWidth-8)+"px";
+  _tip.style.top=Math.max(8, y-_tip.offsetHeight-12)+"px";
+}
+function hideTip(){ if(_tip) _tip.style.opacity="0"; }
+function setupTips(svg){
+  if(svg.__tips) return; svg.__tips=true;
+  const at=e=>{ const p=e.target.closest&&e.target.closest(".petal"); if(p) showTip(tipHTML(p.dataset),e.clientX,e.clientY); else hideTip(); };
+  svg.addEventListener("pointermove",at);
+  svg.addEventListener("pointerdown",e=>{ const p=e.target.closest&&e.target.closest(".petal"); if(p){ showTip(tipHTML(p.dataset),e.clientX,e.clientY); clearTimeout(svg.__th); svg.__th=setTimeout(hideTip,1900);} });
+  svg.addEventListener("pointerleave",hideTip);
+}
+
+function renderRose(svg, days, slot, opts={}){
+  const prog = opts.progress==null?1:opts.progress;
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  const cx=180, cy=180, maxR=164, innerR=maxR*0.32, gap=0.018;
+  const slotA=2*Math.PI/slot, base=-Math.PI/2 - slotA/2;
+
+  const isDiamond = days.length>=slot && days.slice(0,slot).every(d=>d&&d.kind==="completed");
+  if(isDiamond){
+    const defs=el("defs",{}), rg=el("radialGradient",{id:"dm"});
+    // a gentle icy halo around the petal tips, fading outward
+    [["56%","0"],["86%","0.45"],["100%","0"]].forEach(([o,op])=>
+      rg.appendChild(el("stop",{offset:o,"stop-color":COL.diamond,"stop-opacity":op})));
+    defs.appendChild(rg); svg.appendChild(defs);
+    svg.appendChild(el("circle",{cx,cy,r:maxR*1.16,fill:"url(#dm)"}));
+    // a soft icy ring hugging the whole bloom
+    svg.appendChild(el("circle",{cx,cy,r:maxR*1.08,fill:"none",stroke:COL.diamond,"stroke-width":"2","stroke-opacity":"0.5"}));
+  }
+
+  const outerOf=[];
+  for(let i=0;i<slot;i++){
+    const d=days[i];
+    const a1=base+i*slotA+gap/2, a2=base+(i+1)*slotA-gap/2;
+    if(!d||d.kind==="future"){
+      svg.appendChild(el("path",{d:roundedWedge(cx,cy,innerR*1.06,innerR+(maxR-innerR)*0.9,a1,a2),fill:"none",stroke:"rgba(35,38,43,.07)","stroke-width":"1"}));
+      outerOf.push(null); continue;
+    }
+    const stagger=(i/slot)*0.5;
+    const local=clamp01((prog-stagger)/(1-stagger));
+    if(local<=0){ outerOf.push(null); continue; }
+    const outer=innerR+(maxR-innerR)*radiusRatio(d)*local;
+    outerOf.push(outer);
+    svg.appendChild(el("path",{d:roundedWedge(cx,cy,innerR,outer,a1,a2), fill:colorFor(d), class:"petal",
+      "data-i":i, "data-min":Math.round(d.minutes), "data-kind":d.kind, "data-nw":(d.newWords||0).toFixed(2), "data-lang":d.languageCount||1}));
+    if(d.languageCount>=2 && local>0.98){
+      const dots=Math.min(d.languageCount-1,3), mid=(a1+a2)/2, dr=2.3, baseR=outer-5.5;
+      for(let k=0;k<dots;k++){
+        const t=dots===1?0:(k/(dots-1))*2-1;
+        const ang=mid-((2*dr)/baseR)*(dots-1)/2+k*((2*dr)/baseR);
+        const [px,py]=P(cx,cy,baseR+(1-t*t)*2,ang);
+        svg.appendChild(el("circle",{cx:px,cy:py,r:dr,fill:COL.halo}));
+      }
+    }
+  }
+  // gold arcs over perfect Mon–Sun weeks
+  if(prog>0.98) for(let w=0; w*7<slot; w++){
+    const s=w*7, e=Math.min(s+6,slot-1); let perfect=true,tall=0;
+    for(let i=s;i<=e;i++){ const d=days[i]; if(!d||d.kind!=="completed"){perfect=false;break;} if(outerOf[i]>tall)tall=outerOf[i]; }
+    if(perfect&&tall>0){
+      const a1=base+s*slotA+gap/2, a2=base+(e+1)*slotA-gap/2, rr=tall+5;
+      const [x1,y1]=P(cx,cy,rr,a1),[x2,y2]=P(cx,cy,rr,a2);
+      svg.appendChild(el("path",{d:`M${x1} ${y1} A${rr} ${rr} 0 0 1 ${x2} ${y2}`,fill:"none",stroke:COL.gold,"stroke-width":"3.5","stroke-linecap":"round"}));
+    }
+  }
+  setupTips(svg);
+  // center hole + compact streak number
+  svg.appendChild(el("circle",{cx,cy,r:innerR-3,fill:"var(--bone)"}));
+  if(opts.center!=null){
+    const t=el("text",{x:cx,y:cy+2,"text-anchor":"middle","dominant-baseline":"middle",
+      "font-family":"Fraunces, serif","font-weight":"600","font-size":"30",fill:"var(--ember)"});
+    t.textContent=opts.center;
+    svg.appendChild(t);
+    const f=el("text",{x:cx,y:cy+24,"text-anchor":"middle","font-family":"Manrope","font-size":"11",fill:"var(--muted)"});
+    f.textContent=tr("centerStreak"); svg.appendChild(f);
+  }
+}
+
+// ── seeded helpers ──
+function seeded(s){let t=s>>>0;return ()=>{t+=0x6D2B79F5;let x=Math.imul(t^t>>>15,1|t);x^=x+Math.imul(x^x>>>7,61|x);return ((x^x>>>14)>>>0)/4294967296;};}
+
+// a lush showcase month (used by hero + reveal). Every day kept (completed or
+// frozen) so the running streak reads continuous; one freeze paints a blue
+// petal, the complete weeks earn gold crowns. The centre shows the running
+// streak (which predates this month → "1.1m" ≈ 33 days), not the petal count.
+function specimen(seed){
+  const R=seeded(seed), goal=15, cap=goal*2, days=[];
+  // several "saved" days keep the streak alive: some pure rest (0 min), some
+  // where you still studied a little but fell short of goal (blue, with height).
+  const saved={9:0, 16:8, 22:0, 24:6};
+  for(let i=0;i<28;i++){
+    const frozen=(i in saved);
+    const m = frozen ? saved[i] : goal+2+R()*16;          // height = minutes
+    const langs = (!frozen && R()<0.26) ? 2+(R()<0.4?1:0) : 1;
+    // colour = new vocab, its OWN axis; skewed so most days are pale and a few deep
+    days.push({kind:frozen?"frozen":"completed", minutes:m, goal, cap,
+      newWords:Math.pow(R(),1.6), languageCount:langs});
+  }
+  return days;
+}
+
+// ── reveal facts (keyed for i18n) ──
+const tr=(k)=> (window.vizI18n&&vizI18n.t&&vizI18n.t(k)) || k;
+function petalIcon(fill){return `<svg viewBox="0 0 30 30"><path d="M15 28 A11 11 0 0 1 5 14 L15 5 L25 14 A11 11 0 0 1 15 28 Z" fill="${fill}"/></svg>`;}
+const FACTS=[
+  {ic:petalIcon("var(--ember)"), k:"factHeight"},
+  {ic:`<svg viewBox="0 0 30 30"><defs><linearGradient id="fg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FFB74D"/><stop offset="1" stop-color="#E65100"/></linearGradient></defs><path d="M15 28 A11 11 0 0 1 5 14 L15 5 L25 14 A11 11 0 0 1 15 28 Z" fill="url(#fg)"/></svg>`, k:"factColour"},
+  {ic:petalIcon("var(--b-deep)"), k:"factBlue"},
+  {ic:`<svg viewBox="0 0 30 30"><path d="M15 28 A10 10 0 0 1 6 15 L15 6 L24 15 A10 10 0 0 1 15 28 Z" fill="#FFB74D"/><circle cx="11" cy="9" r="2" fill="${COL.halo}"/><circle cx="15" cy="7.4" r="2" fill="${COL.halo}"/><circle cx="19" cy="9" r="2" fill="${COL.halo}"/></svg>`, k:"factDots"},
+  {ic:`<svg viewBox="0 0 30 30"><path d="M3.5 13 A 13 13 0 0 1 26.5 13" fill="none" stroke="#E8B84B" stroke-width="3" stroke-linecap="round"/><path d="M15 27.5 A9.5 9.5 0 0 1 6 15 L15 7 L24 15 A9.5 9.5 0 0 1 15 27.5 Z" fill="#FFB74D"/></svg>`, k:"factGold"},
+  {ic:`<svg viewBox="0 0 30 30"><circle cx="15" cy="15" r="13.5" fill="#B9F2FF" opacity=".6"/><path d="M15 26 A8.5 8.5 0 0 1 7 14 L15 7.5 L23 14 A8.5 8.5 0 0 1 15 26 Z" fill="#E65100"/></svg>`, k:"factDiamond"}
+];
+function buildFacts(){
+  document.getElementById("facts").innerHTML=FACTS.map(f=>
+    `<div class="fact"><div class="ic">${f.ic}</div><div><b>${tr(f.k+"_b")}</b><span>${tr(f.k+"_s")}</span></div></div>`).join("");
+}
+
+// ───────── interactive ─────────
+const sim={ goal:15, freezesBank:3, multi:false,
+  days:Array.from({length:28},(_,i)=>({minutes:0,freeze:false,seed:(i*2654435761)>>>0})) };
+const editor=document.getElementById("editor"), roseGrow=document.getElementById("rose-grow");
+const cap=()=>sim.goal*2;
+const sr=(seed,salt)=>seeded((seed^(salt*2246822519))>>>0)();
+
+function derive(d,i){
+  const goal=sim.goal, c=cap();
+  let kind = (d.freeze&&d.minutes<goal)?"frozen": d.minutes<=0?"missed": d.minutes>=goal?"completed":"tried";
+  // colour = new vocab: a stable per-day value, independent of the minutes you drag
+  const nw=Math.pow(sr(d.seed,3),1.6);
+  let langs=1;
+  if(sim.multi&&kind!=="missed"&&sr(d.seed,5)<0.5) langs=2+(sr(d.seed,9)<0.35?1:0);
+  return {kind,minutes:d.minutes,goal,cap:c,newWords:nw,languageCount:langs};
+}
+const freezesUsed=()=>sim.days.filter(d=>d.freeze&&d.minutes<sim.goal).length;
+// the current run: count back from the most recent active (completed/frozen)
+// day. Filling consecutive days grows it; a skip before your latest day breaks it.
+function streakNow(dv){
+  let last=-1;
+  for(let i=dv.length-1;i>=0;i--){ if(dv[i].kind==="completed"||dv[i].kind==="frozen"){ last=i; break; } }
+  if(last<0) return 0;
+  let n=0;
+  for(let i=last;i>=0;i--){ const k=dv[i].kind; if(k==="completed"||k==="frozen") n++; else break; }
+  return n;
+}
+
+function render(){
+  const dv=sim.days.map(derive);
+  renderRose(roseGrow, dv, 28, {center:compactStreak(streakNow(dv))});
+  // bars
+  editor.querySelectorAll(".day").forEach(n=>n.remove());
+  const c=cap(), axis=editor.querySelector(".axis");
+  sim.days.forEach((d,i)=>{
+    const dd=dv[i], col=document.createElement("div");
+    col.className="day"+(d.minutes<sim.goal&&(sim.freezesBank-freezesUsed()>0||d.freeze)?" canfreeze":"");
+    col.dataset.i=i;
+    const bar=document.createElement("div"); bar.className="bar";
+    bar.style.height=(dd.minutes<=0?5:Math.max(4,Math.min(d.minutes,c)/c*100))+"%";
+    bar.style.background=colorFor(dd);
+    col.appendChild(bar);
+    if(dd.kind==="frozen"){const f=document.createElement("div");f.className="frz";f.textContent="❄";col.appendChild(f);}
+    editor.insertBefore(col, axis);
+  });
+  let gl=editor.querySelector(".goal");
+  if(!gl){ gl=document.createElement("div"); gl.className="goal"; gl.innerHTML='<span class="lbl"></span>'; editor.appendChild(gl); }
+  gl.querySelector(".lbl").textContent=tr("goalLabel");
+  gl.style.bottom=(Math.min(sim.goal,c)/c*100)+"%";
+  // freeze tokens
+  const left=sim.freezesBank-freezesUsed();
+  document.getElementById("freezes").innerHTML=Array.from({length:sim.freezesBank},(_,i)=>
+    `<span class="tok ${i<left?'':'spent'}">❄</span>`).join("");
+  document.getElementById("goal-v").textContent=sim.goal+" "+tr("unitMin");
+}
+
+// drag to set minutes; tap a short day to (un)freeze
+let drag=null, moved=false;
+const minsAt=y=>{const r=editor.getBoundingClientRect(); return Math.round(clamp01((r.bottom-y)/r.height)*cap());};
+editor.addEventListener("pointerdown",e=>{const col=e.target.closest(".day"); if(!col)return; drag=+col.dataset.i; moved=false; editor.setPointerCapture(e.pointerId); sim.days[drag].minutes=minsAt(e.clientY); sim.days[drag].freeze=false; render();});
+editor.addEventListener("pointermove",e=>{if(drag===null)return; moved=true; sim.days[drag].minutes=minsAt(e.clientY); render();});
+editor.addEventListener("pointerup",()=>{
+  if(drag!==null&&!moved){ const d=sim.days[drag];
+    if(d.minutes<sim.goal){ if(!d.freeze&&(sim.freezesBank-freezesUsed())>0){d.freeze=true; d.minutes=0;} else if(d.freeze){d.freeze=false;} }
+    render();
+  }
+  drag=null;
+});
+document.getElementById("goal").addEventListener("input",e=>{sim.goal=+e.target.value; render();});
+const mb=document.getElementById("multi");
+mb.addEventListener("click",()=>{sim.multi=!sim.multi; mb.setAttribute("aria-pressed",sim.multi); render();});
+
+const RP=seeded(99);
+const PRESETS=[
+  {k:"presetPerfect", run(){ sim.goal=15; document.getElementById("goal").value=15; sim.days.forEach(d=>{d.freeze=false; d.minutes=17+Math.round(RP()*15);}); }},
+  {k:"presetSave", run(){ sim.goal=15; document.getElementById("goal").value=15; sim.days.forEach((d,i)=>{d.freeze=false; d.minutes=(i>=18)?15+Math.round(RP()*12):0; if(i===23){d.minutes=0; d.freeze=true;}}); }},
+  {k:"presetReset", run(){ sim.days.forEach(d=>{d.minutes=0; d.freeze=false;}); }}
+];
+function buildPresets(){
+  const w=document.getElementById("presets");
+  w.innerHTML=PRESETS.map((p,i)=>`<button class="chip" data-i="${i}">${tr(p.k)}</button>`).join("");
+  w.querySelectorAll(".chip").forEach(b=>b.addEventListener("click",()=>{PRESETS[+b.dataset.i].run(); render(); window.vizTrack&&vizTrack("streak_preset",{p:PRESETS[+b.dataset.i].k});}));
+}
+
+// ── i18n dictionary (matches the notebook's EN/ES/PT/FR/DE/NL/AR switcher) ──
+const DICT = {
+  en:{
+    pageTitle:"A Streak, in Bloom — viz",
+    metaDescription:"Most apps mark your streak on a calendar. One marks it as a flower — a month of practice drawn as a rose, where every part of a petal means something.",
+    eyebrow:"entry 005 · a field note",
+    heroTitle:`A streak, <em>in bloom</em>`,
+    lede:"Most apps mark your streak on a calendar of little flames. One grows it as a flower.",
+    scrollCue:"scroll ↓",
+    revealH2:"One petal is one day",
+    revealSay:"A whole month, clockwise from noon. Hover a petal to read its day.",
+    factHeight_b:"Height is time", factHeight_s:"How long you practised that day.",
+    factColour_b:"Colour is new words", factColour_s:"Pale for a review day, deep ember for real progress.",
+    factBlue_b:"Blue is a saved day", factBlue_s:"A freeze covered the miss. Still a bloom, not a gap.",
+    factDots_b:"Dots are other languages", factDots_s:"One per extra language — the easter egg everyone hunts for.",
+    factGold_b:"Gold arc is a perfect week", factGold_s:"Seven days, Monday to Sunday, all complete.",
+    factDiamond_b:"Diamond glow is a perfect month", factDiamond_s:"Nothing missed all month — the whole rose shines.",
+    growH2:"Grow a month",
+    growSay:"Drag a day to set its practice. Tap a short one to spend a freeze. Hover any petal.",
+    ctlGoal:"daily goal", unitMin:"min", ctlFreezes:"freezes", multiLabel:"more than one language", goalLabel:"goal",
+    week1:"week 1", week2:"week 2", week3:"week 3", week4:"week 4", centerStreak:"streak",
+    presetPerfect:"a perfect month ✦", presetSave:"a freeze saves a day ❄", presetReset:"start over",
+    soul1:`A calendar streak knows only two things: <em>you showed up, or you didn't.</em> So people game it — one sleepy review at 11:55pm to keep the chain.`,
+    soul2:`The flower won't let you. Height is the time you put in; colour is what you actually learned — so a real day burns tall and deep, and a lazy one stays short and pale. <em>“An app that doesn't punish free learning,”</em> someone called it.`,
+    soulAside:"(That “1.1m” in the middle? Months, not millions — about 33 days.)",
+    voicesH2:"What people made of it",
+    voicesSay:"I showed it to a few thousand learners. They split — and both sides were right.",
+    q1:"“That's beautiful, I love it.”", who1:"— a learner, on first sight",
+    q2:"“Prettier — but more confusing than the calendar.”", who2:"— the honest other half",
+    q3:"“It reminded me of what remains after I sharpen a pencil.”", who3:"— and once you see it, you can't unsee it",
+    voicesPoint:"That's the point: it trades the calendar's instant clarity for something you'd actually want to look at.",
+    closeLead:"A streak worth growing — not a chain you're scared to break.",
+    closeBody:`The flower lives in <a class="app" href="https://severo.luarai.com" target="_blank" rel="noopener" onclick="window.vizTrack&&vizTrack('severo_click',{where:'close'})">Severo</a>, a language app I'm building. If you'd like a rose of your own, it's there.`,
+    coffeeNote:"Enjoyed this one?", coffeeLink:"buy me a coffee",
+    footerNote:"a data field-notebook entry",
+    footerDisc:"The rose and its rules are real, read from Severo's source. The months above are illustrative — no one's actual data is shown.",
+    tipDay:"Day {n}", tipMin:"{n} min practised", tipReview:"a review day", tipSome:"some new words", tipLots:"lots of new words",
+    tipFrozen:"saved by a freeze ❄", tipMissed:"missed — no practice", tipLang1:"+1 language", tipLangN:"+{n} languages"
+  },
+  es:{
+    pageTitle:"Una racha, en flor — viz",
+    metaDescription:"Casi todas las apps guardan tu racha en un calendario. Una la guarda como una flor: un mes de práctica dibujado como una rosa, donde cada parte de un pétalo significa algo.",
+    eyebrow:"entrada 005 · una nota de campo",
+    heroTitle:`Una racha, <em>en flor</em>`,
+    lede:"Casi todas las apps marcan tu racha en un calendario de llamitas. Una la cultiva como una flor.",
+    scrollCue:"desliza ↓",
+    revealH2:"Un pétalo es un día",
+    revealSay:"Un mes entero, en sentido horario desde las doce. Pasa el cursor por un pétalo para leer su día.",
+    factHeight_b:"La altura es tiempo", factHeight_s:"Cuánto practicaste ese día.",
+    factColour_b:"El color es vocabulario nuevo", factColour_s:"Pálido para un día de repaso, ámbar intenso para progreso real.",
+    factBlue_b:"El azul es un día salvado", factBlue_s:"Una congelación cubrió la falta. Sigue floreciendo, no es un hueco.",
+    factDots_b:"Los puntos son otros idiomas", factDots_s:"Uno por cada idioma extra — el huevo de pascua que todos buscan.",
+    factGold_b:"El arco dorado es una semana perfecta", factGold_s:"Siete días, de lunes a domingo, todos completos.",
+    factDiamond_b:"El brillo diamante es un mes perfecto", factDiamond_s:"Nada perdido en todo el mes — la rosa entera resplandece.",
+    growH2:"Cultiva un mes",
+    growSay:"Arrastra un día para fijar su práctica. Toca uno corto para gastar una congelación. Pasa el cursor por cualquier pétalo.",
+    ctlGoal:"meta diaria", unitMin:"min", ctlFreezes:"congelaciones", multiLabel:"más de un idioma", goalLabel:"meta",
+    week1:"semana 1", week2:"semana 2", week3:"semana 3", week4:"semana 4", centerStreak:"racha",
+    presetPerfect:"un mes perfecto ✦", presetSave:"una congelación salva un día ❄", presetReset:"empezar de nuevo",
+    soul1:`Una racha de calendario solo sabe dos cosas: <em>apareciste o no.</em> Así que la gente hace trampa — un repaso somnoliento a las 23:55 para no romper la cadena.`,
+    soul2:`La flor no te deja. La altura es el tiempo que pones; el color es lo que de verdad aprendiste — así un día real arde alto y profundo, y uno perezoso queda corto y pálido. <em>“Una app que no castiga el aprendizaje libre,”</em> dijo alguien.`,
+    soulAside:"(¿Ese “1.1m” del centro? Meses, no millones — unos 33 días.)",
+    voicesH2:"Lo que opinó la gente",
+    voicesSay:"Lo mostré a unos miles de estudiantes. Se dividieron — y ambos lados tenían razón.",
+    q1:"“Es hermoso, me encanta.”", who1:"— una estudiante, a primera vista",
+    q2:"“Más bonito, pero más confuso que el calendario.”", who2:"— la otra mitad, sincera",
+    q3:"“Me recordó a lo que queda al sacarle punta a un lápiz.”", who3:"— y una vez que lo ves, no puedes dejar de verlo",
+    voicesPoint:"Ese es el punto: cambia la claridad inmediata del calendario por algo que de verdad querrías mirar.",
+    closeLead:"Una racha que vale la pena cultivar — no una cadena que temes romper.",
+    closeBody:`La flor vive en <a class="app" href="https://severo.luarai.com" target="_blank" rel="noopener" onclick="window.vizTrack&&vizTrack('severo_click',{where:'close'})">Severo</a>, una app de idiomas que estoy creando. Si quieres una rosa propia, está ahí.`,
+    coffeeNote:"¿Te gustó esta?", coffeeLink:"invítame un café",
+    footerNote:"una entrada de la libreta de campo",
+    footerDisc:"La rosa y sus reglas son reales, leídas del código de Severo. Los meses de arriba son ilustrativos — no se muestran datos de nadie.",
+    tipDay:"Día {n}", tipMin:"{n} min practicados", tipReview:"un día de repaso", tipSome:"algo de vocabulario nuevo", tipLots:"mucho vocabulario nuevo",
+    tipFrozen:"salvado por una congelación ❄", tipMissed:"perdido — sin práctica", tipLang1:"+1 idioma", tipLangN:"+{n} idiomas"
+  },
+  pt:{
+    pageTitle:"Uma sequência, em flor — viz",
+    metaDescription:"Quase todo app guarda sua sequência num calendário. Um a guarda como flor: um mês de prática desenhado como rosa, onde cada parte de uma pétala significa algo.",
+    eyebrow:"entrada 005 · uma nota de campo",
+    heroTitle:`Uma sequência, <em>em flor</em>`,
+    lede:"Quase todo app marca sua sequência num calendário de chaminhas. Um a cultiva como flor.",
+    scrollCue:"role ↓",
+    revealH2:"Uma pétala é um dia",
+    revealSay:"Um mês inteiro, no sentido horário a partir do meio-dia. Passe o cursor numa pétala para ler seu dia.",
+    factHeight_b:"Altura é tempo", factHeight_s:"Quanto você praticou naquele dia.",
+    factColour_b:"Cor é vocabulário novo", factColour_s:"Pálido para um dia de revisão, âmbar intenso para progresso real.",
+    factBlue_b:"Azul é um dia salvo", factBlue_s:"Um congelamento cobriu a falta. Ainda floresce, não é um vão.",
+    factDots_b:"Os pontos são outros idiomas", factDots_s:"Um por idioma extra — o easter egg que todo mundo procura.",
+    factGold_b:"O arco dourado é uma semana perfeita", factGold_s:"Sete dias, de segunda a domingo, todos completos.",
+    factDiamond_b:"O brilho diamante é um mês perfeito", factDiamond_s:"Nada perdido no mês todo — a rosa inteira brilha.",
+    growH2:"Cultive um mês",
+    growSay:"Arraste um dia para definir sua prática. Toque num curto para gastar um congelamento. Passe o cursor em qualquer pétala.",
+    ctlGoal:"meta diária", unitMin:"min", ctlFreezes:"congelamentos", multiLabel:"mais de um idioma", goalLabel:"meta",
+    week1:"semana 1", week2:"semana 2", week3:"semana 3", week4:"semana 4", centerStreak:"sequência",
+    presetPerfect:"um mês perfeito ✦", presetSave:"um congelamento salva um dia ❄", presetReset:"recomeçar",
+    soul1:`Uma sequência de calendário só sabe duas coisas: <em>você apareceu ou não.</em> Então as pessoas trapaceiam — uma revisão sonolenta às 23:55 só para manter a corrente.`,
+    soul2:`A flor não deixa. A altura é o tempo que você investe; a cor é o que você realmente aprendeu — então um dia real arde alto e profundo, e um preguiçoso fica curto e pálido. <em>“Um app que não pune o aprendizado livre,”</em> alguém disse.`,
+    soulAside:"(Aquele “1.1m” no meio? Meses, não milhões — cerca de 33 dias.)",
+    voicesH2:"O que acharam disso",
+    voicesSay:"Mostrei a alguns milhares de estudantes. Eles se dividiram — e os dois lados tinham razão.",
+    q1:"“É lindo, eu amei.”", who1:"— um estudante, à primeira vista",
+    q2:"“Mais bonito — mas mais confuso que o calendário.”", who2:"— a outra metade, sincera",
+    q3:"“Me lembrou o que sobra depois de apontar um lápis.”", who3:"— e depois que você vê, não consegue desver",
+    voicesPoint:"É esse o ponto: troca a clareza imediata do calendário por algo que você realmente gostaria de olhar.",
+    closeLead:"Uma sequência que vale a pena cultivar — não uma corrente que você tem medo de quebrar.",
+    closeBody:`A flor vive no <a class="app" href="https://severo.luarai.com" target="_blank" rel="noopener" onclick="window.vizTrack&&vizTrack('severo_click',{where:'close'})">Severo</a>, um app de idiomas que estou construindo. Se quiser uma rosa sua, está lá.`,
+    coffeeNote:"Curtiu esta?", coffeeLink:"me pague um café",
+    footerNote:"uma entrada do caderno de campo",
+    footerDisc:"A rosa e suas regras são reais, lidas do código da Severo. Os meses acima são ilustrativos — não se mostram dados de ninguém.",
+    tipDay:"Dia {n}", tipMin:"{n} min praticados", tipReview:"um dia de revisão", tipSome:"algum vocabulário novo", tipLots:"muito vocabulário novo",
+    tipFrozen:"salvo por um congelamento ❄", tipMissed:"perdido — sem prática", tipLang1:"+1 idioma", tipLangN:"+{n} idiomas"
+  },
+  fr:{
+    pageTitle:"Une série, en fleur — viz",
+    metaDescription:"Presque toutes les applis gardent ta série sur un calendrier. Une la garde en fleur : un mois de pratique dessiné en rose, où chaque partie d'un pétale veut dire quelque chose.",
+    eyebrow:"entrée 005 · une note de terrain",
+    heroTitle:`Une série, <em>en fleur</em>`,
+    lede:"Presque toutes les applis marquent ta série sur un calendrier de petites flammes. Une la cultive en fleur.",
+    scrollCue:"défile ↓",
+    revealH2:"Un pétale, c'est un jour",
+    revealSay:"Un mois entier, dans le sens horaire à partir de midi. Survole un pétale pour lire son jour.",
+    factHeight_b:"La hauteur, c'est le temps", factHeight_s:"Combien de temps tu as pratiqué ce jour-là.",
+    factColour_b:"La couleur, c'est le vocabulaire neuf", factColour_s:"Pâle pour une révision, ambre profond pour un vrai progrès.",
+    factBlue_b:"Le bleu, c'est un jour sauvé", factBlue_s:"Un gel a couvert l'oubli. Ça fleurit quand même, pas de trou.",
+    factDots_b:"Les points, ce sont d'autres langues", factDots_s:"Un par langue en plus — le clin d'œil que tout le monde cherche.",
+    factGold_b:"L'arc doré, c'est une semaine parfaite", factGold_s:"Sept jours, du lundi au dimanche, tous complets.",
+    factDiamond_b:"L'éclat diamant, c'est un mois parfait", factDiamond_s:"Rien de manqué de tout le mois — la rose entière scintille.",
+    growH2:"Cultive un mois",
+    growSay:"Fais glisser un jour pour régler sa pratique. Touche un jour court pour dépenser un gel. Survole n'importe quel pétale.",
+    ctlGoal:"objectif quotidien", unitMin:"min", ctlFreezes:"gels", multiLabel:"plus d'une langue", goalLabel:"objectif",
+    week1:"semaine 1", week2:"semaine 2", week3:"semaine 3", week4:"semaine 4", centerStreak:"série",
+    presetPerfect:"un mois parfait ✦", presetSave:"un gel sauve un jour ❄", presetReset:"recommencer",
+    soul1:`Une série de calendrier ne sait que deux choses : <em>tu étais là, ou pas.</em> Alors les gens trichent — une révision endormie à 23h55 juste pour garder la chaîne.`,
+    soul2:`La fleur ne te laisse pas faire. La hauteur, c'est le temps investi ; la couleur, c'est ce que tu as vraiment appris — un vrai jour brûle haut et profond, un jour paresseux reste court et pâle. <em>« Une appli qui ne punit pas l'apprentissage libre, »</em> a dit quelqu'un.`,
+    soulAside:"(Ce « 1.1m » au centre ? Des mois, pas des millions — environ 33 jours.)",
+    voicesH2:"Ce que les gens en ont pensé",
+    voicesSay:"Je l'ai montré à quelques milliers d'apprenants. Ils étaient partagés — et les deux camps avaient raison.",
+    q1:"« C'est magnifique, j'adore. »", who1:"— une apprenante, au premier regard",
+    q2:"« Plus joli — mais plus confus que le calendrier. »", who2:"— l'autre moitié, honnête",
+    q3:"« Ça m'a rappelé ce qui reste après avoir taillé un crayon. »", who3:"— et une fois vu, impossible de l'oublier",
+    voicesPoint:"C'est tout l'enjeu : ça échange la lisibilité immédiate du calendrier contre quelque chose qu'on aurait vraiment envie de regarder.",
+    closeLead:"Une série qui vaut la peine d'être cultivée — pas une chaîne qu'on a peur de briser.",
+    closeBody:`La fleur vit dans <a class="app" href="https://severo.luarai.com" target="_blank" rel="noopener" onclick="window.vizTrack&&vizTrack('severo_click',{where:'close'})">Severo</a>, une appli de langues que je développe. Si tu veux ta propre rose, elle y est.`,
+    coffeeNote:"Tu as aimé ?", coffeeLink:"offre-moi un café",
+    footerNote:"une entrée du carnet de terrain",
+    footerDisc:"La rose et ses règles sont réelles, lues dans le code de Severo. Les mois ci-dessus sont illustratifs — aucune donnée réelle n'est montrée.",
+    tipDay:"Jour {n}", tipMin:"{n} min de pratique", tipReview:"un jour de révision", tipSome:"un peu de vocabulaire neuf", tipLots:"beaucoup de vocabulaire neuf",
+    tipFrozen:"sauvé par un gel ❄", tipMissed:"manqué — aucune pratique", tipLang1:"+1 langue", tipLangN:"+{n} langues"
+  },
+  de:{
+    pageTitle:"Ein Streak, in Blüte — viz",
+    metaDescription:"Fast jede App führt deinen Streak im Kalender. Eine führt ihn als Blume: ein Monat Übung als Rose gezeichnet, wo jeder Teil eines Blütenblatts etwas bedeutet.",
+    eyebrow:"Eintrag 005 · eine Feldnotiz",
+    heroTitle:`Ein Streak, <em>in Blüte</em>`,
+    lede:"Fast jede App markiert deinen Streak in einem Kalender kleiner Flammen. Eine zieht ihn als Blume.",
+    scrollCue:"scrollen ↓",
+    revealH2:"Ein Blütenblatt ist ein Tag",
+    revealSay:"Ein ganzer Monat, im Uhrzeigersinn ab zwölf. Fahre über ein Blütenblatt, um seinen Tag zu lesen.",
+    factHeight_b:"Höhe ist Zeit", factHeight_s:"Wie lange du an dem Tag geübt hast.",
+    factColour_b:"Farbe ist neues Vokabular", factColour_s:"Blass für einen Wiederholungstag, tiefes Glut-Orange für echten Fortschritt.",
+    factBlue_b:"Blau ist ein geretteter Tag", factBlue_s:"Ein Freeze deckte den Fehltag. Blüht trotzdem, keine Lücke.",
+    factDots_b:"Punkte sind andere Sprachen", factDots_s:"Einer pro zusätzliche Sprache — das Easter Egg, das alle suchen.",
+    factGold_b:"Der goldene Bogen ist eine perfekte Woche", factGold_s:"Sieben Tage, Montag bis Sonntag, alle vollständig.",
+    factDiamond_b:"Der Diamantglanz ist ein perfekter Monat", factDiamond_s:"Den ganzen Monat nichts verpasst — die ganze Rose leuchtet.",
+    growH2:"Zieh einen Monat",
+    growSay:"Zieh an einem Tag, um seine Übung zu setzen. Tippe einen kurzen Tag an, um ein Freeze auszugeben. Fahre über ein beliebiges Blütenblatt.",
+    ctlGoal:"Tagesziel", unitMin:"Min", ctlFreezes:"Freezes", multiLabel:"mehr als eine Sprache", goalLabel:"Ziel",
+    week1:"Woche 1", week2:"Woche 2", week3:"Woche 3", week4:"Woche 4", centerStreak:"Streak",
+    presetPerfect:"ein perfekter Monat ✦", presetSave:"ein Freeze rettet einen Tag ❄", presetReset:"neu beginnen",
+    soul1:`Ein Kalender-Streak kennt nur zwei Dinge: <em>du warst da, oder nicht.</em> Also tricksen die Leute — eine verschlafene Wiederholung um 23:55 Uhr, nur um die Kette zu halten.`,
+    soul2:`Die Blume lässt das nicht zu. Höhe ist die investierte Zeit; Farbe ist, was du wirklich gelernt hast — ein echter Tag brennt hoch und tief, ein fauler bleibt kurz und blass. <em>„Eine App, die freies Lernen nicht bestraft,“</em> nannte es jemand.`,
+    soulAside:"(Dieses „1.1m“ in der Mitte? Monate, keine Millionen — etwa 33 Tage.)",
+    voicesH2:"Was die Leute davon hielten",
+    voicesSay:"Ich zeigte es ein paar tausend Lernenden. Sie waren gespalten — und beide Seiten hatten recht.",
+    q1:"„Das ist wunderschön, ich liebe es.“", who1:"— eine Lernende, auf den ersten Blick",
+    q2:"„Schöner — aber verwirrender als der Kalender.“", who2:"— die ehrliche andere Hälfte",
+    q3:"„Es erinnerte mich an das, was nach dem Anspitzen eines Stifts übrig bleibt.“", who3:"— und einmal gesehen, sieht man es immer",
+    voicesPoint:"Genau das ist der Punkt: Es tauscht die sofortige Lesbarkeit des Kalenders gegen etwas, das man wirklich ansehen möchte.",
+    closeLead:"Ein Streak, den man gerne wachsen lässt — keine Kette, die man Angst hat zu brechen.",
+    closeBody:`Die Blume lebt in <a class="app" href="https://severo.luarai.com" target="_blank" rel="noopener" onclick="window.vizTrack&&vizTrack('severo_click',{where:'close'})">Severo</a>, einer Sprach-App, die ich baue. Wenn du eine eigene Rose möchtest, ist sie dort.`,
+    coffeeNote:"Hat dir das gefallen?", coffeeLink:"spendier mir einen Kaffee",
+    footerNote:"ein Eintrag aus dem Feldnotizbuch",
+    footerDisc:"Die Rose und ihre Regeln sind echt, aus Severos Quellcode gelesen. Die Monate oben sind illustrativ — es werden keine echten Daten gezeigt.",
+    tipDay:"Tag {n}", tipMin:"{n} Min geübt", tipReview:"ein Wiederholungstag", tipSome:"etwas neues Vokabular", tipLots:"viel neues Vokabular",
+    tipFrozen:"durch ein Freeze gerettet ❄", tipMissed:"verpasst — keine Übung", tipLang1:"+1 Sprache", tipLangN:"+{n} Sprachen"
+  },
+  nl:{
+    pageTitle:"Een reeks, in bloei — viz",
+    metaDescription:"Bijna elke app houdt je reeks bij op een kalender. Eén houdt hem als bloem: een maand oefenen getekend als roos, waar elk deel van een blaadje iets betekent.",
+    eyebrow:"invoer 005 · een veldnotitie",
+    heroTitle:`Een reeks, <em>in bloei</em>`,
+    lede:"Bijna elke app markeert je reeks op een kalender van vlammetjes. Eén kweekt hem als bloem.",
+    scrollCue:"scroll ↓",
+    revealH2:"Eén blaadje is één dag",
+    revealSay:"Een hele maand, met de klok mee vanaf twaalf uur. Beweeg over een blaadje om de dag te lezen.",
+    factHeight_b:"Hoogte is tijd", factHeight_s:"Hoe lang je die dag oefende.",
+    factColour_b:"Kleur is nieuwe woorden", factColour_s:"Bleek voor een herhaaldag, diep amber voor echte vooruitgang.",
+    factBlue_b:"Blauw is een geredde dag", factBlue_s:"Een freeze dekte de gemiste dag. Bloeit toch, geen gat.",
+    factDots_b:"Stippen zijn andere talen", factDots_s:"Eén per extra taal — de easter egg die iedereen zoekt.",
+    factGold_b:"De gouden boog is een perfecte week", factGold_s:"Zeven dagen, maandag tot zondag, allemaal compleet.",
+    factDiamond_b:"De diamantgloed is een perfecte maand", factDiamond_s:"De hele maand niets gemist — de hele roos straalt.",
+    growH2:"Kweek een maand",
+    growSay:"Sleep een dag om de oefening in te stellen. Tik op een korte dag om een freeze te gebruiken. Beweeg over een blaadje.",
+    ctlGoal:"dagdoel", unitMin:"min", ctlFreezes:"freezes", multiLabel:"meer dan één taal", goalLabel:"doel",
+    week1:"week 1", week2:"week 2", week3:"week 3", week4:"week 4", centerStreak:"reeks",
+    presetPerfect:"een perfecte maand ✦", presetSave:"een freeze redt een dag ❄", presetReset:"opnieuw beginnen",
+    soul1:`Een kalenderreeks weet maar twee dingen: <em>je kwam opdagen, of niet.</em> Dus mensen sjoemelen — een slaperige herhaling om 23:55 om de keten te behouden.`,
+    soul2:`De bloem staat dat niet toe. Hoogte is de tijd die je erin stopt; kleur is wat je echt leerde — een echte dag brandt hoog en diep, een luie blijft kort en bleek. <em>“Een app die vrij leren niet bestraft,”</em> noemde iemand het.`,
+    soulAside:"(Die “1.1m” in het midden? Maanden, geen miljoenen — ongeveer 33 dagen.)",
+    voicesH2:"Wat mensen ervan vonden",
+    voicesSay:"Ik liet het een paar duizend leerlingen zien. Ze waren verdeeld — en beide kanten hadden gelijk.",
+    q1:"“Het is prachtig, ik vind het geweldig.”", who1:"— een leerling, op het eerste gezicht",
+    q2:"“Mooier — maar verwarrender dan de kalender.”", who2:"— de eerlijke andere helft",
+    q3:"“Het deed me denken aan wat overblijft na het slijpen van een potlood.”", who3:"— en eenmaal gezien, zie je het altijd",
+    voicesPoint:"Dat is het punt: het ruilt de directe leesbaarheid van de kalender voor iets waar je echt naar wilt kijken.",
+    closeLead:"Een reeks die het waard is om te laten groeien — geen ketting die je bang bent te breken.",
+    closeBody:`De bloem leeft in <a class="app" href="https://severo.luarai.com" target="_blank" rel="noopener" onclick="window.vizTrack&&vizTrack('severo_click',{where:'close'})">Severo</a>, een taal-app die ik bouw. Als je een eigen roos wilt, hij staat daar.`,
+    coffeeNote:"Vond je dit leuk?", coffeeLink:"trakteer me op koffie",
+    footerNote:"een invoer uit het veldnotitieboek",
+    footerDisc:"De roos en haar regels zijn echt, gelezen uit Severo's broncode. De maanden hierboven zijn illustratief — niemands echte data wordt getoond.",
+    tipDay:"Dag {n}", tipMin:"{n} min geoefend", tipReview:"een herhaaldag", tipSome:"wat nieuwe woorden", tipLots:"veel nieuwe woorden",
+    tipFrozen:"gered door een freeze ❄", tipMissed:"gemist — geen oefening", tipLang1:"+1 taal", tipLangN:"+{n} talen"
+  },
+  ar:{
+    pageTitle:"سلسلة، في تفتُّح — viz",
+    metaDescription:"معظم التطبيقات تحفظ سلسلتك في تقويم. أحدها يحفظها كزهرة: شهرٌ من التدرّب مرسوم كوردة، حيث كل جزء من البتلة يعني شيئًا.",
+    eyebrow:"مدخل 005 · ملاحظة ميدانية",
+    heroTitle:`سلسلة، <em>في تفتُّح</em>`,
+    lede:"معظم التطبيقات تُعلِّم سلسلتك على تقويم من اللهبات الصغيرة. أحدها يزرعها كزهرة.",
+    scrollCue:"مرِّر ↓",
+    revealH2:"كل بتلة هي يوم",
+    revealSay:"شهرٌ كامل، باتجاه عقارب الساعة من الأعلى. مرِّر فوق بتلة لقراءة يومها.",
+    factHeight_b:"الارتفاع هو الوقت", factHeight_s:"كم تدرّبت في ذلك اليوم.",
+    factColour_b:"اللون هو المفردات الجديدة", factColour_s:"باهت ليوم مراجعة، وكهرماني غامق لتقدّم حقيقي.",
+    factBlue_b:"الأزرق يوم أُنقِذ", factBlue_s:"غطّى التجميد اليوم الفائت. ما زال يتفتّح، وليس فجوة.",
+    factDots_b:"النقاط لغات أخرى", factDots_s:"واحدة لكل لغة إضافية — البيضة المخفية التي يبحث عنها الجميع.",
+    factGold_b:"القوس الذهبي أسبوع مثالي", factGold_s:"سبعة أيام، من الاثنين إلى الأحد، كلها مكتملة.",
+    factDiamond_b:"التوهّج الماسي شهر مثالي", factDiamond_s:"لا شيء فائت طوال الشهر — تتلألأ الوردة كلها.",
+    growH2:"ازرع شهرًا",
+    growSay:"اسحب يومًا لتحديد تدرّبه. انقر يومًا قصيرًا لإنفاق تجميد. مرِّر فوق أي بتلة.",
+    ctlGoal:"الهدف اليومي", unitMin:"دقيقة", ctlFreezes:"التجميدات", multiLabel:"أكثر من لغة", goalLabel:"الهدف",
+    week1:"الأسبوع 1", week2:"الأسبوع 2", week3:"الأسبوع 3", week4:"الأسبوع 4", centerStreak:"السلسلة",
+    presetPerfect:"شهر مثالي ✦", presetSave:"تجميد يُنقذ يومًا ❄", presetReset:"ابدأ من جديد",
+    soul1:`سلسلة التقويم تعرف شيئين فقط: <em>حضرت أم لا.</em> فيتحايل الناس — مراجعة ناعسة في 11:55 مساءً فقط للحفاظ على السلسلة.`,
+    soul2:`الزهرة لا تسمح بذلك. الارتفاع هو الوقت الذي تبذله؛ واللون هو ما تعلّمته فعلًا — فاليوم الحقيقي يشتعل عاليًا وعميقًا، والكسول يبقى قصيرًا باهتًا. <em>«تطبيق لا يعاقب التعلّم الحر»</em> هكذا وصفه أحدهم.`,
+    soulAside:"(ذلك «1.1m» في الوسط؟ أشهر لا ملايين — نحو 33 يومًا.)",
+    voicesH2:"ما رأى الناس فيها",
+    voicesSay:"عرضتها على بضعة آلاف من المتعلمين. انقسموا — وكان الطرفان محقّين.",
+    q1:"«إنها جميلة، أحببتها.»", who1:"— متعلِّمة، من النظرة الأولى",
+    q2:"«أجمل، لكن أكثر إرباكًا من التقويم.»", who2:"— النصف الآخر الصادق",
+    q3:"«ذكّرتني بما يتبقّى بعد بري قلم رصاص.»", who3:"— وما إن تراها حتى لا تنساها",
+    voicesPoint:"هذا هو المغزى: تستبدل وضوح التقويم الفوري بشيء تودّ فعلًا أن تنظر إليه.",
+    closeLead:"سلسلة تستحق أن تنمو — لا قيدًا تخشى كسره.",
+    closeBody:`الزهرة تعيش في <a class="app" href="https://severo.luarai.com" target="_blank" rel="noopener" onclick="window.vizTrack&&vizTrack('severo_click',{where:'close'})">Severo</a>، تطبيق لغات أبنيه. إن أردت وردة خاصة بك، فهي هناك.`,
+    coffeeNote:"أعجبتك هذه؟", coffeeLink:"اشترِ لي قهوة",
+    footerNote:"مدخل من دفتر ميداني",
+    footerDisc:"الوردة وقواعدها حقيقية، مقروءة من شيفرة Severo. الأشهر أعلاه توضيحية — لا تُعرض بيانات أي شخص.",
+    tipDay:"اليوم {n}", tipMin:"{n} دقيقة تدرّب", tipReview:"يوم مراجعة", tipSome:"بعض المفردات الجديدة", tipLots:"الكثير من المفردات الجديدة",
+    tipFrozen:"أُنقِذ بتجميد ❄", tipMissed:"فائت — بلا تدرّب", tipLang1:"+1 لغة", tipLangN:"+{n} لغات"
+  }
+};
+
+// seed the interactive once (the data is language-independent)
+(function seedSim(){ const R=seeded(2026); sim.goal=15; sim.freezesBank=4;
+  sim.days.forEach((d,i)=>{ d.freeze=false;
+    if(i<7) d.minutes=17+Math.round(R()*14);          // a strong first week → gold
+    else if(i===15){ d.minutes=0; }                   // a real miss → gray, breaks the run
+    else if(i===12){ d.minutes=9; d.freeze=true; }    // saved, still studied a bit (blue + height)
+    else if(i===19){ d.minutes=6; d.freeze=true; }    // saved, a little time
+    else if(i===22){ d.minutes=0; d.freeze=true; }    // saved rest day (blue stub)
+    else d.minutes=16+Math.round(R()*15);
+  });
+})();
+
+const specReveal=specimen(7), specHero=specimen(11);
+function applyLang(){
+  buildFacts();
+  buildPresets();
+  renderRose(document.getElementById("rose-reveal"), specReveal, 28, {center:"1.1m"});
+  renderRose(document.getElementById("rose-hero"),   specHero,   28, {center:"1.1m"});
+  render();
+}
+if(window.vizI18n){ vizI18n.init({ dict:DICT, onApply: applyLang }); }
+else { applyLang(); }
+</script>
+</body>
+</html>
