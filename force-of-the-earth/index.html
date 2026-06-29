@@ -331,6 +331,7 @@ let _refDims="";
 function layout(){
   W=window.innerWidth; H=window.innerHeight;
   dpr=window.devicePixelRatio||1; cv.width=W*dpr; cv.height=H*dpr;
+  cv.style.width=W+"px"; cv.style.height=H+"px";   // pin display size = drawn size, so taps map 1:1 (mobile 100vh fix)
   ctx.setTransform(dpr,0,0,dpr,0,0);
   cx=W*0.5; cy=H*0.5; rMax=Math.min(W,H)*0.46; r0=rMax/Math.pow(G,65);
   const dims=W+"x"+H;
