@@ -77,6 +77,8 @@
   .scale{position:fixed;top:calc(50% + 66px);right:14px;z-index:6;font:600 11px ui-monospace,monospace;color:var(--cool);
     background:rgba(8,22,28,.6);border:1px solid var(--line);border-radius:7px;padding:5px 9px;opacity:.9;white-space:nowrap;}
   [dir=rtl] .scale{right:auto;left:14px;}
+  /* #bare → clean capture: hide interactive chrome, keep title + legend */
+  .bare .viz-home,.bare .viz-lang,.bare .zoom,.bare .scale,.bare .head,.bare .hint{display:none!important;}
 
   .tip{position:fixed;pointer-events:none;opacity:0;transform:translate(-50%,calc(-100% - 14px));z-index:30;
     transition:opacity .1s;background:rgba(6,18,24,.95);border:1px solid var(--line);border-radius:9px;
@@ -124,6 +126,7 @@
 <div class="tip" id="tip"></div>
 
 <script>
+if(/bare/.test(location.hash+location.search))document.documentElement.classList.add('bare');
 const DICT={
  en:{pageTitle:"From a heartbeat to the deep — the nautilus of earthquakes",
    metaDescription:"Every earthquake that mattered, wound into a nautilus shell — placed by magnitude, sized by the lives it took, from your own heartbeat to one second of the Sun.",
@@ -448,10 +451,15 @@ function magAt(mx,my){
   if(prW<Rin(bt)*0.8||prW>R(bt)*1.12)return null;
   return bt/5-3;
 }
-function pickPoint(mx,my){let best=null,bestR=1e9;   // prefer the smallest marker under the cursor (so a tiny one isn't eclipsed)
-  Q.forEach((q,i)=>{const d=Math.hypot(mx-q.x,my-q.y);if(d<Math.max(q.r,7)+5&&q.r<bestR){bestR=q.r;best={type:"q",i};}});
-  REF.forEach((rf,i)=>{const d=Math.hypot(mx-rf.x,my-rf.y);if(d<Math.max(rf.r,7)+4&&rf.r<bestR){bestR=rf.r;best={type:"ref",i};}});
-  return best;}
+function pickPoint(mx,my,pad){pad=pad==null?5:pad;
+  let inside=null,insideR=1e9,near=null,nearE=1e9;
+  const consider=(o,type,i)=>{const d=Math.hypot(mx-o.x,my-o.y);
+    if(d<=o.r+1){ if(o.r<insideR){insideR=o.r;inside={type,i};} }          // finger ON a marker → smallest wins (no eclipse)
+    else if(d<=o.r+pad){ const e=d-o.r; if(e<nearE){nearE=e;near={type,i};} } // near miss → closest edge wins (size-aware)
+  };
+  Q.forEach((q,i)=>consider(q,"q",i));
+  REF.forEach((rf,i)=>consider(rf,"ref",i));
+  return inside||near;}
 
 // position the tooltip near (tx,ty) but always clamp it inside the screen (flip below if no room above)
 function placeTip(tx,ty){
@@ -462,8 +470,8 @@ function placeTip(tx,ty){
   top=Math.max(m,Math.min(window.innerHeight-th2-m, top));
   tip.style.left=left+"px"; tip.style.top=top+"px";
 }
-function showAt(mx,my){
-  const pt=pickPoint(mx,my);
+function showAt(mx,my,pad){
+  const pt=pickPoint(mx,my,pad);
   if(pt){hover=pt;let html,tx,ty;
     if(pt.type==="q"){const q=Q[pt.i];
       const dn=q.hook
@@ -501,7 +509,7 @@ let pinchD=0;
 const touchDist=e=>{const a=e.touches[0],b=e.touches[1];return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);};
 cv.addEventListener("touchstart",e=>{
   if(e.touches.length>=2){pinchD=touchDist(e);hover=null;tip.style.opacity=0;}
-  else if(e.touches.length===1){const t=e.touches[0];showAt(t.clientX,t.clientY);}
+  else if(e.touches.length===1){const t=e.touches[0];showAt(t.clientX,t.clientY,24);}
 },{passive:true});
 cv.addEventListener("touchmove",e=>{
   if(e.touches.length>=2){e.preventDefault();const d=touchDist(e);if(pinchD>0)setZoom(zoom*(d/pinchD));pinchD=d;}
