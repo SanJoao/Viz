@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="pageTitle">From a heartbeat to the deep — the nautilus of earthquakes</title>
+<meta name="description" data-i18n-attr="content:metaDescription" content="Every earthquake that mattered, wound into a nautilus shell — placed by magnitude, sized by the lives it took, from your own heartbeat to one second of the Sun.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="viz">
+<meta property="og:title" content="From a heartbeat to the deep">
+<meta property="og:description" content="The Richter scale as a nautilus shell: every earthquake placed by magnitude and sized by the lives it took — your pulse to the Sun.">
+<meta property="og:url" content="https://viz.luarai.com/force-of-the-earth/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="../logo.svg">
+<script src="../analytics.js"></script>
+<script src="../i18n.js"></script>
+<style>
+  :root{--foam:#dff1f4; --pale:#9fc4cc; --cool:#7fdfe8; --earth:#e3c08f; --coral:#ff6f53; --line:#1d3942;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;overflow:hidden;}
+  body{background:radial-gradient(120% 100% at 50% 50%,#0d242e 0%,#061218 58%,#03090d 100%);
+    color:var(--foam);font-family:"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;}
+  #cv{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0;}
+  .vig{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(60% 60% at 50% 50%,transparent 55%,rgba(3,9,13,.5) 100%);}
+
+  /* back pill (dark) */
+  .viz-home{position:fixed;top:16px;left:16px;z-index:100;display:inline-flex;align-items:center;gap:8px;
+    padding:7px 13px 7px 10px;background:rgba(8,22,28,.72);border:1px solid var(--line);border-radius:999px;
+    color:var(--foam);font-size:13px;text-decoration:none;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:border-color .15s;}
+  .viz-home:hover{border-color:var(--cool);}
+  .viz-home img{height:16px;width:16px;transition:transform .4s ease;}
+  .viz-home:hover img{transform:rotate(360deg);}
+  .viz-home .vh-arrow{color:var(--cool);transition:transform .15s;}
+  .viz-home:hover .vh-arrow{transform:translateX(-3px);}
+  .viz-home .vh-label{font-weight:600;}
+  @media(max-width:760px){.viz-home .vh-label{display:none;}}
+
+  /* language switcher (dark; mounted top-right by i18n.js) */
+  .viz-lang{position:fixed;top:16px;right:16px;z-index:100;display:inline-flex;gap:2px;
+    background:rgba(8,22,28,.72);border:1px solid var(--line);border-radius:999px;padding:3px;
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
+  .viz-lang-opt{font:inherit;font-size:12px;font-weight:600;color:var(--pale);background:none;border:0;
+    border-radius:999px;padding:4px 9px;cursor:pointer;transition:color .15s,background .15s;}
+  .viz-lang-opt:hover{color:var(--foam);}
+  .viz-lang-opt.is-on{color:#06181c;background:var(--cool);}
+  [dir=rtl] .viz-lang{right:auto;left:16px;}
+  [dir=rtl] .viz-home{left:auto;right:16px;}
+
+  .head{position:fixed;top:58px;left:20px;max-width:340px;z-index:3;pointer-events:none;
+    text-shadow:0 1px 18px rgba(2,10,14,.9),0 1px 3px rgba(2,10,14,.9);}
+  .kicker{font:600 11px/1.4 ui-monospace,monospace;letter-spacing:.32em;text-transform:uppercase;color:var(--cool);opacity:.85;margin:0 0 5px;}
+  h1{font:italic 600 25px/1.12 Georgia,"Times New Roman",serif;margin:0 0 7px;color:#eafaff;}
+  .lede{font-size:13px;line-height:1.5;color:#bcd8de;margin:0;}
+  .lede b{color:#eafaff;font-weight:600;}
+  [dir=rtl] .head{left:auto;right:20px;}
+
+  .legend{position:fixed;bottom:16px;left:0;right:0;z-index:3;display:flex;justify-content:center;flex-wrap:wrap;gap:6px 18px;
+    pointer-events:none;font-size:12px;color:#bcd8de;text-shadow:0 1px 10px rgba(2,10,14,.95);}
+  .legend .row{display:flex;align-items:center;gap:7px;}
+  .sw{width:13px;height:13px;border-radius:50%;flex:none;}
+  .sw.cool{background:radial-gradient(circle at 35% 30%,#f4ffff,#7fdfe8 45%,#2f8a99);}
+  .sw.earth{background:radial-gradient(circle at 35% 30%,#fff6ea,#e3c08f 45%,#9a7038);}
+  .sw.coral{background:radial-gradient(circle at 35% 30%,#ffe9e2,#ff8f73 45%,#c0392b);}
+  .sw.est{background:transparent;border:1.5px dashed var(--pale);}
+  .spk{color:#cfeefb;}
+  .dots{display:flex;align-items:center;gap:5px;}
+  .dots i{display:block;border-radius:50%;background:#7aa0aa;}
+  .hint{width:100%;text-align:center;font-size:11px;color:var(--cool);opacity:.8;font-style:italic;margin-top:2px;}
+
+  .zoom{position:fixed;top:50%;right:14px;transform:translateY(-50%);z-index:6;display:flex;flex-direction:column;gap:6px;}
+  .zoom button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);
+    background:rgba(8,22,28,.78);color:var(--foam);font-size:15px;cursor:pointer;line-height:1;
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);}
+  .zoom button:hover{background:rgba(20,52,64,.95);}
+  [dir=rtl] .zoom{right:auto;left:14px;}
+  .scale{position:fixed;bottom:16px;left:16px;z-index:6;font:600 11px ui-monospace,monospace;color:var(--cool);
+    background:rgba(8,22,28,.6);border:1px solid var(--line);border-radius:7px;padding:5px 9px;opacity:.9;}
+  [dir=rtl] .scale{left:auto;right:16px;}
+
+  .tip{position:fixed;pointer-events:none;opacity:0;transform:translate(-50%,calc(-100% - 14px));z-index:30;
+    transition:opacity .1s;background:rgba(6,18,24,.95);border:1px solid var(--line);border-radius:9px;
+    padding:9px 12px;min-width:172px;max-width:252px;box-shadow:0 10px 30px rgba(0,0,0,.6);
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);}
+  .tip .n{font:italic 600 15px Georgia,serif;color:#eafaff;display:flex;align-items:center;}
+  .tip .flag{height:13px;border-radius:2px;margin-right:6px;box-shadow:0 0 0 1px rgba(255,255,255,.18);}
+  .tip .meta{font:600 11px ui-monospace,monospace;letter-spacing:.03em;color:var(--cool);margin:5px 0 3px;}
+  .tip .big{font-size:12.5px;color:var(--earth);font-weight:600;}
+  .tip .red{color:var(--coral);}
+  .tip .note{font-size:12px;color:var(--pale);margin-top:5px;line-height:1.42;font-style:italic;}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="vig"></div>
+
+<a class="viz-home" href="../index.html" data-i18n-attr="title:backTitle" title="Back to the notebook">
+  <span class="vh-arrow">&larr;</span><img src="../logo.svg" alt=""><span class="vh-label">viz<b>.</b></span>
+</a>
+
+<div class="head">
+  <p class="kicker" data-i18n="kicker">field log · the richter scale</p>
+  <h1 data-i18n="h1">From a heartbeat to the deep</h1>
+  <p class="lede" data-i18n-html="lede">A spiral of doublings — each chamber holds a force twice the last. From <b>your own pulse</b> at the eye to the largest motions the planet makes. Each pearl is a real earthquake, sized by <b>the lives it took, not its magnitude.</b></p>
+</div>
+
+<div class="zoom">
+  <button id="zin" title="zoom in (or scroll)">＋</button>
+  <button id="zout" title="zoom out (or scroll)">－</button>
+  <button id="zreset" title="reset view">⟲</button>
+</div>
+<div class="scale" id="scale">M−3 → M10</div>
+
+<div class="legend">
+  <div class="row"><span class="sw cool"></span> <span data-i18n="legTsunami">tsunami</span></div>
+  <div class="row"><span class="sw earth"></span> <span data-i18n="legLand">land only</span></div>
+  <div class="row"><span class="sw coral"></span> <span data-i18n="legLive">Venezuela 2026</span></div>
+  <div class="row"><span class="sw est"></span> <span data-i18n="legEst">est. magnitude</span></div>
+  <div class="row"><span class="dots"><i style="width:5px;height:5px"></i><i style="width:9px;height:9px"></i><i style="width:15px;height:15px"></i></span> <span data-i18n="legSize">area ∝ lives</span></div>
+  <div class="row"><span class="spk">✦</span> <span data-i18n="legForce">what each force equals</span></div>
+  <div class="hint" data-i18n="hint">hover anything · scroll or ＋/－ to dive from a heartbeat to the Sun</div>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+const DICT={
+ en:{pageTitle:"From a heartbeat to the deep — the nautilus of earthquakes",
+   metaDescription:"Every earthquake that mattered, wound into a nautilus shell — placed by magnitude, sized by the lives it took, from your own heartbeat to one second of the Sun.",
+   backTitle:"Back to the notebook",kicker:"field log · the richter scale",h1:"From a heartbeat to the deep",
+   lede:"A spiral of doublings — each chamber holds a force twice the last. From <b>your own pulse</b> at the eye to the largest motions the planet makes. Each pearl is a real earthquake, sized by <b>the lives it took, not its magnitude.</b>",
+   legTsunami:"tsunami",legLand:"land only",legLive:"Venezuela 2026",legEst:"est. magnitude",legSize:"area ∝ lives",legForce:"what each force equals",
+   hint:"hover anything · scroll or ＋/－ to dive from a heartbeat to the Sun",showing:"showing"},
+ es:{pageTitle:"De un latido a las profundidades — el nautilus de los terremotos",
+   metaDescription:"Cada terremoto que importó, enroscado en una concha de nautilus: ubicado por magnitud y dimensionado por las vidas que se llevó, desde tu propio latido hasta un segundo del Sol.",
+   backTitle:"Volver al cuaderno",kicker:"cuaderno de campo · la escala de richter",h1:"De un latido a las profundidades",
+   lede:"Una espiral de duplicaciones: cada cámara guarda una fuerza el doble de la anterior. Desde <b>tu propio pulso</b> en el centro hasta los mayores movimientos del planeta. Cada perla es un terremoto real, dimensionado por <b>las vidas que se llevó, no por su magnitud.</b>",
+   legTsunami:"tsunami",legLand:"solo en tierra",legLive:"Venezuela 2026",legEst:"magnitud estimada",legSize:"área ∝ vidas",legForce:"a qué equivale cada fuerza",
+   hint:"pasa el cursor por todo · usa la rueda o ＋/－ para bajar de un latido al Sol",showing:"mostrando"},
+ pt:{pageTitle:"De um batimento às profundezas — o náutilo dos terremotos",
+   metaDescription:"Cada terremoto que importou, enrolado numa concha de náutilo: posicionado pela magnitude e dimensionado pelas vidas que levou, do seu próprio batimento até um segundo do Sol.",
+   backTitle:"Voltar ao caderno",kicker:"caderno de campo · a escala richter",h1:"De um batimento às profundezas",
+   lede:"Uma espiral de duplicações — cada câmara guarda uma força o dobro da anterior. Do <b>seu próprio pulso</b> no centro até os maiores movimentos do planeta. Cada pérola é um terremoto real, dimensionada pelas <b>vidas que levou, não por sua magnitude.</b>",
+   legTsunami:"tsunami",legLand:"só em terra",legLive:"Venezuela 2026",legEst:"magnitude estimada",legSize:"área ∝ vidas",legForce:"a que equivale cada força",
+   hint:"passe o cursor sobre tudo · role ou ＋/－ para mergulhar de um batimento ao Sol",showing:"mostrando"},
+ fr:{pageTitle:"D'un battement de cœur aux abysses — le nautile des séismes",
+   metaDescription:"Chaque séisme qui a compté, enroulé dans une coquille de nautile : placé par magnitude et dimensionné par les vies qu'il a prises, de votre propre pouls à une seconde de Soleil.",
+   backTitle:"Retour au carnet",kicker:"carnet de terrain · l'échelle de richter",h1:"D'un battement de cœur aux abysses",
+   lede:"Une spirale de doublements — chaque loge contient une force double de la précédente. De <b>votre propre pouls</b> au centre jusqu'aux plus grands mouvements de la planète. Chaque perle est un séisme réel, dimensionnée par <b>les vies qu'il a prises, non par sa magnitude.</b>",
+   legTsunami:"tsunami",legLand:"à terre seulement",legLive:"Venezuela 2026",legEst:"magnitude estimée",legSize:"aire ∝ vies",legForce:"à quoi équivaut chaque force",
+   hint:"survolez n'importe quoi · molette ou ＋/－ pour plonger d'un battement de cœur au Soleil",showing:"affichage"},
+ de:{pageTitle:"Vom Herzschlag in die Tiefe — der Nautilus der Erdbeben",
+   metaDescription:"Jedes Erdbeben, das zählte, in eine Nautilus-Schale gewunden — nach Magnitude platziert und nach den geforderten Leben skaliert, vom eigenen Herzschlag bis zu einer Sekunde Sonne.",
+   backTitle:"Zurück zum Notizbuch",kicker:"feldtagebuch · die richterskala",h1:"Vom Herzschlag in die Tiefe",
+   lede:"Eine Spirale aus Verdopplungen — jede Kammer birgt eine Kraft, doppelt so groß wie die letzte. Vom <b>eigenen Puls</b> im Zentrum bis zu den größten Bewegungen des Planeten. Jede Perle ist ein echtes Erdbeben, skaliert nach <b>den Menschenleben, die es forderte, nicht nach seiner Magnitude.</b>",
+   legTsunami:"Tsunami",legLand:"nur an Land",legLive:"Venezuela 2026",legEst:"geschätzte Magnitude",legSize:"Fläche ∝ Leben",legForce:"was jede Kraft entspricht",
+   hint:"über alles fahren · scrollen oder ＋/－, um vom Herzschlag zur Sonne zu tauchen",showing:"Ansicht"},
+ nl:{pageTitle:"Van een hartslag naar de diepte — de nautilus van aardbevingen",
+   metaDescription:"Elke aardbeving die ertoe deed, opgerold in een nautilusschelp — geplaatst op magnitude en geschaald naar de levens die ze kostte, van je eigen hartslag tot één seconde zon.",
+   backTitle:"Terug naar het notitieboek",kicker:"veldlogboek · de schaal van richter",h1:"Van een hartslag naar de diepte",
+   lede:"Een spiraal van verdubbelingen — elke kamer bevat een kracht twee keer zo groot als de vorige. Van <b>je eigen hartslag</b> in het midden tot de grootste bewegingen van de planeet. Elke parel is een echte aardbeving, geschaald naar <b>de levens die ze kostte, niet naar de magnitude.</b>",
+   legTsunami:"tsunami",legLand:"alleen op land",legLive:"Venezuela 2026",legEst:"geschatte magnitude",legSize:"oppervlak ∝ levens",legForce:"waar elke kracht aan gelijkstaat",
+   hint:"beweeg over alles · scroll of ＋/－ om van een hartslag naar de zon te duiken",showing:"weergave"},
+ ar:{pageTitle:"من نبضة قلب إلى الأعماق — حلزون الزلازل",
+   metaDescription:"كل زلزال كان له شأن، ملفوفًا في صدفة حلزون: موضوعًا حسب القوة ومُحجَّمًا بعدد الأرواح التي حصدها، من نبضك أنت إلى ثانية واحدة من ضوء الشمس.",
+   backTitle:"العودة إلى الدفتر",kicker:"دفتر ميداني · مقياس ريختر",h1:"من نبضة قلب إلى الأعماق",
+   lede:"حلزون من المضاعفات — كل حجرة تحمل قوة ضعف سابقتها. من <b>نبضك أنت</b> في المركز إلى أعظم حركات الكوكب. كل لؤلؤة زلزال حقيقي، حجمها <b>بعدد الأرواح التي حصدها، لا بقوّته.</b>",
+   legTsunami:"تسونامي",legLand:"على اليابسة فقط",legLive:"فنزويلا 2026",legEst:"قوة تقديرية",legSize:"المساحة ∝ الأرواح",legForce:"ما تعادله كل قوة",
+   hint:"مرّر فوق أي عنصر · استخدم العجلة أو ＋/－ للغوص من نبضة قلب إلى الشمس",showing:"يعرض"}
+};
+// tooltip translations: scaffolding + frequency phrases + per-marker labels/notes (aligned to Q and REF)
+const FQ_EN={"-3":"constant, all around you","-2":"constant, all around you","-1":"constant, all around you","0":"countless, every day","1":"~8 million a year","2":"~1 million a year","3":"~100,000 a year","4":"~13,000 a year","5":"~1,500 a year","6":"~130 a year","7":"~15 a year","8":"~1 a year","9":"about 1 per decade","10":"never recorded",beyond:"beyond any earthquake"};
+const TT={
+ en:{mag:"Magnitude",enr:"energy ≈",enrEq:"energy-equivalent ≈ M",tnt:"of TNT",lives:"lives",missing:"still missing",tsu:"tsunami",est:"est.",howOften:"how often:",about:"about",freq:FQ_EN},
+ es:{mag:"Magnitud",enr:"energía ≈",enrEq:"equivalente en energía ≈ M",tnt:"de TNT",lives:"vidas",missing:"aún desaparecidos",tsu:"tsunami",est:"est.",howOften:"qué tan seguido:",about:"como",
+  freq:{"-3":"constante, a tu alrededor","-2":"constante, a tu alrededor","-1":"constante, a tu alrededor","0":"incontables, cada día","1":"~8 millones al año","2":"~1 millón al año","3":"~100.000 al año","4":"~13.000 al año","5":"~1.500 al año","6":"~130 al año","7":"~15 al año","8":"~1 al año","9":"~1 por década","10":"nunca registrado",beyond:"más allá de cualquier terremoto"},
+  qn:["El mayor terremoto jamás registrado.","El sismo del Viernes Santo: el 2.º mayor de la historia.","El tsunami, no el sismo, se llevó casi todas las vidas.","Desencadenó Fukushima; aun así, un sismo enorme con pocas víctimas.","Cruzó el Pacífico y golpeó Hawái.","Normas de construcción estrictas mantuvieron baja la cifra.","Sacudió la filosofía europea tanto como sus ciudades.","El terremoto más mortífero de la historia.","Una ciudad borrada en la oscuridad antes del amanecer.","Un tsunami local llegó minutos después.","Las escuelas, entre lo más golpeado.","Aldeas de montaña aisladas por deslizamientos.","Una ruptura doble a través de dos naciones.","Avalanchas arrasaron el campamento base del Everest.","Tsunami y licuefacción se tragaron barrios enteros.","24 de junio de 2026: un premonitorio de 7.2 y, 39 segundos después, el 7.5.","“Solo” 7.0, pero superficial y una ciudad frágil.","Un sismo modesto; una catástrofe de adobe.","Bloques de hormigón soviéticos colapsaron al instante.","Una ciudad moderna, y aun así sus autopistas se desplomaron.","Casas de ladrillo y teja se derrumbaron por toda la llanura.","Aldeas de adobe en lo alto del Atlas, difíciles de alcanzar.","Un tercio de la ciudad desaparecido, por un 5.8. Superficial, piedra sin reforzar.","Aldeas remotas de montaña, golpeadas antes del amanecer.","Un pueblo medieval; juzgaron a científicos por las advertencias.","Una ciudad moderna y rica; un solo edificio se llevó casi todas las vidas."],
+  rl:["un latido","un paso","una bicicleta a toda velocidad","una granada de mano","un auto a velocidad de autopista","un cartucho de dinamita","una bomba aérea de la 2.ª Guerra Mundial","un rayo","un avión de pasajeros","una tonelada de TNT","una bomba antibúnker","la explosión de Beirut (2020)","un cohete Saturno V","la bomba de Hiroshima","la bomba de Nagasaki","un reactor nuclear · un día","el Vesubio sepulta Pompeya","el meteoro de Cheliábinsk","un reactor nuclear · un año","la explosión de Tunguska","el parque eólico de Gansu · un año","el parque solar de Talatan · un año","la Bomba del Zar","la presa de las Tres Gargantas · un año","la erupción del Krakatoa","todas las armas nucleares de la Tierra","la energía diaria de un huracán","la erupción del Tambora","la energía anual de la humanidad","una supererupción de Yellowstone","la supererupción de La Garita","el asteroide de Chicxulub","el impacto de Vredefort","un segundo de luz solar","suficiente para hervir los océanos"],
+  rn:["~1 julio de energía, y sientes cada uno.","","la energía cinética del ciclista y la bici.","~15 g de TNT, y aun así se registra.","su energía cinética en un choque.","~medio kilo de TNT.","~100 kg de TNT.","","energía cinética en vuelo de crucero.","","~15 toneladas de TNT.","la explosión portuaria que marcó a una ciudad.","todo su propelente, casi el sismo de Agadir.","~15 kilotones, y ~140.000 vidas para fin de año.","“Fat Man”, ~21 kilotones; ~74.000 vidas.","un solo reactor de 1 GW, durante 24 horas.","79 d. C.: una ciudad sellada en ceniza por 1.700 años.","el estallido aéreo de 2013 sobre Rusia.","el mismo reactor; en un año la energía se acumula ~60×.","arrasó 2.000 km² de bosque siberiano, 1908.","el mayor parque eólico del mundo (10,5 GW).","el mayor parque solar del mundo (21 GW).","el mayor artefacto nuclear jamás: 50 megatones.","la mayor central eléctrica de la Tierra (22,5 GW).","se oyó a 5.000 km; su tsunami se llevó ~36.000, 1883.","todo el arsenal del mundo a la vez.","liberada casi toda como calor.","1815: la erupción más mortífera conocida; su ceniza hambreó al mundo.","todo lo que nuestra especie quema en un año.","","5.000 km³ de roca: la mayor erupción conocida.","el impacto que acabó con los dinosaurios.","el mayor asteroide que golpeó la Tierra, hace 2.000 millones de años.","toda la producción del Sol, durante un segundo.","el calor para vaporizar todos los mares de la Tierra."]},
+ pt:{mag:"Magnitude",enr:"energia ≈",enrEq:"equivalente em energia ≈ M",tnt:"de TNT",lives:"vidas",missing:"ainda desaparecidos",tsu:"tsunami",est:"est.",howOften:"com que frequência:",about:"como",
+  freq:{"-3":"constante, ao seu redor","-2":"constante, ao seu redor","-1":"constante, ao seu redor","0":"incontáveis, todo dia","1":"~8 milhões por ano","2":"~1 milhão por ano","3":"~100.000 por ano","4":"~13.000 por ano","5":"~1.500 por ano","6":"~130 por ano","7":"~15 por ano","8":"~1 por ano","9":"~1 por década","10":"nunca registrado",beyond:"além de qualquer terremoto"},
+  qn:["O maior terremoto já registrado.","O sismo de Sexta-Feira Santa: o 2.º maior da história.","O tsunami, não o sismo, levou quase todas as vidas.","Desencadeou Fukushima; ainda assim, um sismo enorme com poucas vítimas.","Cruzou o Pacífico e atingiu o Havaí.","Códigos de construção rígidos mantiveram o número baixo.","Abalou a filosofia europeia tanto quanto suas cidades.","O terremoto mais mortal da história.","Uma cidade apagada no escuro antes do amanhecer.","Um tsunami local chegou minutos depois.","As escolas, entre as mais atingidas.","Aldeias de montanha isoladas por deslizamentos.","Uma ruptura dupla atravessando duas nações.","Avalanches varreram o acampamento-base do Everest.","Tsunami e liquefação engoliram bairros inteiros.","24 de junho de 2026: um tremor inicial de 7,2 e, 39 segundos depois, o 7,5.","“Apenas” 7,0, mas raso e uma cidade frágil.","Um sismo modesto; uma catástrofe de adobe.","Blocos de concreto soviéticos desabaram num instante.","Uma cidade moderna, e ainda assim suas vias elevadas caíram.","Casas de tijolo e telha desabaram por toda a planície.","Aldeias de adobe no alto do Atlas, difíceis de alcançar.","Um terço da cidade desapareceu, por um 5,8. Raso, pedra sem reforço.","Aldeias remotas de montanha, atingidas antes do amanhecer.","Uma cidade medieval; cientistas foram julgados pelos avisos.","Uma cidade moderna e rica; um único prédio levou quase todas as vidas."],
+  rl:["um batimento","um passo","uma bicicleta a toda velocidade","uma granada de mão","um carro em velocidade de estrada","uma banana de dinamite","uma bomba aérea da 2.ª Guerra","um relâmpago","um avião de passageiros","uma tonelada de TNT","uma bomba anti-bunker","a explosão de Beirute (2020)","um foguete Saturno V","a bomba de Hiroshima","a bomba de Nagasaki","um reator nuclear · um dia","o Vesúvio sepulta Pompeia","o meteoro de Chelyabinsk","um reator nuclear · um ano","a explosão de Tunguska","o parque eólico de Gansu · um ano","o parque solar de Talatan · um ano","a Bomba Czar","a barragem das Três Gargantas · um ano","a erupção do Krakatoa","todas as armas nucleares da Terra","a energia diária de um furacão","a erupção do Tambora","a energia anual da humanidade","uma supererupção de Yellowstone","a supererupção de La Garita","o asteroide de Chicxulub","o impacto de Vredefort","um segundo de luz solar","o suficiente para ferver os oceanos"],
+  rn:["~1 joule, e você sente cada um.","","a energia cinética do ciclista e da bici.","~15 g de TNT, e ainda assim se registra.","sua energia cinética numa colisão.","~meio quilo de TNT.","~100 kg de TNT.","","energia cinética em voo de cruzeiro.","","~15 toneladas de TNT.","a explosão no porto que marcou uma cidade.","todo o seu propelente, quase o sismo de Agadir.","~15 quilotons, e ~140.000 vidas até o fim do ano.","“Fat Man”, ~21 quilotons; ~74.000 vidas.","um único reator de 1 GW, por 24 horas.","79 d.C.: uma cidade selada em cinzas por 1.700 anos.","a explosão aérea de 2013 sobre a Rússia.","o mesmo reator; em um ano a energia acumula ~60×.","arrasou 2.000 km² de floresta siberiana, 1908.","o maior parque eólico do mundo (10,5 GW).","o maior parque solar do mundo (21 GW).","o maior artefato nuclear de todos: 50 megatons.","a maior usina elétrica da Terra (22,5 GW).","ouvida a 5.000 km; seu tsunami levou ~36.000, 1883.","todo o arsenal do mundo de uma vez.","liberada quase toda como calor.","1815: a erupção mais mortal conhecida; sua cinza causou fome no mundo.","tudo o que nossa espécie queima em um ano.","","5.000 km³ de rocha: a maior erupção conhecida.","o impacto que acabou com os dinossauros.","o maior asteroide a atingir a Terra, há 2 bilhões de anos.","toda a produção do Sol, por um segundo.","o calor para vaporizar todos os mares da Terra."]},
+ fr:{mag:"Magnitude",enr:"énergie ≈",enrEq:"équivalent en énergie ≈ M",tnt:"de TNT",lives:"vies",missing:"toujours disparus",tsu:"tsunami",est:"est.",howOften:"fréquence :",about:"comme",
+  freq:{"-3":"constant, tout autour de vous","-2":"constant, tout autour de vous","-1":"constant, tout autour de vous","0":"innombrables, chaque jour","1":"~8 millions par an","2":"~1 million par an","3":"~100 000 par an","4":"~13 000 par an","5":"~1 500 par an","6":"~130 par an","7":"~15 par an","8":"~1 par an","9":"~1 par décennie","10":"jamais enregistré",beyond:"au-delà de tout séisme"},
+  qn:["Le plus grand séisme jamais enregistré.","Le séisme du Vendredi saint : le 2ᵉ plus grand de l'histoire.","Le tsunami, pas le séisme, a pris presque toutes les vies.","A déclenché Fukushima ; pourtant un séisme énorme au bilan faible.","A traversé le Pacifique pour frapper Hawaï.","Des normes de construction strictes ont limité le bilan.","A ébranlé la philosophie européenne autant que ses villes.","Le séisme le plus meurtrier de l'histoire.","Une ville effacée dans le noir avant l'aube.","Un tsunami local a frappé quelques minutes après.","Les écoles parmi les plus touchées.","Des villages de montagne isolés par les glissements.","Une double rupture à travers deux nations.","Des avalanches ont balayé le camp de base de l'Everest.","Tsunami et liquéfaction ont englouti des quartiers entiers.","24 juin 2026 : un choc précurseur de 7,2, puis 39 secondes plus tard le 7,5.","« Seulement » 7,0, mais peu profond et une ville fragile.","Un séisme modeste ; une catastrophe de pisé.","Des barres de béton soviétiques se sont effondrées d'un coup.","Une ville moderne, et ses autoponts se sont quand même écroulés.","Des maisons de brique et de tuile se sont effondrées dans la plaine.","Des villages de pisé en haut de l'Atlas, difficiles d'accès.","Un tiers de la ville disparu, pour un 5,8. Peu profond, pierre non armée.","Des hameaux de montagne isolés, frappés avant l'aube.","Une ville médiévale ; des scientifiques jugés pour les alertes.","Une ville moderne et riche ; un seul immeuble a pris presque toutes les vies."],
+  rl:["un battement de cœur","un pas","un vélo lancé","une grenade à main","une voiture sur autoroute","un bâton de dynamite","une bombe aérienne de la 2ᵈᵉ Guerre","un éclair","un avion de ligne","une tonne de TNT","une bombe anti-bunker","l'explosion de Beyrouth (2020)","une fusée Saturn V","la bombe d'Hiroshima","la bombe de Nagasaki","un réacteur nucléaire · un jour","le Vésuve ensevelit Pompéi","le météore de Tcheliabinsk","un réacteur nucléaire · un an","l'explosion de la Toungouska","le parc éolien de Gansu · un an","le parc solaire de Talatan · un an","la Tsar Bomba","le barrage des Trois-Gorges · un an","l'éruption du Krakatoa","toutes les armes nucléaires de la Terre","l'énergie quotidienne d'un ouragan","l'éruption du Tambora","l'énergie annuelle de l'humanité","une super-éruption de Yellowstone","la super-éruption de La Garita","l'astéroïde de Chicxulub","l'impact de Vredefort","une seconde de soleil","de quoi faire bouillir les océans"],
+  rn:["~1 joule, et vous sentez chacun.","","l'énergie cinétique du cycliste et du vélo.","~15 g de TNT, et toujours enregistrable.","son énergie cinétique dans un choc.","~un demi-kilo de TNT.","~100 kg de TNT.","","énergie cinétique en croisière.","","~15 tonnes de TNT.","l'explosion du port qui a marqué une ville.","tout son ergol, à peu près le séisme d'Agadir.","~15 kilotonnes, et ~140 000 vies avant la fin de l'année.","« Fat Man », ~21 kilotonnes ; ~74 000 vies.","un seul réacteur de 1 GW, pendant 24 heures.","79 apr. J.-C. : une ville scellée sous la cendre pendant 1 700 ans.","l'explosion aérienne de 2013 au-dessus de la Russie.","le même réacteur ; en un an l'énergie s'accumule ~60×.","a rasé 2 000 km² de forêt sibérienne, 1908.","le plus grand parc éolien du monde (10,5 GW).","le plus grand parc solaire du monde (21 GW).","le plus grand engin nucléaire jamais conçu : 50 mégatonnes.","la plus grande centrale de la Terre (22,5 GW).","entendue à 5 000 km ; son tsunami a pris ~36 000 vies, 1883.","tout l'arsenal mondial d'un coup.","libérée surtout sous forme de chaleur.","1815 : l'éruption la plus meurtrière connue ; sa cendre a affamé le monde.","tout ce que notre espèce brûle en un an.","","5 000 km³ de roche : la plus grande éruption connue.","l'impact qui a mis fin aux dinosaures.","le plus grand astéroïde à frapper la Terre, il y a 2 milliards d'années.","toute la production du Soleil, en une seconde.","la chaleur pour vaporiser toutes les mers de la Terre."]},
+ de:{mag:"Magnitude",enr:"Energie ≈",enrEq:"Energie-Äquivalent ≈ M",tnt:"TNT",lives:"Menschenleben",missing:"noch vermisst",tsu:"Tsunami",est:"gesch.",howOften:"wie oft:",about:"etwa",
+  freq:{"-3":"ständig, überall um dich herum","-2":"ständig, überall um dich herum","-1":"ständig, überall um dich herum","0":"unzählige, jeden Tag","1":"~8 Millionen pro Jahr","2":"~1 Million pro Jahr","3":"~100.000 pro Jahr","4":"~13.000 pro Jahr","5":"~1.500 pro Jahr","6":"~130 pro Jahr","7":"~15 pro Jahr","8":"~1 pro Jahr","9":"~1 pro Jahrzehnt","10":"nie aufgezeichnet",beyond:"jenseits jedes Erdbebens"},
+  qn:["Das größte je aufgezeichnete Erdbeben.","Das Karfreitagsbeben: das zweitgrößte aller Zeiten.","Der Tsunami, nicht das Beben, forderte die meisten Leben.","Löste Fukushima aus; dennoch ein riesiges Beben mit geringer Opferzahl.","Überquerte den Pazifik bis nach Hawaii.","Strenge Bauvorschriften hielten die Zahl niedrig.","Erschütterte die europäische Philosophie so sehr wie ihre Städte.","Das tödlichste Erdbeben der Geschichte.","Eine Stadt, ausgelöscht im Dunkel vor der Dämmerung.","Ein lokaler Tsunami traf wenige Minuten später.","Schulen zählten zu den am härtesten getroffenen.","Bergdörfer durch Erdrutsche abgeschnitten.","Eine Doppelruptur quer durch zwei Nationen.","Lawinen fegten das Everest-Basislager hinweg.","Tsunami und Bodenverflüssigung verschlangen ganze Viertel.","24. Juni 2026: ein 7,2-Vorbeben, 39 Sekunden später das 7,5.","„Nur“ 7,0, aber flach und eine fragil gebaute Stadt.","Ein bescheidenes Beben; eine Lehmziegel-Katastrophe.","Sowjetische Betonblocks brachen augenblicklich zusammen.","Eine moderne Stadt, und doch stürzten ihre Hochstraßen ein.","Häuser aus Ziegel und Ton brachen über die Ebene hinweg ein.","Lehmdörfer hoch im Atlas, schwer erreichbar.","Ein Drittel der Stadt verschwunden, durch ein 5,8. Flach, unbewehrter Stein.","Abgelegene Bergweiler, getroffen vor der Dämmerung.","Eine mittelalterliche Stadt; Wissenschaftler standen wegen der Warnungen vor Gericht.","Eine wohlhabende moderne Stadt; ein einziges Gebäude forderte die meisten Leben."],
+  rl:["ein Herzschlag","ein Schritt","ein rasendes Fahrrad","eine Handgranate","ein Auto bei Autobahntempo","eine Stange Dynamit","eine Fliegerbombe aus dem 2. Weltkrieg","ein Blitz","ein Verkehrsflugzeug","eine Tonne TNT","eine Bunkerbrecher-Bombe","die Explosion von Beirut (2020)","eine Saturn-V-Rakete","die Hiroshima-Bombe","die Nagasaki-Bombe","ein Kernreaktor · ein Tag","der Vesuv begräbt Pompeji","der Meteor von Tscheljabinsk","ein Kernreaktor · ein Jahr","die Tunguska-Explosion","der Windpark Gansu · ein Jahr","der Solarpark Talatan · ein Jahr","die Zar-Bombe","der Drei-Schluchten-Damm · ein Jahr","der Ausbruch des Krakatau","alle Atomwaffen der Erde","die Tagesenergie eines Hurrikans","der Ausbruch des Tambora","der Jahresenergiebedarf der Menschheit","eine Yellowstone-Supereruption","die La-Garita-Supereruption","der Chicxulub-Asteroid","der Vredefort-Einschlag","eine Sekunde Sonnenlicht","genug, um die Ozeane zu verdampfen"],
+  rn:["~1 Joule, und du spürst jeden.","","die Bewegungsenergie von Fahrer und Rad.","~15 g TNT, und trotzdem messbar.","seine Bewegungsenergie bei einem Aufprall.","~ein halbes Kilo TNT.","~100 kg TNT.","","Bewegungsenergie im Reiseflug.","","~15 Tonnen TNT.","die Hafenexplosion, die eine Stadt zeichnete.","ihr gesamter Treibstoff, etwa das Agadir-Beben.","~15 Kilotonnen, und ~140.000 Leben bis Jahresende.","„Fat Man“, ~21 Kilotonnen; ~74.000 Leben.","ein einzelner 1-GW-Reaktor, 24 Stunden lang.","79 n. Chr.: eine Stadt 1.700 Jahre in Asche versiegelt.","die Luftexplosion von 2013 über Russland.","derselbe Reaktor; in einem Jahr summiert sich die Energie ~60×.","ebnete 2.000 km² sibirischen Wald ein, 1908.","der größte Windpark der Welt (10,5 GW).","der größte Solarpark der Welt (21 GW).","das größte je gebaute Nukleargerät: 50 Megatonnen.","das größte Kraftwerk der Erde (22,5 GW).","5.000 km weit zu hören; sein Tsunami forderte ~36.000, 1883.","das gesamte Arsenal der Welt auf einmal.","größtenteils als Wärme freigesetzt.","1815: der tödlichste bekannte Ausbruch; seine Asche ließ die Welt hungern.","alles, was unsere Spezies in einem Jahr verbrennt.","","5.000 km³ Gestein: der größte bekannte Ausbruch.","der Einschlag, der die Dinosaurier beendete.","der größte Asteroid, der je die Erde traf, vor 2 Milliarden Jahren.","die gesamte Leistung der Sonne, für eine Sekunde.","die Wärme, um jedes Meer der Erde zu verdampfen."]},
+ nl:{mag:"Magnitude",enr:"energie ≈",enrEq:"energie-equivalent ≈ M",tnt:"TNT",lives:"levens",missing:"nog vermist",tsu:"tsunami",est:"gesch.",howOften:"hoe vaak:",about:"ongeveer",
+  freq:{"-3":"constant, overal om je heen","-2":"constant, overal om je heen","-1":"constant, overal om je heen","0":"ontelbaar, elke dag","1":"~8 miljoen per jaar","2":"~1 miljoen per jaar","3":"~100.000 per jaar","4":"~13.000 per jaar","5":"~1.500 per jaar","6":"~130 per jaar","7":"~15 per jaar","8":"~1 per jaar","9":"~1 per decennium","10":"nooit geregistreerd",beyond:"voorbij elke aardbeving"},
+  qn:["De grootste aardbeving ooit geregistreerd.","De Goede Vrijdag-beving: de op één na grootste ooit.","De tsunami, niet de beving, eiste de meeste levens.","Veroorzaakte Fukushima; toch een enorme beving met een laag dodental.","Stak de Stille Oceaan over en trof Hawaï.","Strenge bouwvoorschriften hielden het aantal laag.","Schudde de Europese filosofie net zo hard als haar steden.","De dodelijkste aardbeving in de geschiedenis.","Een stad uitgewist in het donker voor zonsopgang.","Een lokale tsunami sloeg minuten later toe.","Scholen behoorden tot het zwaarst getroffen.","Bergdorpen afgesneden door aardverschuivingen.","Een dubbele breuk dwars door twee landen.","Lawines veegden het Everest-basiskamp weg.","Tsunami én bodemvervloeiing verzwolgen hele wijken.","24 juni 2026: een voorschok van 7,2 en 39 seconden later de 7,5.","“Slechts” 7,0, maar ondiep en een fragiel gebouwde stad.","Een bescheiden beving; een ramp van leemsteen.","Sovjet-betonblokken stortten in een oogwenk in.","Een moderne stad, en toch vielen haar viaducten om.","Huizen van baksteen en dakpan stortten over de vlakte in.","Leemdorpen hoog in de Atlas, moeilijk te bereiken.","Een derde van de stad weg, door een 5,8. Ondiep, ongewapend steen.","Afgelegen bergehuchten, getroffen voor zonsopgang.","Een middeleeuwse stad; wetenschappers werden vervolgd om de waarschuwingen.","Een welvarende moderne stad; één gebouw eiste de meeste levens."],
+  rl:["een hartslag","een voetstap","een razendsnelle fiets","een handgranaat","een auto op snelwegsnelheid","een staaf dynamiet","een vliegtuigbom uit WO II","een bliksemflits","een passagiersvliegtuig","een ton TNT","een bunkerbreker-bom","de explosie van Beiroet (2020)","een Saturn V-raket","de Hiroshima-bom","de Nagasaki-bom","een kernreactor · één dag","de Vesuvius bedelft Pompeï","de meteoor van Tsjeljabinsk","een kernreactor · één jaar","de Toengoeska-explosie","het windpark Gansu · één jaar","het zonnepark Talatan · één jaar","de Tsar Bomba","de Drieklovendam · één jaar","de uitbarsting van Krakatau","alle kernwapens op aarde","de dagelijkse energie van een orkaan","de uitbarsting van Tambora","de jaarlijkse energie van de mensheid","een Yellowstone-superuitbarsting","de La Garita-superuitbarsting","de Chicxulub-asteroïde","de Vredefort-inslag","één seconde zonlicht","genoeg om de oceanen te koken"],
+  rn:["~1 joule, en je voelt er elke een.","","de bewegingsenergie van fietser en fiets.","~15 g TNT, en toch meetbaar.","zijn bewegingsenergie bij een botsing.","~een halve kilo TNT.","~100 kg TNT.","","bewegingsenergie tijdens kruisvlucht.","","~15 ton TNT.","de havenexplosie die een stad tekende.","al haar stuwstof, ongeveer de Agadir-beving.","~15 kiloton, en ~140.000 levens tegen het jaareinde.","“Fat Man”, ~21 kiloton; ~74.000 levens.","één 1-GW-reactor, 24 uur lang.","79 n.Chr.: een stad 1.700 jaar in as verzegeld.","de luchtexplosie van 2013 boven Rusland.","dezelfde reactor; in een jaar stapelt de energie ~60× op.","verwoestte 2.000 km² Siberisch bos, 1908.","het grootste windpark ter wereld (10,5 GW).","het grootste zonnepark ter wereld (21 GW).","het grootste kernwapen ooit: 50 megaton.","de grootste energiecentrale op aarde (22,5 GW).","5.000 km ver te horen; de tsunami eiste ~36.000, 1883.","het hele wereldarsenaal in één keer.","grotendeels vrijgekomen als warmte.","1815: de dodelijkste bekende uitbarsting; haar as liet de wereld hongeren.","alles wat onze soort in een jaar verbrandt.","","5.000 km³ gesteente: de grootste bekende uitbarsting.","de inslag die de dinosauriërs beëindigde.","de grootste asteroïde die ooit de aarde trof, 2 miljard jaar geleden.","de volledige output van de zon, in één seconde.","de warmte om elke zee op aarde te verdampen."]},
+ ar:{mag:"القوة",enr:"الطاقة ≈",enrEq:"مكافئ الطاقة ≈ M",tnt:"من TNT",lives:"روح",missing:"ما زالوا مفقودين",tsu:"تسونامي",est:"تقديري",howOften:"كم مرة:",about:"نحو",
+  freq:{"-3":"مستمر، في كل مكان حولك","-2":"مستمر، في كل مكان حولك","-1":"مستمر، في كل مكان حولك","0":"لا تُحصى، كل يوم","1":"~8 ملايين سنويًا","2":"~مليون سنويًا","3":"~100,000 سنويًا","4":"~13,000 سنويًا","5":"~1,500 سنويًا","6":"~130 سنويًا","7":"~15 سنويًا","8":"~1 سنويًا","9":"~1 كل عقد","10":"لم يُسجَّل قط",beyond:"أبعد من أي زلزال"},
+  qn:["أكبر زلزال سُجِّل على الإطلاق.","زلزال الجمعة العظيمة: ثاني أكبر زلزال في التاريخ.","التسونامي، لا الزلزال، حصد معظم الأرواح.","تسبّب في كارثة فوكوشيما؛ ومع ذلك زلزال هائل بحصيلة منخفضة.","عبر المحيط الهادئ ليضرب هاواي.","قوانين بناء صارمة أبقت الحصيلة منخفضة.","هزّ الفلسفة الأوروبية بقدر ما هزّ مدنها.","أشد زلزال فتكًا في تاريخ البشرية.","مدينة محيت في العتمة قبيل الفجر.","تسونامي محلي ضرب بعد دقائق.","كانت المدارس من بين الأشد تضررًا.","قرى جبلية عزلتها الانهيارات الأرضية.","تصدّع مزدوج عبر دولتين.","انهيارات ثلجية اجتاحت معسكر إيفرست الأساسي.","تسونامي وتسيّل للتربة ابتلعا أحياءً بأكملها.","24 يونيو 2026: هزة تمهيدية 7.2، ثم بعد 39 ثانية هزة 7.5.","«مجرد» 7.0، لكنه ضحل ومدينة هشة البناء.","زلزال متواضع؛ وكارثة من الطوب الطيني.","كتل خرسانية سوفيتية انهارت في لحظة.","مدينة حديثة، ومع ذلك سقطت جسورها العلوية.","بيوت من الطوب والقرميد انهارت في كل السهل.","قرى طينية عالية في الأطلس، يصعب الوصول إليها.","ثلث المدينة اختفى، بفعل 5.8. ضحل، وحجر غير مُسلَّح.","قرى جبلية نائية، ضُربت قبيل الفجر.","مدينة من العصور الوسطى؛ حوكم علماء بسبب التحذيرات.","مدينة حديثة ثرية؛ مبنى واحد حصد معظم الأرواح."],
+  rl:["نبضة قلب","خطوة قدم","دراجة مسرعة","قنبلة يدوية","سيارة بسرعة الطريق السريع","عود ديناميت","قنبلة جوية من الحرب العالمية الثانية","صاعقة برق","طائرة ركاب","طن من TNT","قنبلة خارقة للتحصينات","انفجار بيروت (2020)","صاروخ ساتورن 5","قنبلة هيروشيما","قنبلة ناغازاكي","مفاعل نووي · يوم واحد","بركان فيزوف يدفن بومبي","نيزك تشيليابينسك","مفاعل نووي · سنة واحدة","انفجار تونغوسكا","مزرعة غانسو للرياح · سنة","حديقة تالاتان الشمسية · سنة","قنبلة القيصر","سد الخوانق الثلاثة · سنة","ثوران كراكاتوا","كل سلاح نووي على الأرض","الطاقة اليومية لإعصار","ثوران تامبورا","الطاقة السنوية للبشرية","ثوران عملاق ليلوستون","ثوران لا غاريتا العملاق","كويكب تشيكشولوب","ارتطام فريدفورت","ثانية واحدة من ضوء الشمس","ما يكفي لغلي المحيطات"],
+  rn:["~1 جول، وتشعر بكل واحدة.","","الطاقة الحركية للراكب والدراجة.","~15 غ من TNT، ومع ذلك يُسجَّل.","طاقتها الحركية في حادث تصادم.","~نصف كيلو من TNT.","~100 كغ من TNT.","","الطاقة الحركية أثناء الطيران.","","~15 طنًا من TNT.","انفجار المرفأ الذي ترك ندبة في مدينة.","كل وقوده، نحو زلزال أغادير.","~15 كيلوطنًا، و~140,000 روح بنهاية العام.","«الرجل البدين»، ~21 كيلوطنًا؛ ~74,000 روح.","مفاعل واحد بقدرة 1 غيغاواط، لمدة 24 ساعة.","عام 79م: مدينة خُتمت تحت الرماد 1,700 عام.","الانفجار الجوي عام 2013 فوق روسيا.","المفاعل نفسه؛ في سنة تتراكم الطاقة نحو 60 ضعفًا.","سوّى 2,000 كم² من غابات سيبيريا، 1908.","أكبر مزرعة رياح في العالم (10.5 غيغاواط).","أكبر حديقة شمسية في العالم (21 غيغاواط).","أضخم جهاز نووي صُنع: 50 ميغاطنًا.","أكبر محطة طاقة على الأرض (22.5 غيغاواط).","سُمع على بعد 5,000 كم؛ تسوناميه حصد ~36,000، 1883.","ترسانة العالم كلها دفعة واحدة.","تتحرر معظمها على شكل حرارة.","1815: أشد ثوران معروف فتكًا؛ رماده جوّع العالم.","كل ما يحرقه جنسنا في سنة.","","5,000 كم³ من الصخر: أكبر ثوران معروف.","الارتطام الذي أنهى الديناصورات.","أكبر كويكب يضرب الأرض، قبل ملياري عام.","كامل إنتاج الشمس، لثانية واحدة.","الحرارة اللازمة لتبخير كل بحر على الأرض."]}
+};
+let T=Object.assign({},DICT.en,TT.en);
+
+const Q=[
+ {n:"Valdivia",cc:"cl",place:"Chile",year:1960,M:9.5,deaths:1655,tsu:true,note:"The largest earthquake ever recorded."},
+ {n:"Great Alaska",cc:"us",place:"Alaska, USA",year:1964,M:9.2,deaths:131,tsu:true,note:"The Good Friday quake — 2nd largest ever."},
+ {n:"Sumatra–Andaman",cc:"id",place:"Indian Ocean",year:2004,M:9.1,deaths:227898,tsu:true,note:"The tsunami, not the quake, took most lives."},
+ {n:"Tōhoku",cc:"jp",place:"Japan",year:2011,M:9.1,deaths:19759,tsu:true,note:"Triggered Fukushima — yet a huge quake with a low toll."},
+ {n:"Kamchatka",cc:"ru",place:"Russia",year:1952,M:9.0,deaths:2300,tsu:true,note:"Crossed the Pacific to strike Hawaii."},
+ {n:"Maule",cc:"cl",place:"Chile",year:2010,M:8.8,deaths:525,tsu:true,note:"Strict building codes kept the toll low."},
+ {n:"Lisbon",cc:"pt",place:"Portugal",year:1755,M:8.5,deaths:50000,tsu:true,est:true,note:"Shook European philosophy as much as its cities."},
+ {n:"Shaanxi",cc:"cn",place:"China",year:1556,M:8.0,deaths:830000,tsu:false,est:true,note:"The deadliest earthquake in human history."},
+ {n:"Tangshan",cc:"cn",place:"China",year:1976,M:7.6,deaths:242000,tsu:false,note:"A city erased in the dark before dawn."},
+ {n:"Messina",cc:"it",place:"Italy",year:1908,M:7.1,deaths:82000,tsu:true,note:"A local tsunami struck minutes after."},
+ {n:"Wenchuan",cc:"cn",place:"Sichuan, China",year:2008,M:7.9,deaths:87587,tsu:false,note:"Schools among the hardest hit."},
+ {n:"Kashmir",cc:"pk",place:"Pakistan",year:2005,M:7.6,deaths:87351,tsu:false,note:"Mountain villages cut off by landslides."},
+ {n:"Türkiye–Syria",cc:"tr",place:"Türkiye / Syria",year:2023,M:7.8,deaths:62000,tsu:false,note:"A doublet rupture across two nations."},
+ {n:"Gorkha",cc:"np",place:"Nepal",year:2015,M:7.8,deaths:8964,tsu:false,note:"Avalanches swept Everest base camp."},
+ {n:"Sulawesi",cc:"id",place:"Indonesia",year:2018,M:7.5,deaths:4340,tsu:true,note:"Tsunami plus liquefaction swallowed neighborhoods."},
+ {n:"Venezuela",cc:"ve",place:"Yaracuy, Venezuela",year:2026,M:7.5,deaths:1450,missing:68900,tsu:false,hook:true,note:"24 June 2026 — a 7.2 foreshock, then 39 seconds later the 7.5."},
+ {n:"Haiti",cc:"ht",place:"Haiti",year:2010,M:7.0,deaths:160000,tsu:false,note:"“Only” 7.0 — but shallow, and a city built fragile."},
+ {n:"Bam",cc:"ir",place:"Iran",year:2003,M:6.6,deaths:34000,tsu:false,note:"A modest quake; a mud-brick catastrophe."},
+ {n:"Spitak",cc:"am",place:"Armenia",year:1988,M:6.8,deaths:25000,tsu:false,note:"Soviet concrete apartment blocks pancaked instantly."},
+ {n:"Great Hanshin",cc:"jp",place:"Kobe, Japan",year:1995,M:6.9,deaths:6434,tsu:false,note:"A modern city — and its expressways still toppled."},
+ {n:"Yogyakarta",cc:"id",place:"Java, Indonesia",year:2006,M:6.4,deaths:5749,tsu:false,note:"Brick-and-tile homes collapsed across the plain."},
+ {n:"Al Haouz",cc:"ma",place:"Morocco",year:2023,M:6.9,deaths:2960,tsu:false,note:"Mudbrick villages high in the Atlas, hard to reach."},
+ {n:"Agadir",cc:"ma",place:"Morocco",year:1960,M:5.8,deaths:13000,tsu:false,note:"A third of the city gone — from a 5.8. Shallow, unreinforced stone."},
+ {n:"Paktika",cc:"af",place:"Afghanistan",year:2022,M:6.2,deaths:1100,tsu:false,note:"Remote mountain hamlets, struck before dawn."},
+ {n:"L'Aquila",cc:"it",place:"Italy",year:2009,M:6.3,deaths:309,tsu:false,note:"A medieval town; scientists were tried over the warnings."},
+ {n:"Christchurch",cc:"nz",place:"New Zealand",year:2011,M:6.2,deaths:185,tsu:false,note:"A wealthy modern city — one building took most of the lives."},
+];
+const REF=[
+ {E:1,label:"a heartbeat",note:"~1 joule — and you feel every one.",heart:true},
+ {E:300,label:"a footstep",note:""},
+ {E:1620,label:"a speeding bicycle",note:"the kinetic energy of rider and bike."},
+ {E:6.3e4,label:"a hand grenade",note:"~15 g of TNT — and still recordable."},
+ {E:6.75e5,label:"a car at highway speed",note:"its kinetic energy in a crash."},
+ {E:2.0e6,label:"a stick of dynamite",note:"~half a kilo of TNT."},
+ {E:4.18e8,label:"a WWII aerial bomb",note:"~100 kg of TNT."},
+ {E:1e9,label:"a lightning bolt",note:""},
+ {E:2.5e9,label:"a jet airliner",note:"cruising kinetic energy."},
+ {E:4.184e9,label:"one ton of TNT",note:""},
+ {E:6.3e10,label:"a bunker-buster bomb",note:"~15 tons of TNT."},
+ {E:2.9e12,label:"the Beirut blast (2020)",cc:"lb",deaths:220,note:"the port explosion that scarred a city."},
+ {E:2.8e13,label:"a Saturn V rocket",cc:"us",note:"all its propellant — about the Agadir quake."},
+ {E:6.3e13,label:"the Hiroshima bomb",cc:"jp",deaths:140000,note:"~15 kilotons — and ~140,000 lives by year's end."},
+ {E:8.79e13,label:"the Nagasaki bomb",cc:"jp",deaths:74000,note:"“Fat Man,” ~21 kilotons — ~74,000 lives."},
+ {E:8.64e13,label:"a nuclear reactor · one day",note:"a single 1-GW reactor, running 24 hours."},
+ {E:1e17,label:"Vesuvius buries Pompeii",cc:"it",deaths:2000,note:"79 AD — a city sealed in ash for 1,700 years."},
+ {E:2.1e15,label:"the Chelyabinsk meteor",cc:"ru",note:"the 2013 airburst over Russia."},
+ {E:3.154e16,label:"a nuclear reactor · one year",note:"the same reactor — a year of energy piles up ~60×."},
+ {E:5e16,label:"the Tunguska blast",cc:"ru",note:"flattened 2,000 km² of Siberian forest, 1908."},
+ {E:8.24e16,label:"Gansu wind farm · one year",cc:"cn",note:"the world's largest wind farm (10.5 GW)."},
+ {E:1.19e17,label:"Talatan solar park · one year",cc:"cn",note:"the world's largest solar park (21 GW)."},
+ {E:2.09e17,label:"Tsar Bomba",cc:"ru",note:"the largest nuclear device ever — 50 megatons."},
+ {E:3.6e17,label:"Three Gorges dam · one year",cc:"cn",note:"the largest power station on Earth (22.5 GW)."},
+ {E:8.4e17,label:"the Krakatoa eruption",cc:"id",deaths:36000,note:"heard 5,000 km away; its tsunami took ~36,000, 1883."},
+ {E:2.7e19,label:"every nuclear weapon on Earth",note:"the world's entire arsenal at once."},
+ {E:5.2e19,label:"a hurricane's daily energy",note:"mostly released as heat."},
+ {E:1.4e20,label:"the Tambora eruption",cc:"id",deaths:92000,note:"1815 — the deadliest eruption known; its ash starved the world."},
+ {E:6.3e20,label:"humanity's yearly energy",note:"everything our species burns in a year."},
+ {E:1e21,label:"a Yellowstone supereruption",cc:"us",note:""},
+ {E:1.0e22,label:"the La Garita supereruption",cc:"us",note:"5,000 km³ of rock — the largest eruption known."},
+ {E:4.2e23,label:"the Chicxulub asteroid",cc:"mx",note:"the impact that ended the dinosaurs."},
+ {E:1.0e25,label:"the Vredefort impact",cc:"za",note:"the largest asteroid ever to strike Earth, 2 billion years ago."},
+ {E:3.83e26,label:"one second of sunlight",note:"the Sun's entire output, for one second."},
+ {E:3.2e27,label:"enough to boil the oceans",note:"the heat to vaporize every sea on Earth."},
+];
+
+const cv=document.getElementById("cv"), tip=document.getElementById("tip");
+const ctx=cv.getContext("2d");
+let W,H,dpr,cx,cy,rMax,r0,base,zoom=1;
+const th0=-Math.PI/2, perTurn=15, dth=2*Math.PI/perTurn, G=Math.pow(3.22,1/perTurn);
+const dOf=M=>5*(M+3);
+const R=t=>r0*Math.pow(G,t);
+const th=t=>th0+t*dth;
+const Rin=t=>t>=perTurn?R(t-perTurn):r0*0.4;
+const PX=(r,a)=>cx+r*zoom*Math.cos(a), PY=(r,a)=>cy+r*zoom*Math.sin(a);
+function seed(i){let x=Math.sin(i*127.1+9.7)*43758.5;return x-Math.floor(x);}
+const mOfE=E=>(Math.log10(E)-4.8)/1.5;
+REF.forEach(r=>{r.M=mOfE(r.E);r.phantom=r.M>10;});
+
+const SUP={"-":"⁻","0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹"};
+const sup=n=>(""+n).split("").map(c=>SUP[c]||c).join("");
+const eJ=M=>Math.pow(10,1.5*M+4.8);
+function fmtJ(x){if(x<1000)return x.toFixed(0)+" J";const e=Math.floor(Math.log10(x));
+  return (x/Math.pow(10,e)).toFixed(1)+"×10"+sup(e)+" J";}
+function fmtTNT(E){const g=E/4184;const U=[["g",1],["kg",1e3],["t",1e6],["kt",1e9],["Mt",1e12],["Gt",1e15],["Tt",1e18],["Pt",1e21]];
+  let u=U[0];for(const x of U)if(g>=x[1])u=x;const v=g/u[1];
+  return (v>=100?Math.round(v).toLocaleString():v.toPrecision(2))+" "+u[0];}
+const energyLine=E=>E<1000?fmtJ(E):fmtTNT(E)+" "+(T.tnt||"of TNT");
+const FREQ={"-3":"constant — all around you","-2":"constant — all around you","-1":"constant — all around you",
+ "0":"countless, every day","1":"~8 million a year","2":"~1 million a year","3":"~100,000 a year",
+ "4":"~13,000 a year","5":"~1,500 a year","6":"~130 a year","7":"~15 a year","8":"~1 a year",
+ "9":"about 1 per decade","10":"never recorded"};
+function freqTxt(M){const f=(T&&T.freq)||FREQ;const m=Math.round(M);if(m>10)return f.beyond||"beyond any earthquake";return f[Math.max(-3,Math.min(10,m))]||"";}
+function nearestRefIdx(M){let bi=0,bd=1e9;REF.forEach((r,i)=>{const d=Math.abs(r.M-M);if(d<bd){bd=d;bi=i;}});return bi;}
+
+function layout(){
+  W=window.innerWidth; H=window.innerHeight;
+  dpr=window.devicePixelRatio||1; cv.width=W*dpr; cv.height=H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  cx=W*0.5; cy=H*0.5; rMax=Math.min(W,H)*0.46; r0=rMax/Math.pow(G,65);
+  // Lay out + gently de-overlap in a FIXED reference frame (zoom=1), then scale by zoom.
+  // Reference positions don't depend on zoom, so the arrangement is stable — it only scales, never drifts/fights.
+  const WX=(r,a)=>cx+r*Math.cos(a), WY=(r,a)=>cy+r*Math.sin(a);
+  const all=[];
+  Q.forEach((q,i)=>{const t=dOf(q.M),a=th(t)+(seed(i)-0.5)*0.05,
+      rad=Rin(t)+(0.18+0.64*seed(i+99))*(R(t)-Rin(t));
+    q._a=a;q._ra=rad;q._sz=Math.max(2.6,Math.min(27,0.0285*Math.sqrt(q.deaths)));
+    q._x=WX(rad,a);q._y=WY(rad,a);all.push(q);});
+  REF.forEach((rf,i)=>{const t=dOf(rf.M),a=th(t)+(seed(i*7+3)-0.5)*0.05,
+      rad=Rin(t)+(0.18+0.64*seed(i*7+8))*(R(t)-Rin(t));
+    rf._a=a;rf._ra=rad;rf._raw=rf.deaths?0.0285*Math.sqrt(rf.deaths):0;
+    rf._sz=rf.deaths?Math.max(4.6,rf._raw):4.2;
+    rf._x=WX(rad,a);rf._y=WY(rad,a);if(!rf.heart)all.push(rf);});
+  for(let it=0;it<90;it++){
+    for(let i=0;i<all.length;i++){const A=all[i];
+      for(let j=i+1;j<all.length;j++){const B=all[j];
+        let dx=B._x-A._x,dy=B._y-A._y,d=Math.hypot(dx,dy)||0.01,min=A._sz+B._sz+3;
+        if(d<min){const p=(min-d)/2/d;A._x-=dx*p;A._y-=dy*p;B._x+=dx*p;B._y+=dy*p;}}}
+    for(const m of all){const ax=WX(m._ra,m._a),ay=WY(m._ra,m._a);
+      m._x+=(ax-m._x)*0.05;m._y+=(ay-m._y)*0.05;
+      // never stray more than ~a third of the local radius from home → stays on its magnitude line
+      const maxD=0.30*m._ra,dx=m._x-ax,dy=m._y-ay,d=Math.hypot(dx,dy);
+      if(d>maxD){const s=maxD/d;m._x=ax+dx*s;m._y=ay+dy*s;}}
+  }
+  Q.forEach(q=>{q.x=cx+(q._x-cx)*zoom;q.y=cy+(q._y-cy)*zoom;q.r=q._sz*zoom;
+    if(q.missing)q.halo=Math.max(q.r+3,0.0285*Math.sqrt(q.deaths+q.missing)*zoom);});
+  REF.forEach(rf=>{rf.x=cx+(rf._x-cx)*zoom;rf.y=cy+(rf._y-cy)*zoom;
+    rf.r=rf.heart?4.2:(rf.deaths?Math.max(4.6,rf._raw*zoom):4.2);});
+  drawBase(); updateScaleLabel();
+}
+
+function pearlFill(x,y,r,kind){
+  const g=ctx.createRadialGradient(x-r*0.36,y-r*0.36,r*0.1,x,y,r);
+  if(kind==="cool"){g.addColorStop(0,"#f4ffff");g.addColorStop(.42,"#aee6ee");g.addColorStop(1,"#2f8a99");}
+  else if(kind==="coral"){g.addColorStop(0,"#ffe9e2");g.addColorStop(.42,"#ff8f73");g.addColorStop(1,"#bf3a26");}
+  else{g.addColorStop(0,"#fff6ea");g.addColorStop(.42,"#e6c594");g.addColorStop(1,"#96702f");}
+  return g;
+}
+const kindOf=q=>q.hook?"coral":q.tsu?"cool":"earth";
+
+function drawBase(){
+  base=document.createElement("canvas"); base.width=W*dpr; base.height=H*dpr;
+  const b=base.getContext("2d"); b.setTransform(dpr,0,0,dpr,0,0);
+  for(let i=0;i<110;i++){const x=seed(i*3)*W,y=seed(i*3+1)*H,rr=seed(i*3+2)*1.4+0.3;
+    b.fillStyle="rgba(150,220,230,"+(0.04+seed(i)*0.05)+")";b.beginPath();b.arc(x,y,rr,0,7);b.fill();}
+
+  b.beginPath();
+  for(let t=perTurn;t<=65;t+=0.05){const x=PX(R(t),th(t)),y=PY(R(t),th(t));t===perTurn?b.moveTo(x,y):b.lineTo(x,y);}
+  (function(){const a=th(65),ro=R(65),ri=Rin(65),rm=(ro+ri)/2;
+    b.quadraticCurveTo(PX(rm,a-0.2),PY(rm,a-0.2),PX(ri,a),PY(ri,a));})();
+  for(let t=65-0.05;t>=perTurn;t-=0.05){b.lineTo(PX(Rin(t),th(t)),PY(Rin(t),th(t)));}
+  (function(){const a=th(perTurn),ro=R(perTurn),ri=Rin(perTurn),rm=(ro+ri)/2;
+    b.quadraticCurveTo(PX(rm,a-0.2),PY(rm,a-0.2),PX(ro,a),PY(ro,a));})();
+  b.closePath();
+  const g=b.createRadialGradient(cx,cy,R(perTurn)*0.5,cx,cy,rMax);
+  g.addColorStop(0,"rgba(120,180,190,.10)");g.addColorStop(.5,"rgba(90,160,175,.16)");
+  g.addColorStop(.82,"rgba(150,210,220,.22)");g.addColorStop(1,"rgba(220,245,250,.30)");
+  b.fillStyle=g;b.fill();
+
+  function septum(t,col,lw){const a=th(t),ro=R(t),ri=Rin(t),rm=(ro+ri)/2,bow=0.2;
+    b.strokeStyle=col;b.lineWidth=lw;b.beginPath();b.moveTo(PX(ri,a),PY(ri,a));
+    b.quadraticCurveTo(PX(rm,a-bow),PY(rm,a-bow),PX(ro,a),PY(ro,a));b.stroke();}
+  for(let t=perTurn+1;t<=65;t++) if(t%5) septum(t,"rgba(190,230,235,.12)",1);
+  for(let t=perTurn;t<=65;t+=5) septum(t,"rgba(210,245,250,.4)",1.6);
+  for(let t=70;t<=95;t+=5) septum(t,"rgba(170,215,225,.16)",1);
+
+  b.strokeStyle="rgba(225,248,252,.5)";b.lineWidth=1.6;b.beginPath();let st=false;
+  for(let t=-3;t<=65;t+=0.04){const x=PX(R(t),th(t)),y=PY(R(t),th(t));st?b.lineTo(x,y):b.moveTo(x,y);st=true;}b.stroke();
+  b.strokeStyle="rgba(245,255,255,.7)";b.lineWidth=2.4;
+  (function(){const a=th(65),ro=R(65),ri=Rin(65),rm=(ro+ri)/2,bow=0.2;
+    b.beginPath();b.moveTo(PX(ri,a),PY(ri,a));
+    b.quadraticCurveTo(PX(rm,a-bow),PY(rm,a-bow),PX(ro,a),PY(ro,a));b.stroke();})();
+  b.strokeStyle="rgba(180,225,235,.35)";b.lineWidth=1.2;b.setLineDash([2,5]);b.beginPath();st=false;
+  for(let t=65;t<=97;t+=0.06){const x=PX(R(t),th(t)),y=PY(R(t),th(t));
+    if(x<-40||x>W+40||y<-40||y>H+40)break;st?b.lineTo(x,y):b.moveTo(x,y);st=true;}b.stroke();b.setLineDash([]);
+
+  b.font="600 11px ui-monospace,monospace";
+  for(let M=-3;M<=16;M++){const t=dOf(M),a=th(t),x=PX(R(t),a),y=PY(R(t),a);
+    if(x<6||x>W-6||y<6||y>H-6)continue;
+    if(Math.hypot(x-cx,y-cy)<26)continue;
+    const lx=x+Math.cos(a)*15,ly=y+Math.sin(a)*15;
+    b.fillStyle=M>10?"rgba(150,205,215,.55)":M<0?"rgba(195,230,236,.5)":"rgba(200,235,240,.72)";
+    b.textAlign=Math.cos(a)<-.25?"right":Math.cos(a)>.25?"left":"center";
+    b.textBaseline="middle";b.fillText("M"+M,lx,ly);}
+
+  REF.forEach(rf=>{if(rf.heart)return;const x=rf.x,y=rf.y,s=rf.r;
+    if(x<-s-12||x>W+s+12||y<-s-12||y>H+s+12)return;
+    b.save();b.translate(x,y);
+    b.fillStyle=rf.phantom?"rgba(255,238,190,.95)":"rgba(230,250,255,.95)";
+    b.shadowColor=rf.phantom?"rgba(255,210,120,.9)":"rgba(160,235,250,.9)";b.shadowBlur=Math.max(7,s*0.9);
+    b.beginPath();
+    b.moveTo(0,-s);b.lineTo(s*0.28,-s*0.28);b.lineTo(s,0);b.lineTo(s*0.28,s*0.28);
+    b.lineTo(0,s);b.lineTo(-s*0.28,s*0.28);b.lineTo(-s,0);b.lineTo(-s*0.28,-s*0.28);
+    b.closePath();b.fill();b.restore();});
+}
+
+let hover=null, time=0;
+function frame(){
+  time+=0.016;
+  ctx.clearRect(0,0,W,H);
+  ctx.drawImage(base,0,0,W,H);
+  const heart=REF.find(r=>r.heart);
+  const beat=(Math.sin(time*2.0)>0.7)?1.7:1;
+  ctx.save();ctx.shadowColor="rgba(255,120,100,.9)";ctx.shadowBlur=10*beat;
+  ctx.fillStyle="rgba(255,150,130,.97)";ctx.beginPath();ctx.arc(heart.x,heart.y,2.6*beat,0,7);ctx.fill();ctx.restore();
+
+  Q.forEach((q,i)=>{
+    if(q.halo){ctx.fillStyle="rgba(255,111,83,.10)";ctx.beginPath();ctx.arc(q.x,q.y,q.halo,0,7);ctx.fill();
+      ctx.strokeStyle="rgba(255,111,83,.35)";ctx.lineWidth=1;ctx.setLineDash([2,3]);
+      ctx.beginPath();ctx.arc(q.x,q.y,q.halo,0,7);ctx.stroke();ctx.setLineDash([]);}
+    const pulse=q.hook?(1+0.1*Math.sin(time*3)):1, r=q.r*pulse;
+    ctx.save();
+    ctx.shadowColor=q.hook?"rgba(255,100,80,.9)":q.tsu?"rgba(120,225,240,.85)":"rgba(225,180,120,.7)";
+    ctx.shadowBlur=(q.hook?20:11)+((hover&&hover.type==="q"&&hover.i===i)?14:0);
+    ctx.fillStyle=pearlFill(q.x,q.y,r,kindOf(q));
+    ctx.beginPath();ctx.arc(q.x,q.y,r,0,7);ctx.fill();ctx.restore();
+    if(q.est){ctx.strokeStyle="rgba(230,245,250,.85)";ctx.lineWidth=1.1;ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.arc(q.x,q.y,r+1.5,0,7);ctx.stroke();ctx.setLineDash([]);}
+    ctx.fillStyle="rgba(255,255,255,.85)";ctx.beginPath();
+    ctx.arc(q.x-r*0.34,q.y-r*0.34,Math.max(.8,r*0.18),0,7);ctx.fill();
+    if(q.hook){ctx.strokeStyle="rgba(255,111,83,"+(0.5+0.3*Math.sin(time*3))+")";ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.arc(q.x,q.y,r+7+1.5*Math.sin(time*3),0,7);ctx.stroke();}
+    if(hover&&hover.type==="q"&&hover.i===i){ctx.strokeStyle="rgba(245,255,255,.9)";ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.arc(q.x,q.y,r+5,0,7);ctx.stroke();}
+  });
+  if(hover&&hover.type==="ref"){const rf=REF[hover.i];
+    ctx.strokeStyle="rgba(245,255,255,.9)";ctx.lineWidth=1.3;ctx.beginPath();ctx.arc(rf.x,rf.y,Math.max(9,rf.r+5),0,7);ctx.stroke();}
+  requestAnimationFrame(frame);
+}
+
+function magAt(mx,my){
+  const dx=mx-cx,dy=my-cy,prW=Math.hypot(dx,dy)/zoom,pa=Math.atan2(dy,dx);
+  if(prW<r0*0.6||prW>R(95)*1.05)return null;
+  let baseA=((((pa-th0)/dth)%perTurn)+perTurn)%perTurn, bt=null,bd=1e9;
+  for(let k=0;k<=7;k++){const t=baseA+perTurn*k;if(t<dOf(-3)||t>95)continue;
+    const d=Math.abs(R(t)-prW);if(d<bd){bd=d;bt=t;}}
+  if(bt==null)return null;
+  if(prW<Rin(bt)*0.8||prW>R(bt)*1.12)return null;
+  return bt/5-3;
+}
+function pickPoint(mx,my){let best=null,bestR=1e9;   // prefer the smallest marker under the cursor (so a tiny one isn't eclipsed)
+  Q.forEach((q,i)=>{const d=Math.hypot(mx-q.x,my-q.y);if(d<Math.max(q.r,7)+5&&q.r<bestR){bestR=q.r;best={type:"q",i};}});
+  REF.forEach((rf,i)=>{const d=Math.hypot(mx-rf.x,my-rf.y);if(d<Math.max(rf.r,7)+4&&rf.r<bestR){bestR=rf.r;best={type:"ref",i};}});
+  return best;}
+
+cv.addEventListener("mousemove",e=>{
+  const mx=e.clientX, my=e.clientY;
+  const pt=pickPoint(mx,my);
+  if(pt){hover=pt;let html,tx,ty;
+    if(pt.type==="q"){const q=Q[pt.i];
+      const dn=q.hook
+        ? '<div class="big red">~'+q.deaths.toLocaleString()+' '+T.lives+' · ~'+q.missing.toLocaleString()+' '+T.missing+'</div>'
+        : '<div class="big">~'+q.deaths.toLocaleString()+' '+T.lives+'</div>';
+      html='<div class="n"><img class="flag" src="https://flagcdn.com/24x18/'+q.cc+'.png" alt="">'+q.n+
+        (q.est?'&nbsp;<span style="font-size:11px;color:#9fc4cc;font-style:normal">'+T.est+'</span>':'')+'</div>'+
+        '<div class="meta">M'+q.M.toFixed(1)+'  ·  '+q.place+'  ·  '+q.year+(q.tsu?'  ·  '+T.tsu:'')+'</div>'+
+        dn+'<div class="note">'+((T.qn&&T.qn[pt.i])||q.note)+'</div>';
+      tx=q.x;ty=q.y;
+    } else {const rf=REF[pt.i],rl=(T.rl&&T.rl[pt.i])||rf.label,rn=(T.rn&&T.rn[pt.i])||rf.note;
+      html='<div class="n">'+(rf.cc?'<img class="flag" src="https://flagcdn.com/24x18/'+rf.cc+'.png" alt="">':'')+rl+'</div>'+
+        '<div class="meta">'+T.enrEq+rf.M.toFixed(1)+'</div>'+
+        '<div class="big">'+energyLine(rf.E)+'</div>'+
+        (rf.deaths?'<div class="big red">~'+rf.deaths.toLocaleString()+' '+T.lives+'</div>':'')+
+        (rn?'<div class="note">'+rn+'</div>':'');
+      tx=rf.x;ty=rf.y;
+    }
+    tip.innerHTML=html;tip.style.left=tx+"px";tip.style.top=ty+"px";tip.style.opacity=1;
+    cv.style.cursor="pointer";return;
+  }
+  const M=magAt(mx,my);
+  if(M!=null){hover=null;const E=eJ(M),ri=nearestRefIdx(M),rl=(T.rl&&T.rl[ri])||REF[ri].label;
+    tip.innerHTML='<div class="n">'+T.mag+' '+M.toFixed(1)+'</div>'+
+      '<div class="meta">'+T.enr+' '+fmtJ(E)+'</div>'+
+      '<div class="big">'+energyLine(E)+'</div>'+
+      '<div class="note">'+T.howOften+' '+freqTxt(M)+'<br>'+T.about+' '+rl+'</div>';
+    tip.style.left=mx+"px";tip.style.top=my+"px";tip.style.opacity=1;cv.style.cursor="crosshair";
+  } else {hover=null;tip.style.opacity=0;cv.style.cursor="default";}
+});
+cv.addEventListener("mouseleave",()=>{hover=null;tip.style.opacity=0;});
+
+function updateScaleLabel(){
+  const rEdge=Math.min(W,H)*0.47;
+  const Mouter=Math.round(Math.max(-3,Math.min(16, Math.log(rEdge/(r0*zoom))/Math.log(G)/5-3)));
+  document.getElementById("scale").textContent=(T.showing||"showing")+"  M−3 → M"+Mouter;
+}
+function setZoom(z){zoom=Math.max(0.1,Math.min(14,z));layout();}
+document.getElementById("zin").onclick=()=>setZoom(zoom*1.5);
+document.getElementById("zout").onclick=()=>setZoom(zoom/1.5);
+document.getElementById("zreset").onclick=()=>setZoom(1);
+cv.addEventListener("wheel",e=>{e.preventDefault();setZoom(zoom*(e.deltaY<0?1.12:0.893));},{passive:false});
+
+function applyLang(lang,strings){ T=Object.assign({}, strings||DICT[lang]||DICT.en, TT[lang]||TT.en); updateScaleLabel(); }
+if(window.vizI18n) vizI18n.init({ dict: DICT, onApply: applyLang });
+else applyLang('en',DICT.en);
+
+layout(); frame();
+let rz; window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(layout,160);});
+</script>
+</body>
+</html>
